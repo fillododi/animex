@@ -1,0 +1,7 @@
+{
+  "name": "animex",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "vue-vite"
+}
