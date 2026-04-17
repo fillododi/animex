@@ -27,13 +27,40 @@
             UI Components
           </a>
         </p>
+        <ion-button @click="openCamera">Open Camera</ion-button>
+        <div v-if="imageUrl" style="margin-top: 16px;">
+          <img :src="imageUrl" alt="Captured" style="width: 100%; border-radius: 12px;" />
+        </div>
+        <p v-if="statusMessage">{{ statusMessage }}</p>
       </div>
     </ion-content>
   </ion-page>
 </template>
 
 <script setup lang="ts">
-import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from '@ionic/vue';
+import { ref } from 'vue'
+import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButton } from '@ionic/vue'
+import { requestCameraPermission, takePhoto } from '@/services/CameraService'
+
+const imageUrl = ref<string>('')
+const statusMessage = ref('')
+
+async function openCamera() {
+  const granted: boolean = await requestCameraPermission()
+
+  if (!granted) {
+    statusMessage.value = 'Camera permission not granted.'
+    return
+  }
+
+  try {
+    const photo = await takePhoto()
+    imageUrl.value = photo.webPath ?? ''
+    statusMessage.value = 'Camera working correctly.'
+  } catch (error) {
+    statusMessage.value = 'Camera failed to open.'
+  }
+}
 </script>
 
 <style scoped>

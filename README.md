@@ -34,18 +34,18 @@ npm install
 ionic serve
 ```
 
-### Run on a device with Capacitor live reload
+### Run on a device
 
-Android:
+Android (will open on android studio):
 
 ```bash
-npx cap run android
+npx cap open android
 ```
 
 iOS:
 
 ```bash
-npx cap run ios
+npx cap open ios
 ```
 
 If native dependencies or web assets change, sync the project first:
@@ -72,9 +72,18 @@ npx cap sync
 
 ### Android build
 
+```bash
+npm run build
+npx cap sync
+```
+
 Build the native Android project with Gradle after syncing assets. The output is an APK that can be sideloaded onto a device.
 
 ### iOS build
+```bash
+npm run build
+npx cap sync
+```
 
 Open the synced iOS project in Xcode and build the app for a simulator or physical device. The output can be packaged as an IPA for sideloading.
 
