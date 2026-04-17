@@ -26,6 +26,8 @@
 	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>Animex uses the camera to identify animals and show interactive wildlife content.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Animex uses the microphone so users can ask questions about animals by voice.</string>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
