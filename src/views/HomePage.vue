@@ -103,8 +103,8 @@ async function startMic() {
     startRecording()
     isRecording.value = true
     statusMessage.value = 'Recording… press Stop when done.'
-  } catch {
-    statusMessage.value = 'Failed to start recording.'
+  } catch (e: unknown) {
+    statusMessage.value = e instanceof Error? e.message: 'Failed to start recording.'
     releaseStream()
   }
 }
