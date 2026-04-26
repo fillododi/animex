@@ -30,7 +30,8 @@ export function stopRecording(): Promise<string> {
     if (!mediaRecorder) return reject(new Error('No active recording.'))
 
     mediaRecorder.onstop = () => {
-      const audioBlob = new Blob(audioChunks, { type: 'audio/webm' })
+      const actualMimeType = mediaRecorder?.mimeType || 'audio/mp4'
+      const audioBlob = new Blob(audioChunks, { type: actualMimeType })
       const audioUrl = URL.createObjectURL(audioBlob)
       resolve(audioUrl)
     }
