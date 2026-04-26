@@ -26,7 +26,10 @@
         <div v-if="imageUrl" style="margin-top: 16px;">
           <img :src="imageUrl" alt="Captured" style="width: 100%; border-radius: 12px;" />
         </div>
-
+        <!-- ChatBot -->
+        <ion-button router-link="/chat">
+          Entra nella Chat Animex!
+        </ion-button>
         <!-- Microphone -->
         <ion-button
           v-if="!isRecording"
