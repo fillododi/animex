@@ -39,24 +39,23 @@ import {
     IonButtons, 
     IonBackButton 
     } from '@ionic/vue'; // Importiamo i "mattoncini" visivi di Ionic
+import { simulaRispostaAnimale } from '@/modules/ConversationMgr';
 
 // 2. Creiamo una variabile reattiva (che cambia nel tempo)
 // All'inizio, la stringa è vuota.
 const rispostaAnimale = ref("...");
 
 // 3. Creiamo la funzione che viene chiamata quando si preme il bottone
-const inviaMessaggioDiProva = () => {
+const inviaMessaggioDiProva = async () => {
   
   // Immaginiamo che qui in mezzo il "Conversation Manager" parli con l'intelligenza artificiale.
   // Per ora, facciamo finta che l'IA risponda dopo 1 secondo.
   
   rispostaAnimale.value = "Sto pensando..."; // .value è obbligatorio quando usiamo ref() in <script>
 
-  setTimeout(() => {
-    // Dopo un secondo, cambiamo il valore della variabile. 
-    // Vue se ne accorgerà e aggiornerà il testo sullo schermo automaticamente!
-    rispostaAnimale.value = "Roar! Ciao piccolo umano! 🦁";
-  }, 1000);
+  const answer =  await simulaRispostaAnimale(); // Qui chiamiamo la funzione che simula la risposta dell'animale
+  console.log("Risposta ricevuta:", answer); // Stampiamo la risposta nella console per debug
+  rispostaAnimale.value = answer;
 
 };
 </script>
