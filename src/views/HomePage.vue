@@ -24,9 +24,6 @@
         <!-- Camera -->
         <ion-button @click="openCamera">Open Camera</ion-button>
         <ion-button @click="screenshot">Take Photo</ion-button>
-        <div v-if="imageUrl" style="margin-top: 16px;">
-          <img :src="imageUrl" alt="Captured" style="width: 100%; border-radius: 12px;" />
-        </div>
         <div id="camera" class="camera-box"></div>
         <div v-if="capturedImage" class="overlay">
           <img :src="capturedImage" alt="CAMERA-ALT" />
@@ -66,26 +63,26 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButton } from '@ionic/vue'
-import { start, stop, takePhoto } from '@/services/CameraService'
 import {
   requestMicrophonePermission,
   startRecording,
   stopRecording,
   releaseStream,
 } from '@/services/SpeechService'
+import { DeviceCameraService } from '@/services/CameraService'
 
-const imageUrl = ref<string>('')
 const audioUrl = ref<string>('')
 const statusMessage = ref('')
 const isRecording = ref(false)
 const capturedImage = ref()
+const cam = new DeviceCameraService()
 
 async function openCamera() {
- start();
+ cam.start("camera");
 }
 
 async function screenshot() {
-  var res = await takePhoto();
+  var res = await cam.getCameraFrame();
   capturedImage.value = `data:image/jpeg;base64,${res.value}`;
 }
 
