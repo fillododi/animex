@@ -1,25 +1,19 @@
-import { Camera } from "@capacitor/camera"
-import { Capacitor } from "@capacitor/core"
+import { CameraPreview, type CameraPreviewOptions } from "@capacitor-community/camera-preview";
 
-export async function requestCameraPermission(): Promise<boolean> {
-    try {
-        if(Capacitor.getPlatform() === "web") {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true })
-            stream.getTracks().forEach(track => track.stop())
-            return true
-        }
-        //ios or android
-        const check = await Camera.checkPermissions()
-        if (check.camera === "granted") return true;
-        const request = await Camera.requestPermissions({ permissions: ['camera'] })
-        return request.camera === "granted"
-    } catch {
-        return false
-    }
+export async function start() {
+    var options: CameraPreviewOptions = {
+        position: 'front',
+        parent: 'camera',
+        toBack: true, // overlay ui
+    };
+    await CameraPreview.start(options);
 }
 
-export async function takePhoto() {
-    return Camera.takePhoto({
-        quality: 100,
-    })
+export async function stop() {
+    await CameraPreview.stop();
+}
+
+export async function takePhoto(): Promise<{value: String}> {
+    var res = await CameraPreview.captureSample({quality: 100});
+    return res;
 }
