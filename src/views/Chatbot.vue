@@ -2,69 +2,159 @@
   <ion-page>
     <ion-header>
       <ion-toolbar>
-        
         <ion-buttons slot="start">
-          <ion-back-button default-href="/home" text="Indietro"></ion-back-button>
+          <ion-back-button default-href="/home" text="Back"></ion-back-button>
         </ion-buttons>
-        
-        <ion-title>Chat con l'Animale</ion-title>
-        
+        <ion-title>Chatbot Logic Test</ion-title>
       </ion-toolbar>
     </ion-header>
+
     <ion-content class="ion-padding">
       
-      <h2>Risposta dell'animale:</h2>
-      <p> {{ rispostaAnimale }} </p> 
-      
-      <br><br>
+      <!-- SYSTEM STATUS BANNER -->
+      <div class="status-banner" :class="{ active: isRecording }">
+        {{ currentStatus }}
+      </div>
 
-      <ion-button @click="inviaMessaggioDiProva">
-        Fai ciao all'animale!
-      </ion-button>
+      <!-- TEST CONTROLS -->
+      <div class="controls-container">
+        <ion-button 
+          expand="block" 
+          @click="handleStart" 
+          :disabled="isRecording || isProcessing"
+          color="primary"
+        >
+          1. START RECORDING
+        </ion-button>
+
+        <ion-button 
+          expand="block" 
+          @click="handleStop" 
+          :disabled="!isRecording || isProcessing"
+          color="danger"
+          style="margin-top: 15px;"
+        >
+          2. STOP & PROCESS
+        </ion-button>
+      </div>
+
+      <hr style="margin: 30px 0;">
+
+      <!-- DEBUG OUTPUT -->
+      <div class="debug-section">
+        <h3>Manager Output:</h3>
+        
+        <div class="debug-box">
+          <strong>User Text (STT):</strong>
+          <p>{{ debugUserText }}</p>
+        </div>
+
+        <div class="debug-box">
+          <strong>Animal Text (AI):</strong>
+          <p>{{ debugAnimalText }}</p>
+        </div>
+      </div>
 
     </ion-content>
   </ion-page>
 </template>
 
 <script setup lang="ts">
-// 1. Importiamo le cose che ci servono
-import { ref } from 'vue'; // ref serve per creare variabili "magiche" che si aggiornano da sole
-import { 
-    IonPage,
-    IonHeader, 
-    IonToolbar, 
-    IonTitle, 
-    IonContent, 
-    IonButton,
-    IonButtons, 
-    IonBackButton 
-    } from '@ionic/vue'; // Importiamo i "mattoncini" visivi di Ionic
-import { simulaRispostaAnimale } from '@/modules/ConversationMgr';
+import { ref } from 'vue';
+import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButton, IonButtons, IonBackButton } from '@ionic/vue';
 
-// 2. Creiamo una variabile reattiva (che cambia nel tempo)
-// All'inizio, la stringa è vuota.
-const rispostaAnimale = ref("...");
+// Import the manager you just built
+import { startInteraction, stopAndProcessInteraction } from '@/modules/ConversationMgr';
 
-// 3. Creiamo la funzione che viene chiamata quando si preme il bottone
-const inviaMessaggioDiProva = async () => {
+// --- STATE VARIABLES ---
+const isRecording = ref(false);
+const isProcessing = ref(false);
+const currentStatus = ref("Idle - Waiting to start");
+
+const debugUserText = ref("-");
+const debugAnimalText = ref("-");
+
+// --- EVENT HANDLERS ---
+
+const handleStart = async () => {
+  try {
+    currentStatus.value = "Requesting microphone...";
+    
+    // Call your manager to start the flow
+    await startInteraction();
+    
+    isRecording.value = true;
+    currentStatus.value = "🔴 Recording... (Speak now)";
+    
+    // Reset debug texts
+    debugUserText.value = "-";
+    debugAnimalText.value = "-";
+  } catch (error: any) {
+    currentStatus.value = "Error: " + error.message;
+  }
+};
+
+const handleStop = async () => {
+  isRecording.value = false;
+  isProcessing.value = true;
+  currentStatus.value = "⚙️ Processing (STT -> AI -> TTS)...";
   
-  // Immaginiamo che qui in mezzo il "Conversation Manager" parli con l'intelligenza artificiale.
-  // Per ora, facciamo finta che l'IA risponda dopo 1 secondo.
-  
-  rispostaAnimale.value = "Sto pensando..."; // .value è obbligatorio quando usiamo ref() in <script>
-
-  const answer =  await simulaRispostaAnimale(); // Qui chiamiamo la funzione che simula la risposta dell'animale
-  console.log("Risposta ricevuta:", answer); // Stampiamo la risposta nella console per debug
-  rispostaAnimale.value = answer;
-
+  try {
+    // Call your manager to handle all the background logic
+    const result = await stopAndProcessInteraction();
+    
+    // Display the results returned by your manager
+    debugUserText.value = result.userText;
+    debugAnimalText.value = result.animalText;
+    
+    currentStatus.value = "✅ Flow complete! (Animal should be speaking)";
+  } catch (error: any) {
+    currentStatus.value = "Process Error: " + error.message;
+  } finally {
+    isProcessing.value = false;
+  }
 };
 </script>
 
 <style scoped>
-/* Qui potresti mettere regole grafiche specifiche, es. per rendere il testo più grande */
-p {
-  font-size: 18px;
-  color: #333;
-  font-style: italic;
+.status-banner {
+  background-color: #f1f2f6;
+  color: #2f3542;
+  text-align: center;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 25px;
+  font-weight: bold;
+  border: 1px solid #ced6e0;
+  transition: all 0.3s ease;
+}
+
+.status-banner.active {
+  background-color: #ff4757;
+  color: white;
+  border-color: #ff4757;
+}
+
+.controls-container {
+  padding: 10px 0;
+}
+
+.debug-section h3 {
+  color: #747d8c;
+  margin-bottom: 15px;
+}
+
+.debug-box {
+  background-color: #000000;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  border-left: 4px solid #3742fa;
+}
+
+.debug-box p {
+  margin: 10px 0 0 0;
+  font-size: 16px;
+  color: #FFFFFF;
 }
 </style>
