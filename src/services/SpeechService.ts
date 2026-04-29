@@ -46,3 +46,49 @@ export function releaseStream(): void {
   mediaRecorder = null
   audioChunks = []
 }
+
+export async function convertSpeechToText(audioUrl: string): Promise<string> {
+    // Simulate an API call to a Speech-to-Text service (e.g., Whisper)
+    return new Promise((resolve) => {
+        setTimeout(() => {
+            // MODIFY HERE TO TEST:
+            // Change `true` to `false` to simulate the child staying silent
+            const didChildSpeak = false; 
+
+            if (didChildSpeak) {
+                resolve("Ciao animale, come stai?");
+            } else {
+                resolve(""); // Return an empty string (silence)
+            }
+        }, 1500);
+    });
+}
+
+export async function fetchAnimalResponse(userText: string): Promise<string> {
+    // Simulate an API call to the Animex AI backend
+    return new Promise((resolve) => {
+        setTimeout(() => resolve(`Roar! Ho sentito la tua domanda. Sto benissimo! 🦁`), 1500);
+    });
+}
+
+export async function playTextToSpeech(text: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+        const synth = window.speechSynthesis;
+        
+        if (!synth) {
+            console.warn("Text-to-Speech is not supported by this browser.");
+            // Resolve anyway to avoid breaking the application flow
+            resolve(); 
+            return;
+        }
+
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'it-IT'; // The animal speaks in Italian
+        utterance.pitch = 1.2; 
+        
+        utterance.onend = () => resolve();
+        utterance.onerror = (e) => reject(e);
+        
+        synth.speak(utterance);
+    });
+}
