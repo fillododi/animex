@@ -1,3 +1,5 @@
+import { TextToSpeech } from "@capacitor-community/text-to-speech"
+
 let mediaRecorder: MediaRecorder | null = null
 let audioChunks: Blob[] = []
 let audioStream: MediaStream | null = null
@@ -71,25 +73,18 @@ export async function fetchAnimalResponse(_userText: string): Promise<string> {
     });
 }
 
-export async function playTextToSpeech(text: string): Promise<void> {
-    return new Promise((resolve, reject) => {
-        const synth = window.speechSynthesis;
-        
-        if (!synth) {
-            // Resolve anyway to avoid breaking the application flow
-            resolve(); 
-            return;
-        }
-
-        synth.cancel();
-
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = 'it-IT'; // The animal speaks in Italian
-        utterance.pitch = 1.2; 
-        
-        utterance.onend = () => resolve();
-        utterance.onerror = (e) => reject(e);
-        
-        synth.speak(utterance);
-    });
+export async function playTextToSpeech(text: string)  {
+  await TextToSpeech.speak({
+    text,
+    lang: 'it-IT',
+    rate: 1.0,
+    pitch: 1.0,
+    volume: 1.0,
+    category: 'ambient',
+    queueStrategy: 1
+  });
+    
+}
+export async function stopTextToSpeech() {
+  await TextToSpeech.stop();
 }
