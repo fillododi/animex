@@ -47,7 +47,7 @@ export function releaseStream(): void {
   audioChunks = []
 }
 
-export async function convertSpeechToText(audioUrl: string): Promise<string> {
+export async function convertSpeechToText(_audioUrl: string): Promise<string> {
     // Simulate an API call to a Speech-to-Text service (e.g., Whisper)
     return new Promise((resolve) => {
         setTimeout(() => {
@@ -64,7 +64,7 @@ export async function convertSpeechToText(audioUrl: string): Promise<string> {
     });
 }
 
-export async function fetchAnimalResponse(userText: string): Promise<string> {
+export async function fetchAnimalResponse(_userText: string): Promise<string> {
     // Simulate an API call to the Animex AI backend
     return new Promise((resolve) => {
         setTimeout(() => resolve(`Roar! Ho sentito la tua domanda. Sto benissimo! 🦁`), 1500);
@@ -76,7 +76,6 @@ export async function playTextToSpeech(text: string): Promise<void> {
         const synth = window.speechSynthesis;
         
         if (!synth) {
-            console.warn("Text-to-Speech is not supported by this browser.");
             // Resolve anyway to avoid breaking the application flow
             resolve(); 
             return;

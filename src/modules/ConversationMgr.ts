@@ -35,7 +35,6 @@ export async function stopAndProcessInteraction(): Promise<{ userText: string, a
 
     } catch (error) {
         // SCENARIO C: Servers (STT or AI) are down / offline
-        console.error("Network or server error:", error);
         finalUserText = "[Errore di sistema]";
         finalAnimalText = "Roar! Ho un po' di mal di pancia al server... dammi un minuto e riprova!";
     }

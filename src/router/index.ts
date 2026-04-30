@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory } from '@ionic/vue-router';
 import type { RouteRecordRaw } from 'vue-router';
 import HomePage from '../views/HomePage.vue';
-import ChatView from '../views/Chatbot.vue';
+import ChatView from '../views/ChatBot.vue';
 
 const routes: Array<RouteRecordRaw> = [
   {
