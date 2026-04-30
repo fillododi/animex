@@ -1,5 +1,5 @@
-import { requestMicrophonePermission, startRecording, stopRecording, releaseStream, convertSpeechToText, fetchAnimalResponse, playTextToSpeech } from '@/services/SpeechService';
-
+import { requestMicrophonePermission, startRecording, stopRecording, releaseStream, convertSpeechToText,  playTextToSpeech } from '@/services/SpeechService';
+import { fetchAnimalResponse } from '@/services/AIService';
 // --- PUBLIC FUNCTIONS (Exposed to the View) ---
 
 export async function startInteraction(): Promise<void> {
