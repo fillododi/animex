@@ -75,10 +75,10 @@ const audioUrl = ref<string>('')
 const statusMessage = ref('')
 const isRecording = ref(false)
 const capturedImage = ref()
-const cam = new DeviceCameraService()
+const cam = new DeviceCameraService("camera")
 
 async function openCamera() {
- cam.start("camera");
+ cam.start();
 }
 
 async function screenshot() {
