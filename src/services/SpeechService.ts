@@ -93,12 +93,3 @@ export async function playTextToSpeech(text: string): Promise<void> {
         synth.speak(utterance);
     });
 }
-export function unlockAudioEngine() {
-    const synth = window.speechSynthesis;
-    if (synth) {
-        const silentUtterance = new SpeechSynthesisUtterance('');
-        // Abbassiamo il volume a zero per sicurezza
-        silentUtterance.volume = 0; 
-        synth.speak(silentUtterance);
-    }
-}

@@ -1,9 +1,8 @@
-import { requestMicrophonePermission, startRecording, stopRecording, releaseStream, convertSpeechToText, fetchAnimalResponse, playTextToSpeech, unlockAudioEngine } from '@/services/SpeechService';
+import { requestMicrophonePermission, startRecording, stopRecording, releaseStream, convertSpeechToText, fetchAnimalResponse, playTextToSpeech } from '@/services/SpeechService';
 
 // --- PUBLIC FUNCTIONS (Exposed to the View) ---
 
 export async function startInteraction(): Promise<void> {
-    unlockAudioEngine();
     const granted = await requestMicrophonePermission();
     if (!granted) {
         throw new Error("Microphone permission denied by the user.");
