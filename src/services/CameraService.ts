@@ -1,5 +1,6 @@
 import { type Service } from "./Service"
 import { CameraPreview, type CameraPreviewOptions } from "@capacitor-community/camera-preview";
+import { assert } from "@/utility/assert";
 
 export interface CameraService extends Service {
     /**
@@ -8,7 +9,7 @@ export interface CameraService extends Service {
      * @requires The service to be active.
      * @returns A promise containing the frame's data as a String
      */
-    getCameraFrame(): Promise<{value: String}>
+    getCameraFrame(): Promise<{value: string}>
 }
 
 export class DeviceCameraService implements CameraService {
@@ -23,12 +24,12 @@ export class DeviceCameraService implements CameraService {
     async start() {
         assert(!this.active, "Camera Service already active!")
 
-        var options: CameraPreviewOptions = {
+        const options: CameraPreviewOptions = {
             position: 'front',
             parent: this.previewParent,
             toBack: true, // overlay ui
-        }
-        await CameraPreview.start(options).then(() => this.active = true)
+        };
+        await CameraPreview.start(options).then(() => this.active = true);
     }
 
     async stop() {
@@ -41,10 +42,9 @@ export class DeviceCameraService implements CameraService {
         return this.active
     }
 
-    async getCameraFrame(): Promise<{value: String}> {
+    async getCameraFrame(): Promise<{value: string}> {
         assert(this.active, "Can't capture a frame from an inactive camera!")
 
-        var res = await CameraPreview.captureSample({quality: 100})
-        return res
+        return await CameraPreview.captureSample({quality: 100});
     }
 }

@@ -3,6 +3,7 @@ import { Event, type EventListener } from "@/utility/Event"
 import { type CameraService } from "./CameraService"
 import type { ConnectionService } from "./ConnectionService"
 import type { Service } from "./Service"
+import { assert } from "@/utility/assert";
 
 export interface RecognitionService extends Service{
     /**
@@ -40,7 +41,7 @@ export class VisionRecognitionService implements RecognitionService {
     start() {
         assert(!this.active, "Recognition Service already active!")
 
-        let snapshotTimerMS = 5000
+        const snapshotTimerMS = 5000
         this.active = true
         this.interval = setInterval(this.snapshotLoop, snapshotTimerMS)
     }
