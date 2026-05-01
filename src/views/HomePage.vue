@@ -28,7 +28,10 @@
         <div v-if="capturedImage" class="overlay">
           <img :src="capturedImage" alt="CAMERA-ALT" />
         </div>
-
+        <!-- ChatBot -->
+        <ion-button router-link="/chat">
+          Entra nella Chat Animex!
+        </ion-button>
         <!-- Microphone -->
         <ion-button
           v-if="!isRecording"
