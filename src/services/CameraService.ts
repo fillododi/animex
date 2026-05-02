@@ -6,8 +6,8 @@ export interface CameraService extends Service {
     /**
      * Takes a frame from the current camera view
      * 
-     * @requires The service to be active.
      * @returns A promise containing the frame's data as a String
+     * @throws An Error if the service isn't active.
      */
     getCameraFrame(): Promise<{value: string}>
 }

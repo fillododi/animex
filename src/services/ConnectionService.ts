@@ -7,7 +7,7 @@ export interface ConnectionService extends Service {
      * @param visionFrame The data of the image as a string
      * @returns The server's response
      */
-    sendRecognitionRequest(visionFrame: String): Promise<RecognitionData>
+    sendRecognitionRequest(visionFrame: string): Promise<RecognitionData>
     //sendChatRequest
     //sendARRequest
 }

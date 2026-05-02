@@ -23,6 +23,7 @@
 
         <!-- Camera -->
         <ion-button @click="openCamera">Open Camera</ion-button>
+        <ion-button @click="screenshot">Snap pic</ion-button>
         <div id="camera" class="camera-box"></div>
         <div v-if="capturedImage" class="overlay">
           <img :src="capturedImage" alt="CAMERA-ALT" />
@@ -81,6 +82,11 @@ const cam = new DeviceCameraService("camera")
 
 async function openCamera() {
   cam.start();
+}
+
+async function screenshot() {
+  const res = await cam.getCameraFrame();
+  capturedImage.value = `data:image/jpeg;base64,${res.value}`;
 }
 
 async function startMic() {

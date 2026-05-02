@@ -1,12 +1,12 @@
 export interface Service {
     /**
      * Activates the service.
-     * @requires The service to not be currently running. (this.isActive() == false)
+     * @throws An Error if the service is currently active.
      */
     start(): void
     /**
      * Deactivates the service.
-     * @requires The service to be currently running. (this.isActive() == true)
+     * @throws An Error if the service is currently inactive.
      */
     stop(): void
     /**
