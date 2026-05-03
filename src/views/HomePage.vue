@@ -24,7 +24,7 @@
         <!-- Camera -->
         <ion-button @click="openCamera">Open Camera</ion-button>
         <ion-button @click="screenshot">Snap pic</ion-button>
-        <div id="camera" class="camera-box"></div>
+        <div id="camera" class="camera-box" width="500" height="500"></div>
         <div v-if="capturedImage" class="overlay">
           <img :src="capturedImage" alt="CAMERA-ALT" />
         </div>
@@ -78,7 +78,7 @@ const audioUrl = ref<string>('')
 const statusMessage = ref('')
 const isRecording = ref(false)
 const capturedImage = ref()
-const cam = new DeviceCameraService("camera")
+const cam = new DeviceCameraService("camera", 200, 200)
 
 async function openCamera() {
   cam.start();
@@ -123,6 +123,13 @@ async function stopMic() {
 </script>
 
 <style scoped>
+ion-content {
+  --background: transparent;
+  background: transparent;
+}
+html, body {
+  background: transparent;
+}
 #container {
   text-align: center;
   position: absolute;

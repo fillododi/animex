@@ -14,11 +14,15 @@ export interface CameraService extends Service {
 
 export class DeviceCameraService implements CameraService {
     private previewParent: string
+    private width: number
+    private height: number
     private active: boolean
 
-    constructor(parent: string) {
+    constructor(parent: string, w: number, h: number) {
         this.active = false
         this.previewParent = parent
+        this.width = w
+        this.height = h
     }
 
     async start() {
@@ -28,6 +32,8 @@ export class DeviceCameraService implements CameraService {
             position: 'front',
             parent: this.previewParent,
             toBack: true, // overlay ui
+            width: this.width,
+            height: this.height
         };
         await CameraPreview.start(options).then(() => this.active = true);
     }
