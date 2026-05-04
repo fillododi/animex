@@ -4,7 +4,7 @@ import { Position } from './Position'
 export class AnimalData {
     readonly id: number
     readonly animalType: AnimalType
-    readonly pos: Position
+    readonly pos?: Position
 
     constructor(id: number, type: AnimalType, pos: Position) {
         this.id = id

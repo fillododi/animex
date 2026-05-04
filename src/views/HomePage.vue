@@ -23,12 +23,15 @@
 
         <!-- Camera -->
         <ion-button @click="openCamera">Open Camera</ion-button>
-        <ion-button @click="screenshot">Take Photo</ion-button>
-        <div id="camera" class="camera-box"></div>
+        <ion-button @click="screenshot">Snap pic</ion-button>
+        <div id="camera" class="camera-box" width="500" height="500"></div>
         <div v-if="capturedImage" class="overlay">
           <img :src="capturedImage" alt="CAMERA-ALT" />
         </div>
-
+        <!-- ChatBot -->
+        <ion-button router-link="/chat">
+          Entra nella Chat Animex!
+        </ion-button>
         <!-- Microphone -->
         <ion-button
           v-if="!isRecording"
@@ -75,14 +78,14 @@ const audioUrl = ref<string>('')
 const statusMessage = ref('')
 const isRecording = ref(false)
 const capturedImage = ref()
-const cam = new DeviceCameraService()
+const cam = new DeviceCameraService(200, 200, "camera")
 
 async function openCamera() {
- cam.start("camera");
+  cam.start();
 }
 
 async function screenshot() {
-  var res = await cam.getCameraFrame();
+  const res = await cam.getCameraFrame();
   capturedImage.value = `data:image/jpeg;base64,${res.value}`;
 }
 
@@ -120,6 +123,13 @@ async function stopMic() {
 </script>
 
 <style scoped>
+/* Make sure every container is transparent */
+html, body, ion-app, ion-content, .ion-page {
+  --background: transparent !important;
+  background-color: transparent !important;
+  background: transparent !important;
+}
+
 #container {
   text-align: center;
   position: absolute;
