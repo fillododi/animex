@@ -30,7 +30,7 @@
         <ion-button 
           expand="block" 
           @click="handleStop" 
-          :disabled="!isRecording || isProcessing"
+          :disabled="!isRecording || !isMicReady || isProcessing"
           color="danger"
           style="margin-top: 15px;"
         >
@@ -70,6 +70,7 @@ import { startInteraction, stopAndProcessInteraction } from '@/modules/Conversat
 const isRecording = ref(false);
 const isProcessing = ref(false);
 const currentStatus = ref("Idle - Waiting to start");
+const isMicReady = ref(false);
 
 const debugUserText = ref("-");
 const debugAnimalText = ref("-");
@@ -78,14 +79,14 @@ const debugAnimalText = ref("-");
 
 const handleStart = async () => {
   try {
-    currentStatus.value = "Requesting microphone...";
-    
-    // Call your manager to start the flow
-    await startInteraction();
-    
+    currentStatus.value = "⏳ Inizializzazione microfono...";
     isRecording.value = true;
-    currentStatus.value = "🔴 Recording... (Speak now)";
-    
+    isMicReady.value = false;
+    // Call your manager to start the flow
+    await startInteraction(() => {
+      isMicReady.value = true;
+      currentStatus.value = "🎤 Microfono attivo, parla ora!";
+    });
     // Reset debug texts
     debugUserText.value = "-";
     debugAnimalText.value = "-";
