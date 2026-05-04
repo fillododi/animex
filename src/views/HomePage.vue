@@ -78,7 +78,7 @@ const audioUrl = ref<string>('')
 const statusMessage = ref('')
 const isRecording = ref(false)
 const capturedImage = ref()
-const cam = new DeviceCameraService("camera", 200, 200)
+const cam = new DeviceCameraService(200, 200, "camera")
 
 async function openCamera() {
   cam.start();
@@ -123,13 +123,13 @@ async function stopMic() {
 </script>
 
 <style scoped>
-ion-content {
-  --background: transparent;
-  background: transparent;
+/* Make sure every container is transparent */
+html, body, ion-app, ion-content, .ion-page {
+  --background: transparent !important;
+  background-color: transparent !important;
+  background: transparent !important;
 }
-html, body {
-  background: transparent;
-}
+
 #container {
   text-align: center;
   position: absolute;
