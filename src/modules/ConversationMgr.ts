@@ -89,38 +89,28 @@ export async function stopAndProcessInteraction(): Promise<{ userText: string, a
 import { playSpeechToText, playTextToSpeech, stopSpeechRecognition } from '@/services/SpeechService';
 import { fetchAnimalResponse } from '@/services/AIService';
 
-// --- VARIABILI DI STATO ---
+// --- STATE VARIABLE ---
 let isListening = false;
-let currentTranscript = ""; // Mantiene il testo ascoltato
-let recognitionResolver: ((text: string) => void) | null = null;
+let currentTranscript = ""; // Keep track of the current transcript as it comes in, so we have it ready when stopping
+
+// --- PUBLIC FUNCTIONS (Exposed to the View) ---
 
 export async function startInteraction(onReady?: () => void): Promise<void> {
     currentTranscript = "";
-    recognitionResolver = null;
     isListening = false;
     
-    playSpeechToText(
+    
+    await playSpeechToText(
         (transcript) => {
-            console.log('[MGR] STT result:', transcript);
-            currentTranscript = transcript; // Salva il testo, ma NON risolvere ancora la Promise
+            currentTranscript = transcript;
         },
         (error) => {
             console.error('[MGR] STT error:', error);
         },
         () => {
-            console.log('[MGR] onEnd called. Transcript is:', currentTranscript);
-            isListening = false;
-            
-            // L'evento onEnd è l'ultimo a scattare. Se qualcuno sta aspettando la Promise, la risolviamo qui.
-            if (recognitionResolver) {
-                recognitionResolver(currentTranscript);
-                recognitionResolver = null;
-            }
-        },
-        () => {
             console.log('[MGR] microphone ready');
             isListening = true;
-            onReady?.();
+            onReady?.(); // Notifica la Vue
         }
     );
 }
@@ -132,19 +122,13 @@ export function getIsListening(): boolean {
 export async function stopAndProcessInteraction(): Promise<{ userText: string, animalText: string }> {
     console.log('[MGR] stopAndProcessInteraction called');
     
-    let finalUserText = currentTranscript;
-
-    // Se sta ancora ascoltando, forziamo lo stop e aspettiamo l'evento onEnd
+    // If we are still listening, we need to stop the recognition first
     if (isListening) {
-        const waitForRecognitionEnd = new Promise<string>((resolve) => {
-            recognitionResolver = resolve;
-        });
-        stopSpeechRecognition(); 
-        finalUserText = await waitForRecognitionEnd;
-    } else {
-        console.log('[MGR] STT era già fermo. Uso il testo accumulato.');
+        await stopSpeechRecognition(); 
+        isListening = false;
     }
 
+    let finalUserText = currentTranscript;
     console.log('[MGR] finalUserText at stop time:', `"${finalUserText}"`);
     let finalAnimalText = "";
     

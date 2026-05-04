@@ -51,5 +51,9 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>NSSpeechRecognitionUsageDescription</key>
+<string>L'app necessita del riconoscimento vocale per permetterti di parlare con l'animale.</string>
+<key>NSMicrophoneUsageDescription</key>
+<string>L'app usa il microfono per ascoltare la tua voce.</string>
 </dict>
 </plist>
