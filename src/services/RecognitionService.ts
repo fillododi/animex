@@ -71,9 +71,8 @@ export class VisionRecognitionService implements RecognitionService {
 
     private snapshotLoop() {
         //Check if the loop should end
-        if (!this.active || !this.cameraService.isActive) {
-            this.active = false
-            clearInterval(this.interval)
+        if (!this.cameraService.isActive) {
+            this.stop()
             return
         }
 
