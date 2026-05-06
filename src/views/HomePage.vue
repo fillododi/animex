@@ -32,6 +32,8 @@
         <ion-button router-link="/chat">
           Entra nella Chat Animex!
         </ion-button>
+        <!-- Augmented Reality -->
+        <ion-button router-link="/ar">Start AR</ion-button>
         <!-- Microphone -->
         <ion-button
           v-if="!isRecording"

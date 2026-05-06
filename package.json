@@ -14,6 +14,7 @@
     "type-check": "vue-tsc --noEmit"
   },
   "dependencies": {
+    "@ar-js-org/ar.js": "^3.4.8",
     "@capacitor-community/camera-preview": "^8.0.1",
     "@capacitor-community/text-to-speech": "^8.0.0",
     "@capacitor/android": "^8.3.0",
