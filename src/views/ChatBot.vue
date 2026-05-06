@@ -64,7 +64,7 @@ import { ref } from 'vue';
 import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButton, IonButtons, IonBackButton } from '@ionic/vue';
 
 // Import the manager you just built
-import { startInteraction, stopAndProcessInteraction } from '@/modules/ConversationMgr';
+import { conversationManager } from '@/modules/ConversationMgr';
 
 // --- STATE VARIABLES ---
 const isRecording = ref(false);
@@ -83,7 +83,7 @@ const handleStart = async () => {
     isRecording.value = true;
     isMicReady.value = false;
     // Call your manager to start the flow
-    await startInteraction(() => {
+    await conversationManager.startInteraction(() => {
       isMicReady.value = true;
       currentStatus.value = "🎤 Microfono attivo, parla ora!";
     });
@@ -102,7 +102,7 @@ const handleStop = async () => {
   
   try {
     // Call your manager to handle all the background logic
-    const result = await stopAndProcessInteraction();
+    const result = await conversationManager.stopAndProcessInteraction();
     
     // Display the results returned by your manager
     debugUserText.value = result.userText;

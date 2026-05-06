@@ -1,63 +1,66 @@
-import { playSpeechToText, playTextToSpeech, stopSpeechRecognition } from '@/services/SpeechService';
+import { sttService, ttsService } from '@/services/SpeechService';
 import { fetchAnimalResponse } from '@/services/AIService';
 
-// --- STATE VARIABLE ---
-let isListening = false;
-let currentTranscript = ""; // Keep track of the current transcript as it comes in, so we have it ready when stopping
-
-// --- PUBLIC FUNCTIONS (Exposed to the View) ---
-
-export async function startInteraction(onReady?: () => void): Promise<void> {
-    currentTranscript = "";
-    isListening = false;
+export class ConversationManager {
     
-    
-    await playSpeechToText(
-        (transcript) => {
-            currentTranscript = transcript;
-        },
-        (error) => {
-            console.error('[MGR] STT error:', error);
-        },
-        () => {
-            console.log('[MGR] microphone ready');
-            isListening = true;
-            onReady?.(); // Notify the Vue
-        }
-    );
-}
+    private isListening = false;
+    private currentTranscript = ""; 
 
-export async function stopAndProcessInteraction(): Promise<{ userText: string, animalText: string }> {
-    console.log('[MGR] stopAndProcessInteraction called');
-    
-    // If we are still listening, we need to stop the recognition first
-    if (isListening) {
-        await stopSpeechRecognition(); 
-        isListening = false;
+    public async startInteraction(onReady?: () => void): Promise<void> {
+        this.currentTranscript = "";
+        this.isListening = false;
+        
+        // Use the STT service instance to start listening
+        await sttService.startListening(
+            (transcript) => {
+                this.currentTranscript = transcript;
+            },
+            (error) => {
+                console.error('[MGR] STT error:', error);
+            },
+            () => {
+                console.log('[MGR] microphone ready');
+                this.isListening = true;
+                onReady?.(); 
+            }
+        );
     }
 
-    let finalUserText = currentTranscript;
-    console.log('[MGR] finalUserText at stop time:', `"${finalUserText}"`);
-    let finalAnimalText = "";
-    
-    try {
-        if (!finalUserText || finalUserText.trim() === "") {
-            console.warn('[MGR] ⚠️ finalUserText is empty - going to fallback');
-            finalUserText = "[Nessuna parola rilevata]";
-            finalAnimalText = "Scusa umano, c'era troppo rumore o hai parlato pianissimo. Puoi ripetere?";
-        } else {
-            console.log('[MGR] ✅ Sending to AI:', finalUserText);
-            finalAnimalText = await fetchAnimalResponse(finalUserText);
+    public async stopAndProcessInteraction(): Promise<{ userText: string, animalText: string }> {
+        console.log('[MGR] stopAndProcessInteraction called');
+        
+        if (this.isListening) {
+            await sttService.stopListening(); 
+            this.isListening = false;
         }
-    } catch (error) {
-        finalUserText = "[Errore di sistema]";
-        finalAnimalText = "Roar! Ho un po' di mal di pancia al server... dammi un minuto e riprova!";
+
+        let finalUserText = this.currentTranscript;
+        console.log('[MGR] finalUserText at stop time:', `"${finalUserText}"`);
+        let finalAnimalText = "";
+        
+        try {
+            if (!finalUserText || finalUserText.trim() === "") {
+                console.warn('[MGR] ⚠️ finalUserText is empty - going to fallback');
+                finalUserText = "[Nessuna parola rilevata]";
+                finalAnimalText = "Scusa umano, c'era troppo rumore o hai parlato pianissimo. Puoi ripetere?";
+            } else {
+                console.log('[MGR] ✅ Sending to AI:', finalUserText);
+                finalAnimalText = await fetchAnimalResponse(finalUserText);
+            }
+        } catch (error) {
+            finalUserText = "[Errore di sistema]";
+            finalAnimalText = "Roar! Ho un po' di mal di pancia al server... dammi un minuto e riprova!";
+        }
+
+        // Use the TTS service instance to speak the response
+        await ttsService.speak(finalAnimalText);
+
+        return { 
+            userText: finalUserText, 
+            animalText: finalAnimalText 
+        };
     }
-
-    await playTextToSpeech(finalAnimalText);
-
-    return { 
-        userText: finalUserText, 
-        animalText: finalAnimalText 
-    };
 }
+
+// Export a singleton instance of ConversationManager to be used across the app
+export const conversationManager = new ConversationManager();

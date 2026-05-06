@@ -66,10 +66,7 @@ import { ref } from 'vue'
 import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButton } from '@ionic/vue'
 import { requestCameraPermission, takePhoto } from '@/services/CameraService'
 import {
-  requestMicrophonePermission,
-  startRecording,
-  stopRecording,
-  releaseStream,
+  browserRecorder,
 } from '@/services/SpeechService'
 
 const imageUrl = ref<string>('')
@@ -96,31 +93,31 @@ async function startMic() {
   statusMessage.value = ''
   audioUrl.value = ''
 
-  const granted = await requestMicrophonePermission()
+  const granted = await browserRecorder.requestMicrophonePermission()
   if (!granted) {
     statusMessage.value = 'Microphone permission not granted.'
     return
   }
 
   try {
-    startRecording()
+    browserRecorder.startRecording()
     isRecording.value = true
     statusMessage.value = 'Recording… press Stop when done.'
   } catch (e: unknown) {
     statusMessage.value = e instanceof Error? e.message: 'Failed to start recording.'
-    releaseStream()
+    browserRecorder.releaseStream()
   }
 }
 
 async function stopMic() {
   try {
-    audioUrl.value = await stopRecording()
+    audioUrl.value = await browserRecorder.stopRecording()
     statusMessage.value = ''
   } catch {
     statusMessage.value = 'Failed to stop recording.'
   } finally {
     isRecording.value = false
-    releaseStream()
+    browserRecorder.releaseStream()
   }
 }
 </script>
