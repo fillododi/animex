@@ -14,7 +14,6 @@
     "type-check": "vue-tsc --noEmit"
   },
   "dependencies": {
-    "@capacitor-community/speech-recognition": "^7.0.1",
     "@capacitor-community/text-to-speech": "^8.0.0",
     "@capacitor/android": "^8.3.0",
     "@capacitor/app": "8.1.0",
@@ -24,6 +23,7 @@
     "@capacitor/ios": "^8.3.0",
     "@capacitor/keyboard": "8.0.2",
     "@capacitor/status-bar": "8.0.2",
+    "@capgo/capacitor-speech-recognition": "^8.1.0",
     "@ionic/pwa-elements": "^3.4.0",
     "@ionic/vue": "^8.0.0",
     "@ionic/vue-router": "^8.0.0",

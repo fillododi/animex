@@ -1,4 +1,6 @@
-  import { SpeechRecognition } from '@capacitor-community/speech-recognition';
+  //import { SpeechRecognition } from '@capacitor-community/speech-recognition';
+  import { SpeechRecognition } from '@capgo/capacitor-speech-recognition';
+
   import { TextToSpeech } from "@capacitor-community/text-to-speech"
   let mediaRecorder: MediaRecorder | null = null
   let audioChunks: Blob[] = []
