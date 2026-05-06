@@ -1,10 +1,10 @@
-  //import { SpeechRecognition } from '@capacitor-community/speech-recognition';
-  import { SpeechRecognition } from '@capgo/capacitor-speech-recognition';
+import { SpeechRecognition } from '@capgo/capacitor-speech-recognition';
+import { TextToSpeech } from "@capacitor-community/text-to-speech"
+let mediaRecorder: MediaRecorder | null = null // Unused in the current implementation (used only in mic test)
+let audioChunks: Blob[] = [] // Unused in the current implementation (used only in mic test)
+let audioStream: MediaStream | null = null // Unused in the current implementation (used only in mic test)
 
-  import { TextToSpeech } from "@capacitor-community/text-to-speech"
-  let mediaRecorder: MediaRecorder | null = null
-  let audioChunks: Blob[] = []
-  let audioStream: MediaStream | null = null
+// --- MICROPHONE PERMISSION & AUDIO RECORDING (for testing purposes, not used in the main flow) ---
 export async function requestMicrophonePermission(): Promise<boolean> {
     try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
@@ -47,6 +47,8 @@ export function releaseStream(): void {
   mediaRecorder = null
   audioChunks = []
 }
+
+// --- SPEECH-TO-TEXT (STT) & TEXT-TO-SPEECH (TTS) FUNCTIONS ---
 let recognitionListener: any = null;
 
 export async function playSpeechToText(
@@ -119,6 +121,4 @@ export async function playTextToSpeech(text: string)  {
   queueStrategy: 1
   });
 }
-export async function stopTextToSpeech() {
-  await TextToSpeech.stop();
-}
+
