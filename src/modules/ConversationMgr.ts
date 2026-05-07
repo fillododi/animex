@@ -15,11 +15,9 @@ export class ConversationManager {
             (transcript) => {
                 this.currentTranscript = transcript;
             },
-            (error) => {
-                console.error('[MGR] STT error:', error);
+            (_error) => {
             },
             () => {
-                console.log('[MGR] microphone ready');
                 this.isListening = true;
                 onReady?.(); 
             }
@@ -27,7 +25,6 @@ export class ConversationManager {
     }
 
     public async stopAndProcessInteraction(): Promise<{ userText: string, animalText: string }> {
-        console.log('[MGR] stopAndProcessInteraction called');
         
         if (this.isListening) {
             await sttService.stopListening(); 
@@ -35,16 +32,13 @@ export class ConversationManager {
         }
 
         let finalUserText = this.currentTranscript;
-        console.log('[MGR] finalUserText at stop time:', `"${finalUserText}"`);
         let finalAnimalText = "";
         
         try {
             if (!finalUserText || finalUserText.trim() === "") {
-                console.warn('[MGR] ⚠️ finalUserText is empty - going to fallback');
                 finalUserText = "[Nessuna parola rilevata]";
                 finalAnimalText = "Scusa umano, c'era troppo rumore o hai parlato pianissimo. Puoi ripetere?";
             } else {
-                console.log('[MGR] ✅ Sending to AI:', finalUserText);
                 finalAnimalText = await fetchAnimalResponse(finalUserText);
             }
         } catch (error) {
@@ -62,12 +56,10 @@ export class ConversationManager {
     }
 
     public async processTextInteraction(text: string): Promise<{ userText: string, animalText: string }> {
-        console.log('[MGR] processTextInteraction called with text:', `"${text}"`);
         
         let finalAnimalText = "";
         
         try {
-            console.log('[MGR] ✅ Sending text to AI:', text);
             finalAnimalText = await fetchAnimalResponse(text);
         } catch (error) {
             finalAnimalText = "Roar! Ho un po' di mal di pancia al server... dammi un minuto e riprova!";

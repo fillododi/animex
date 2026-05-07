@@ -26,7 +26,6 @@ export class NativeSTTService {
 
             this.recognitionListener = await SpeechRecognition.addListener('partialResults', (data: any) => {
                 if (data.matches && data.matches.length > 0) {
-                    console.log('[STT NATIVO] Trascrizione:', data.matches[0]);
                     onResult(data.matches[0]); 
                 }
             });
@@ -39,11 +38,9 @@ export class NativeSTTService {
                 popup: false 
             });
 
-            console.log('[STT NATIVO] ✅ Avviato');
             onStart?.();
 
         } catch (error: any) {
-            console.error('[STT NATIVO] ❌ Errore:', error);
             onError?.(error.message);
         }
     }
@@ -55,9 +52,7 @@ export class NativeSTTService {
                 await this.recognitionListener.remove();
                 this.recognitionListener = null;
             }
-            console.log('[STT NATIVO] 🛑 Fermato');
         } catch (error) {
-            console.error('[STT NATIVO] Errore durante lo stop:', error);
         }
     }
 }
