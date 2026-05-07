@@ -3,9 +3,11 @@ import { Message } from "./message";
 
 export class Chat {
     private messages: Message[] = [];
+    public chatId: string;
     constructor(public userId: string,
-        public chatId: string
+        chatId?: string
     ) {
+        this.chatId = chatId || crypto.randomUUID();
     }
     // the method addMessage adds a message to the chat
     addMessage(message: Message): void {
@@ -23,7 +25,7 @@ export class Chat {
     }
     
     // the method getChatId returns the chat id of the chat
-    getOrCreateChatId(): string {
+    getChatId(): string {
         return this.chatId;
     }
 }

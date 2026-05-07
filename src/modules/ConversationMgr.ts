@@ -60,6 +60,27 @@ export class ConversationManager {
             animalText: finalAnimalText 
         };
     }
+
+    public async processTextInteraction(text: string): Promise<{ userText: string, animalText: string }> {
+        console.log('[MGR] processTextInteraction called with text:', `"${text}"`);
+        
+        let finalAnimalText = "";
+        
+        try {
+            console.log('[MGR] ✅ Sending text to AI:', text);
+            finalAnimalText = await fetchAnimalResponse(text);
+        } catch (error) {
+            finalAnimalText = "Roar! Ho un po' di mal di pancia al server... dammi un minuto e riprova!";
+        }
+
+        // Use the TTS service instance to speak the response
+        await ttsService.speak(finalAnimalText);
+
+        return { 
+            userText: text, 
+            animalText: finalAnimalText 
+        };
+    }
 }
 
 // Export a singleton instance of ConversationManager to be used across the app

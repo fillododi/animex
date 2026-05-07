@@ -57,12 +57,33 @@
       </div>
 
     </ion-content>
+    <ion-footer>
+      <ion-toolbar>
+        <ion-input 
+          v-model="inputText" 
+          placeholder="Scrivi un messaggio..." 
+          @keyup.enter="handleTextSubmit"
+          :disabled="isProcessing || isRecording"
+          class="ion-padding-horizontal"
+        ></ion-input>
+        
+        <ion-buttons slot="end">
+          <ion-button 
+            @click="handleTextSubmit" 
+            :disabled="isProcessing || isRecording || !inputText.trim()" 
+            color="primary"
+          >
+            >
+          </ion-button>
+        </ion-buttons>
+      </ion-toolbar>
+    </ion-footer>
   </ion-page>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue';
-import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButton, IonButtons, IonBackButton } from '@ionic/vue';
+import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButton, IonButtons, IonBackButton, IonInput, IonFooter } from '@ionic/vue';
 import { conversationManager } from '@/modules/ConversationMgr';
 import { Chat } from '@/utility/chat';
 import { Message } from '@/utility/message';
@@ -73,10 +94,10 @@ import { getOrCreateUserId } from '@/utility/user';
 // 1. Get the real persistent User ID
 const myUserId = getOrCreateUserId();
 // 2. Generate a unique ID for this chat session
-const newChatId = crypto.randomUUID();
+const newChatId = ref<Chat>(new Chat(myUserId));
 
 // 3. Initialize the Chat instance
-const currentChat = ref<Chat>(new Chat(newChatId, myUserId));
+const currentChat = ref<Chat>(new Chat(newChatId.value.getChatId(), myUserId));
 
 /** * 4. REACTIVITY FIX: 
  * We create a reactive reference to the messages array.
@@ -89,7 +110,7 @@ const isRecording = ref(false);
 const isProcessing = ref(false);
 const currentStatus = ref("Ready to listen");
 const isMicReady = ref(false);
-
+const inputText = ref("");
 // --- EVENT HANDLERS ---
 
 const handleStart = async () => {
@@ -141,6 +162,32 @@ const handleStop = async () => {
     isProcessing.value = false;
   }
 };
+
+const handleTextSubmit = async () => {
+  const text = inputText.value.trim();
+  if (!text || isProcessing.value) return;
+
+  inputText.value = ""; 
+  isProcessing.value = true;
+
+  try {
+    const result = await conversationManager.processTextInteraction(text);
+    
+    // 2. Create and push objects in one go
+    currentChat.value.addMessage(new Message(result.userText, myUserId, new Date()));
+    currentChat.value.addMessage(new Message(result.animalText, "bot_animal", new Date()));
+    
+    // 3. Sync UI
+    messages.value = [...currentChat.value.getMessages()];
+  } catch (error: any) {
+    currentStatus.value = "Error: " + error.message;
+  }
+   finally {
+    isProcessing.value = false;
+  }
+  
+};
+
 </script>
 
 <style scoped>
