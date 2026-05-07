@@ -1,7 +1,6 @@
 import { type Service } from "./Service"
 import { CameraPreview, type CameraPreviewOptions } from "@capacitor-community/camera-preview";
 import { assert } from "@/utility/assert";
-import { h } from "vue";
 import { Position } from "@/utility/Position";
 
 export interface CameraService extends Service {
