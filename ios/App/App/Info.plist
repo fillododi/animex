@@ -52,6 +52,6 @@
 	<key>NSMicrophoneUsageDescription</key>
 		<string>L'app usa il microfono per ascoltare la tua voce.</string>
 	<key>NSCameraUsageDescription</key>
-		<string>Animex uses the camera to identify animals and show interactive wildlife content.</string>
+		<string>Animex usa la fotocamera per identificare gli animali e mostrare contenuti naturali interattivi.</string>
 </dict>
 </plist>

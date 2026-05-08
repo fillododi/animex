@@ -136,26 +136,7 @@ const handleStop = async () => {
   
   try {
     const result = await conversationManager.stopAndProcessInteraction();
-    
-    // 5. Create Message objects using the REAL myUserId
-    const userMsg = new Message(result.userText, myUserId, new Date());
-    const animalMsg = new Message(result.animalText, "bot_animal", new Date());
-    
-    // 6. Update the logical class
-    currentChat.value.addMessage(userMsg);
-    currentChat.value.addMessage(animalMsg);
-    
-    /**
-     * 7. UPDATE THE UI:
-     * We sync the reactive 'messages' ref with the data from our class.
-     * The spread operator [...] creates a new array reference, forcing Vue to re-render.
-     */
-    messages.value = [...currentChat.value.getMessages()];
-    
-    // Note: If you updated your Chat class to use a single array as we discussed,
-    // you would just do: messages.value = [...currentChat.value.getMessages()];
-
-    currentStatus.value = "✅ Response received!";
+    handleResponse(result);
   } catch (error: any) {
     currentStatus.value = "Error: " + error.message;
   } finally {
@@ -172,13 +153,7 @@ const handleTextSubmit = async () => {
 
   try {
     const result = await conversationManager.processTextInteraction(text);
-    
-    // 2. Create and push objects in one go
-    currentChat.value.addMessage(new Message(result.userText, myUserId, new Date()));
-    currentChat.value.addMessage(new Message(result.animalText, "bot_animal", new Date()));
-    
-    // 3. Sync UI
-    messages.value = [...currentChat.value.getMessages()];
+    handleResponse(result);
   } catch (error: any) {
     currentStatus.value = "Error: " + error.message;
   }
@@ -188,6 +163,13 @@ const handleTextSubmit = async () => {
   
 };
 
+const handleResponse = (response: { userText: string, animalText: string }) => {
+  currentChat.value.addMessage(new Message(response.userText, myUserId, new Date()));
+  currentChat.value.addMessage(new Message(response.animalText, "bot_animal", new Date()));
+  messages.value = [...currentChat.value.getMessages()];
+  conversationManager.speak(response.animalText);
+  currentStatus.value = "✅ Response received!";
+};
 </script>
 
 <style scoped>
