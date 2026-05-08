@@ -23,8 +23,10 @@
 
         <!-- Camera -->
         <ion-button @click="openCamera">Open Camera</ion-button>
-        <div v-if="imageUrl" style="margin-top: 16px;">
-          <img :src="imageUrl" alt="Captured" style="width: 100%; border-radius: 12px;" />
+        <ion-button @click="screenshot">Snap pic</ion-button>
+        <div id="camera" class="camera-box" width="500" height="500"></div>
+        <div v-if="capturedImage" class="overlay">
+          <img :src="capturedImage" alt="CAMERA-ALT" />
         </div>
         <!-- ChatBot -->
         <ion-button router-link="/chat">
@@ -64,29 +66,24 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButton } from '@ionic/vue'
-import { requestCameraPermission, takePhoto } from '@/services/CameraService'
 import {
   browserRecorder,
 } from '@/services/SpeechService'
+import { DeviceCameraService } from '@/services/CameraService'
 
-const imageUrl = ref<string>('')
 const audioUrl = ref<string>('')
 const statusMessage = ref('')
 const isRecording = ref(false)
+const capturedImage = ref()
+const cam = new DeviceCameraService(200, 200, "camera")
 
 async function openCamera() {
-  const granted = await requestCameraPermission()
-  if (!granted) {
-    statusMessage.value = 'Camera permission not granted.'
-    return
-  }
-  try {
-    const photo = await takePhoto()
-    imageUrl.value = photo.webPath ?? ''
-    statusMessage.value = 'Camera working correctly.'
-  } catch {
-    statusMessage.value = 'Camera failed to open.'
-  }
+  cam.start();
+}
+
+async function screenshot() {
+  const res = await cam.getCameraFrame();
+  capturedImage.value = `data:image/jpeg;base64,${res.value}`;
 }
 
 async function startMic() {
@@ -123,6 +120,13 @@ async function stopMic() {
 </script>
 
 <style scoped>
+/* Make sure every container is transparent */
+html, body, ion-app, ion-content, .ion-page {
+  --background: transparent !important;
+  background-color: transparent !important;
+  background: transparent !important;
+}
+
 #container {
   text-align: center;
   position: absolute;
