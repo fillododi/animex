@@ -135,8 +135,10 @@ const handleStop = async () => {
   currentStatus.value = "⚙️ Processing interaction...";
   
   try {
-    const result = await conversationManager.stopAndProcessInteraction();
-    handleResponse(result);
+    const request = await conversationManager.stopListeningAndReturnText();
+    printRequest(request);
+    const response = await conversationManager.stopAndProcessInteraction(request.userText);
+    handleResponse(response);
   } catch (error: any) {
     currentStatus.value = "Error: " + error.message;
   } finally {
@@ -150,7 +152,7 @@ const handleTextSubmit = async () => {
 
   inputText.value = ""; 
   isProcessing.value = true;
-
+  printRequest({ userText: text });
   try {
     const result = await conversationManager.processTextInteraction(text);
     handleResponse(result);
@@ -162,11 +164,13 @@ const handleTextSubmit = async () => {
   }
   
 };
-
-const handleResponse = (response: { userText: string, animalText: string }) => {
-  currentChat.value.addMessage(new Message(response.userText, myUserId, new Date()));
-  currentChat.value.addMessage(new Message(response.animalText, "bot_animal", new Date()));
+const printRequest = (request: { userText: string }) => {
+  currentChat.value.addMessage(new Message(request.userText, myUserId, new Date()));
   messages.value = [...currentChat.value.getMessages()];
+};
+const handleResponse = (response: { animalText: string }) => {
+  messages.value = [...currentChat.value.getMessages()];
+  currentChat.value.addMessage(new Message(response.animalText, "bot_animal", new Date()));
   conversationManager.speak(response.animalText);
   currentStatus.value = "✅ Response received!";
 };

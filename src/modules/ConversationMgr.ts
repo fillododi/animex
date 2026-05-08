@@ -23,32 +23,35 @@ export class ConversationManager {
             }
         );
     }
-
-    public async stopAndProcessInteraction(): Promise<{ userText: string, animalText: string }> {
+    public async stopListeningAndReturnText(): Promise<{userText: string}>{
         if (this.isListening) {
             await sttService.stopListening(); 
             this.isListening = false;
         }
-        const finalUserText = this.currentTranscript;
-        const result = (!finalUserText || finalUserText.trim() === "")?
+        return { userText: this.currentTranscript };
+    }
+    public async stopAndProcessInteraction(userText: string): Promise<{ animalText: string }> {
+        /*if (this.isListening) {
+            await sttService.stopListening(); 
+            this.isListening = false;
+        }
+        const finalUserText = this.currentTranscript;*/
+        const result = (!userText || userText.trim() === "")?
         { userText: "[Nessuna parola rilevata]", animalText: "Scusa umano, c'era troppo rumore o hai parlato pianissimo. Puoi ripetere?" }:
-        await conversationManager.processTextInteraction(finalUserText);
-        return { 
-            userText: result.userText, 
+        await conversationManager.processTextInteraction(userText);
+        return {  
             animalText: result.animalText 
         };
     }
 
-    public async processTextInteraction(text: string): Promise<{ userText: string, animalText: string }> {
+    public async processTextInteraction(text: string): Promise<{ animalText: string }> {
         try {
             const finalAnimalText = await fetchAnimalResponse(text);
             return {
-                userText: text,
                 animalText: finalAnimalText
             };
         } catch (error) {
             return {
-                userText: text,
                 animalText: "Roar! Ho un po' di mal di pancia al server... dammi un minuto e riprova!"
             };
         }
