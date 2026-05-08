@@ -46,14 +46,13 @@ export class NativeSTTService {
     }
 
     public async stopListening(): Promise<void> {
-        try {
-            await SpeechRecognition.stop();
-            if (this.recognitionListener) {
-                await this.recognitionListener.remove();
-                this.recognitionListener = null;
-            }
-        } catch (error) {
+        
+        await SpeechRecognition.stop().catch(() => {});
+        if (this.recognitionListener) {
+            await this.recognitionListener.remove();
+            this.recognitionListener = null;
         }
+        
     }
 }
 
