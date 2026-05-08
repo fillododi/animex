@@ -136,7 +136,9 @@ const handleStop = async () => {
   
   try {
     const request = await conversationManager.stopListeningAndReturnText();
-    printRequest(request);
+    if(request.userText.trim()) {
+      printRequest(request);
+    }
     const response = await conversationManager.stopAndProcessInteraction(request.userText);
     handleResponse(response);
   } catch (error: any) {
@@ -165,12 +167,13 @@ const handleTextSubmit = async () => {
   
 };
 const printRequest = (request: { userText: string }) => {
+  console.log("add message to chat:", request.userText);
   currentChat.value.addMessage(new Message(request.userText, myUserId, new Date()));
   messages.value = [...currentChat.value.getMessages()];
 };
 const handleResponse = (response: { animalText: string }) => {
-  messages.value = [...currentChat.value.getMessages()];
   currentChat.value.addMessage(new Message(response.animalText, "bot_animal", new Date()));
+  messages.value = [...currentChat.value.getMessages()];
   conversationManager.speak(response.animalText);
   currentStatus.value = "✅ Response received!";
 };
