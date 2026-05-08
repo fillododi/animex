@@ -1,51 +1,63 @@
-import { requestMicrophonePermission, startRecording, stopRecording, releaseStream, convertSpeechToText,  playTextToSpeech } from '@/services/SpeechService';
+import { sttService, ttsService } from '@/services/SpeechService';
 import { fetchAnimalResponse } from '@/services/AIService';
-// --- PUBLIC FUNCTIONS (Exposed to the View) ---
 
-export async function startInteraction(): Promise<void> {
-    const granted = await requestMicrophonePermission();
-    if (!granted) {
-        throw new Error("Microphone permission denied by the user.");
-    }
+export class ConversationManager {
     
-    startRecording();
-}
+    private isListening = false;
+    private currentTranscript = ""; 
 
-export async function stopAndProcessInteraction(): Promise<{ userText: string, animalText: string }> {
-    const audioUrl = await stopRecording();
-    releaseStream();
-
-    let finalUserText = "";
-    let finalAnimalText = "";
-
-    try {
-        // 1. Perform Speech-to-Text
-        finalUserText = await convertSpeechToText(audioUrl);
-
-        // 2. CHECK: Did the user actually say something?
-        if (!finalUserText || finalUserText.trim() === "") {
-            // SCENARIO A: Silence or audio not understood
-            finalUserText = "[Nessuna parola rilevata]";
-            finalAnimalText = "Scusa umano, c'era troppo rumore o hai parlato pianissimo. Puoi ripetere?";
+    public async startInteraction(onReady?: () => void): Promise<void> {
+        this.currentTranscript = "";
+        this.isListening = false;
         
-        } else {
-            // SCENARIO B: All good, query the AI
-            finalAnimalText = await fetchAnimalResponse(finalUserText);
-        }
-
-    } catch (error) {
-        // SCENARIO C: Servers (STT or AI) are down / offline
-        finalUserText = "[Errore di sistema]";
-        finalAnimalText = "Roar! Ho un po' di mal di pancia al server... dammi un minuto e riprova!";
+        // Use the STT service instance to start listening
+        await sttService.startListening(
+            (transcript) => {
+                this.currentTranscript = transcript;
+            },
+            (_error) => {
+            },
+            () => {
+                this.isListening = true;
+                onReady?.(); 
+            }
+        );
     }
 
-    // 3. ALWAYS make the animal speak (whether it's a real response or asking to repeat)
-    await playTextToSpeech(finalAnimalText);
+    public async stopAndProcessInteraction(): Promise<{ userText: string, animalText: string }> {
+        if (this.isListening) {
+            await sttService.stopListening(); 
+            this.isListening = false;
+        }
+        const finalUserText = this.currentTranscript;
+        const result = (!finalUserText || finalUserText.trim() === "")?
+        { userText: "[Nessuna parola rilevata]", animalText: "Scusa umano, c'era troppo rumore o hai parlato pianissimo. Puoi ripetere?" }:
+        await conversationManager.processTextInteraction(finalUserText);
+        return { 
+            userText: result.userText, 
+            animalText: result.animalText 
+        };
+    }
 
-    // 4. Return the result to the View, whatever it is
-    return { 
-        userText: finalUserText, 
-        animalText: finalAnimalText 
-    };
+    public async processTextInteraction(text: string): Promise<{ userText: string, animalText: string }> {
+        try {
+            const finalAnimalText = await fetchAnimalResponse(text);
+            return {
+                userText: text,
+                animalText: finalAnimalText
+            };
+        } catch (error) {
+            return {
+                userText: text,
+                animalText: "Roar! Ho un po' di mal di pancia al server... dammi un minuto e riprova!"
+            };
+        }
+    }
+
+    public async speak(text: string): Promise<void> {
+        await ttsService.speak(text);
+    }
 }
 
+// Export a singleton instance of ConversationManager to be used across the app
+export const conversationManager = new ConversationManager();

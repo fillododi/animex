@@ -5,18 +5,16 @@
         <ion-buttons slot="start">
           <ion-back-button default-href="/home" text="Back"></ion-back-button>
         </ion-buttons>
-        <ion-title>Chatbot Logic Test</ion-title>
+        <ion-title>Chatbot Interaction</ion-title>
       </ion-toolbar>
     </ion-header>
 
-    <ion-content class="ion-padding">
+    <ion-content class="ion-padding chat-background">
       
-      <!-- SYSTEM STATUS BANNER -->
       <div class="status-banner" :class="{ active: isRecording }">
         {{ currentStatus }}
       </div>
 
-      <!-- TEST CONTROLS -->
       <div class="controls-container">
         <ion-button 
           expand="block" 
@@ -24,71 +22,108 @@
           :disabled="isRecording || isProcessing"
           color="primary"
         >
-          1. START RECORDING
+          1. START SPEAKING
         </ion-button>
 
         <ion-button 
           expand="block" 
           @click="handleStop" 
-          :disabled="!isRecording || isProcessing"
+          :disabled="!isRecording || !isMicReady || isProcessing"
           color="danger"
           style="margin-top: 15px;"
         >
-          2. STOP & PROCESS
+          2. STOP & SEND
         </ion-button>
       </div>
 
-      <hr style="margin: 30px 0;">
-
-      <!-- DEBUG OUTPUT -->
-      <div class="debug-section">
-        <h3>Manager Output:</h3>
-        
-        <div class="debug-box">
-          <strong>User Text (STT):</strong>
-          <p>{{ debugUserText }}</p>
-        </div>
-
-        <div class="debug-box">
-          <strong>Animal Text (AI):</strong>
-          <p>{{ debugAnimalText }}</p>
+      <div class="chat-container">
+        <div 
+          v-for="(msg, index) in messages" 
+          :key="index" 
+          class="message-wrapper"
+          :class="msg.getSender() === myUserId ? 'wrapper-right' : 'wrapper-left'"
+        >
+          <div 
+            class="message-bubble"
+            :class="msg.getSender() === myUserId ? 'user-bubble' : 'animal-bubble'"
+          >
+            <p>{{ msg.getContent() }}</p>
+            
+            <span class="time-stamp">
+              {{ msg.getTimestamp().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }}
+            </span>
+          </div>
         </div>
       </div>
 
     </ion-content>
+    <ion-footer>
+      <ion-toolbar>
+        <ion-input 
+          v-model="inputText" 
+          placeholder="Scrivi un messaggio..." 
+          @keyup.enter="handleTextSubmit"
+          :disabled="isProcessing || isRecording"
+          class="ion-padding-horizontal"
+        ></ion-input>
+        
+        <ion-buttons slot="end">
+          <ion-button 
+            @click="handleTextSubmit" 
+            :disabled="isProcessing || isRecording || !inputText.trim()" 
+            color="primary"
+          >
+            >
+          </ion-button>
+        </ion-buttons>
+      </ion-toolbar>
+    </ion-footer>
   </ion-page>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue';
-import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButton, IonButtons, IonBackButton } from '@ionic/vue';
+import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButton, IonButtons, IonBackButton, IonInput, IonFooter } from '@ionic/vue';
+import { conversationManager } from '@/modules/ConversationMgr';
+import { Chat } from '@/utility/chat';
+import { Message } from '@/utility/message';
+import { getOrCreateUserId } from '@/utility/user';
 
-// Import the manager you just built
-import { startInteraction, stopAndProcessInteraction } from '@/modules/ConversationMgr';
+// --- CHAT INITIALIZATION ---
 
-// --- STATE VARIABLES ---
+// 1. Get the real persistent User ID
+const myUserId = getOrCreateUserId();
+// 2. Generate a unique ID for this chat session
+const newChatId = ref<Chat>(new Chat(myUserId));
+
+// 3. Initialize the Chat instance
+const currentChat = ref<Chat>(new Chat(newChatId.value.getChatId(), myUserId));
+
+/** * 4. REACTIVITY FIX: 
+ * We create a reactive reference to the messages array.
+ * Vue will track this array to update the UI.
+ */
+const messages = ref<Message[]>([]);
+
+// --- UI STATE VARIABLES ---
 const isRecording = ref(false);
 const isProcessing = ref(false);
-const currentStatus = ref("Idle - Waiting to start");
-
-const debugUserText = ref("-");
-const debugAnimalText = ref("-");
-
+const currentStatus = ref("Ready to listen");
+const isMicReady = ref(false);
+const inputText = ref("");
 // --- EVENT HANDLERS ---
 
 const handleStart = async () => {
   try {
-    currentStatus.value = "Requesting microphone...";
-    
-    // Call your manager to start the flow
-    await startInteraction();
-    
+    currentStatus.value = "⏳ Initializing microphone...";
     isRecording.value = true;
-    currentStatus.value = "🔴 Recording... (Speak now)";
+    isMicReady.value = false;
     
-    // Reset debug texts
-    debugUserText.value = "-";
-    debugAnimalText.value = "-";
+    await conversationManager.startInteraction(() => {
+      isMicReady.value = true;
+      currentStatus.value = "🎤 Microphone active, speak now!";
+    });
+    
   } catch (error: any) {
     currentStatus.value = "Error: " + error.message;
   }
@@ -97,64 +132,123 @@ const handleStart = async () => {
 const handleStop = async () => {
   isRecording.value = false;
   isProcessing.value = true;
-  currentStatus.value = "⚙️ Processing (STT -> AI -> TTS)...";
+  currentStatus.value = "⚙️ Processing interaction...";
   
   try {
-    // Call your manager to handle all the background logic
-    const result = await stopAndProcessInteraction();
-    
-    // Display the results returned by your manager
-    debugUserText.value = result.userText;
-    debugAnimalText.value = result.animalText;
-    
-    currentStatus.value = "✅ Flow complete! (Animal should be speaking)";
+    const result = await conversationManager.stopAndProcessInteraction();
+    handleResponse(result);
   } catch (error: any) {
-    currentStatus.value = "Process Error: " + error.message;
+    currentStatus.value = "Error: " + error.message;
   } finally {
     isProcessing.value = false;
   }
 };
+
+const handleTextSubmit = async () => {
+  const text = inputText.value.trim();
+  if (!text || isProcessing.value) return;
+
+  inputText.value = ""; 
+  isProcessing.value = true;
+
+  try {
+    const result = await conversationManager.processTextInteraction(text);
+    handleResponse(result);
+  } catch (error: any) {
+    currentStatus.value = "Error: " + error.message;
+  }
+   finally {
+    isProcessing.value = false;
+  }
+  
+};
+
+const handleResponse = (response: { userText: string, animalText: string }) => {
+  currentChat.value.addMessage(new Message(response.userText, myUserId, new Date()));
+  currentChat.value.addMessage(new Message(response.animalText, "bot_animal", new Date()));
+  messages.value = [...currentChat.value.getMessages()];
+  conversationManager.speak(response.animalText);
+  currentStatus.value = "✅ Response received!";
+};
 </script>
 
 <style scoped>
-.status-banner {
-  background-color: #f1f2f6;
-  color: #2f3542;
-  text-align: center;
-  padding: 15px;
-  border-radius: 8px;
-  margin-bottom: 25px;
-  font-weight: bold;
-  border: 1px solid #ced6e0;
-  transition: all 0.3s ease;
+/* (Styles remain the same as your previous version) */
+.chat-background {
+  --background: #f0f2f5; 
 }
 
+.status-banner {
+  background-color: #ffffff;
+  color: #2f3542;
+  text-align: center;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  font-weight: bold;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  transition: all 0.3s ease;
+}
 .status-banner.active {
   background-color: #ff4757;
   color: white;
-  border-color: #ff4757;
 }
-
 .controls-container {
-  padding: 10px 0;
+  margin-bottom: 30px;
 }
 
-.debug-section h3 {
-  color: #747d8c;
-  margin-bottom: 15px;
+.chat-container {
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 20px;
 }
 
-.debug-box {
-  background-color: #000000;
-  padding: 15px;
-  border-radius: 8px;
-  margin-bottom: 15px;
-  border-left: 4px solid #3742fa;
+.message-wrapper {
+  display: flex;
+  margin-bottom: 12px;
+  width: 100%;
+}
+.wrapper-right {
+  justify-content: flex-end;
+}
+.wrapper-left {
+  justify-content: flex-start;
 }
 
-.debug-box p {
-  margin: 10px 0 0 0;
+.message-bubble {
+  max-width: 80%;
+  padding: 10px 14px;
+  border-radius: 18px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+}
+
+.user-bubble {
+  background-color: #dcf8c6; 
+  color: #000000;
+  border-bottom-right-radius: 4px; 
+}
+
+.animal-bubble {
+  background-color: #ffffff;
+  color: #000000;
+  border-bottom-left-radius: 4px;
+}
+
+.message-bubble p {
+  margin: 0;
   font-size: 16px;
-  color: #FFFFFF;
+  line-height: 1.4;
+  word-wrap: break-word;
+}
+
+.time-stamp {
+  font-size: 11px;
+  color: #888;
+  align-self: flex-end;
+  margin-top: 4px;
+  margin-left: 15px;
 }
 </style>
