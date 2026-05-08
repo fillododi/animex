@@ -31,11 +31,6 @@ export class ConversationManager {
         return { userText: this.currentTranscript };
     }
     public async stopAndProcessInteraction(userText: string): Promise<{ animalText: string }> {
-        /*if (this.isListening) {
-            await sttService.stopListening(); 
-            this.isListening = false;
-        }
-        const finalUserText = this.currentTranscript;*/
         const result = (!userText || userText.trim() === "")?
         { userText: "[Nessuna parola rilevata]", animalText: "Scusa umano, c'era troppo rumore o hai parlato pianissimo. Puoi ripetere?" }:
         await conversationManager.processTextInteraction(userText);
