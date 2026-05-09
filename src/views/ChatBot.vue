@@ -138,9 +138,14 @@ const handleStop = async () => {
     const request = await conversationManager.stopListeningAndReturnText();
     if(request.userText.trim()) {
       printRequest(request);
+      const response = await conversationManager./*stopAndProcessInteraction*/processTextInteraction(request.userText);
+      handleResponse(response);
     }
-    const response = await conversationManager.stopAndProcessInteraction(request.userText);
-    handleResponse(response);
+    else {
+      handleResponse({ animalText: "Scusa umano, c'era troppo rumore o hai parlato pianissimo. Puoi ripetere?" });
+    }
+    //const response = await conversationManager.stopAndProcessInteraction(request.userText);
+    //handleResponse(response);
   } catch (error: any) {
     currentStatus.value = "Error: " + error.message;
   } finally {
