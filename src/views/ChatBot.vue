@@ -86,7 +86,7 @@ import { ref} from 'vue';
 import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButton, IonButtons, IonBackButton, IonInput, IonFooter } from '@ionic/vue';
 import { conversationManager } from '@/modules/ConversationMgr';
 import { useChatStore } from '@/stores/chatStore';
-
+import { EMPTY_INPUT_ANIMAL_TEXT } from '@/utility/constants';
 // --- CHAT INITIALIZATION ---
 
 const chatStore = useChatStore();
@@ -101,13 +101,13 @@ const inputText = ref("");
 
 const handleStart = async () => {
   try {
-    chatStore.setStatus("⏳ Initializing microphone...");
+    chatStore.setStatus("⏳ Inizializzazione microfono...");
     isRecording.value = true;
     isMicReady.value = false;
     
     await conversationManager.startInteraction(() => {
       isMicReady.value = true;
-      chatStore.setStatus("🎤 Microphone active, speak now!");
+      chatStore.setStatus("🎤 Microfono attivo, parla ora!");
     });
     
   } catch (error: any) {
@@ -118,7 +118,7 @@ const handleStart = async () => {
 const handleStop = async () => {
   isRecording.value = false;
   chatStore.setProcessing(true);
-  chatStore.setStatus("⚙️ Processing interaction...");
+  chatStore.setStatus("⚙️ Sto pensando...");
   try {
     const request = await conversationManager.stopListeningAndReturnText();
     if(request.userText.trim()) {
@@ -127,7 +127,7 @@ const handleStop = async () => {
       handleResponse(response);
     }
     else {
-      handleResponse({ animalText: "Scusa umano, c'era troppo rumore o hai parlato pianissimo. Puoi ripetere?" });
+      handleResponse({ animalText: EMPTY_INPUT_ANIMAL_TEXT });
     }
   } catch (error: any) {
     chatStore.setStatus("Error: " + error.message);
@@ -158,7 +158,7 @@ const handleTextSubmit = async () => {
 const handleResponse = (response: { animalText: string }) => {
   chatStore.addBotMessage(response.animalText);
   conversationManager.speak(response.animalText);
-  chatStore.setStatus("✅ Response received!");
+  chatStore.setStatus("✅ Risposta ricevuta!");
 };
 </script>
 
