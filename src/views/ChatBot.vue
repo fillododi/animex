@@ -12,14 +12,14 @@
     <ion-content class="ion-padding chat-background">
       
       <div class="status-banner" :class="{ active: isRecording }">
-        {{ currentStatus }}
+        {{ chatStore.currentStatus }}
       </div>
 
       <div class="controls-container">
         <ion-button 
           expand="block" 
           @click="handleStart" 
-          :disabled="isRecording || isProcessing"
+          :disabled="isRecording || chatStore.isProcessing"
           color="primary"
         >
           1. START SPEAKING
@@ -28,7 +28,7 @@
         <ion-button 
           expand="block" 
           @click="handleStop" 
-          :disabled="!isRecording || !isMicReady || isProcessing"
+          :disabled="!isRecording || !isMicReady || chatStore.isProcessing"
           color="danger"
           style="margin-top: 15px;"
         >
@@ -38,14 +38,14 @@
 
       <div class="chat-container">
         <div 
-          v-for="(msg, index) in messages" 
+          v-for="(msg, index) in chatStore.messages" 
           :key="index" 
           class="message-wrapper"
-          :class="msg.getSender() === myUserId ? 'wrapper-right' : 'wrapper-left'"
+          :class="msg.getSender() === chatStore.myUserId ? 'wrapper-right' : 'wrapper-left'"
         >
           <div 
             class="message-bubble"
-            :class="msg.getSender() === myUserId ? 'user-bubble' : 'animal-bubble'"
+            :class="msg.getSender() === chatStore.myUserId ? 'user-bubble' : 'animal-bubble'"
           >
             <p>{{ msg.getContent() }}</p>
             
@@ -63,14 +63,14 @@
           v-model="inputText" 
           placeholder="Scrivi un messaggio..." 
           @keyup.enter="handleTextSubmit"
-          :disabled="isProcessing || isRecording"
+          :disabled="chatStore.isProcessing || isRecording"
           class="ion-padding-horizontal"
         ></ion-input>
         
         <ion-buttons slot="end">
           <ion-button 
             @click="handleTextSubmit" 
-            :disabled="isProcessing || isRecording || !inputText.trim()" 
+            :disabled="chatStore.isProcessing || isRecording || !inputText.trim()" 
             color="primary"
           >
             >
@@ -82,110 +82,88 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref} from 'vue';
 import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButton, IonButtons, IonBackButton, IonInput, IonFooter } from '@ionic/vue';
 import { conversationManager } from '@/modules/ConversationMgr';
-import { Chat } from '@/utility/chat';
-import { Message } from '@/utility/message';
-import { getOrCreateUserId } from '@/utility/user';
+import { useChatStore } from '@/stores/chatStore';
 
 // --- CHAT INITIALIZATION ---
 
-// 1. Get the real persistent User ID
-const myUserId = getOrCreateUserId();
-// 2. Generate a unique ID for this chat session
-const newChatId = ref<Chat>(new Chat(myUserId));
-
-// 3. Initialize the Chat instance
-const currentChat = ref<Chat>(new Chat(newChatId.value.getChatId(), myUserId));
-
-/** * 4. REACTIVITY FIX: 
- * We create a reactive reference to the messages array.
- * Vue will track this array to update the UI.
- */
-const messages = ref<Message[]>([]);
+const chatStore = useChatStore();
 
 // --- UI STATE VARIABLES ---
 const isRecording = ref(false);
-const isProcessing = ref(false);
-const currentStatus = ref("Ready to listen");
 const isMicReady = ref(false);
 const inputText = ref("");
+
+
 // --- EVENT HANDLERS ---
 
 const handleStart = async () => {
   try {
-    currentStatus.value = "⏳ Initializing microphone...";
+    chatStore.setStatus("⏳ Initializing microphone...");
     isRecording.value = true;
     isMicReady.value = false;
     
     await conversationManager.startInteraction(() => {
       isMicReady.value = true;
-      currentStatus.value = "🎤 Microphone active, speak now!";
+      chatStore.setStatus("🎤 Microphone active, speak now!");
     });
     
   } catch (error: any) {
-    currentStatus.value = "Error: " + error.message;
+    chatStore.setStatus("Error: " + error.message);
   }
 };
 
 const handleStop = async () => {
   isRecording.value = false;
-  isProcessing.value = true;
-  currentStatus.value = "⚙️ Processing interaction...";
-  
+  chatStore.setProcessing(true);
+  chatStore.setStatus("⚙️ Processing interaction...");
   try {
     const request = await conversationManager.stopListeningAndReturnText();
     if(request.userText.trim()) {
-      printRequest(request);
-      const response = await conversationManager./*stopAndProcessInteraction*/processTextInteraction(request.userText);
+      chatStore.addUserMessage(request.userText);
+      const response = await conversationManager.processTextInteraction(request.userText);
       handleResponse(response);
     }
     else {
       handleResponse({ animalText: "Scusa umano, c'era troppo rumore o hai parlato pianissimo. Puoi ripetere?" });
     }
-    //const response = await conversationManager.stopAndProcessInteraction(request.userText);
-    //handleResponse(response);
   } catch (error: any) {
-    currentStatus.value = "Error: " + error.message;
+    chatStore.setStatus("Error: " + error.message);
   } finally {
-    isProcessing.value = false;
+    chatStore.setProcessing(false);
   }
 };
 
 const handleTextSubmit = async () => {
   const text = inputText.value.trim();
-  if (!text || isProcessing.value) return;
+  if (!text || chatStore.isProcessing) return;
 
   inputText.value = ""; 
-  isProcessing.value = true;
-  printRequest({ userText: text });
+  chatStore.isProcessing = true;
+  chatStore.addUserMessage(text);
   try {
     const result = await conversationManager.processTextInteraction(text);
     handleResponse(result);
   } catch (error: any) {
-    currentStatus.value = "Error: " + error.message;
+    chatStore.setStatus("Error: " + error.message);
   }
    finally {
-    isProcessing.value = false;
+    chatStore.setProcessing(false);
   }
   
 };
-const printRequest = (request: { userText: string }) => {
-  console.log("add message to chat:", request.userText);
-  currentChat.value.addMessage(new Message(request.userText, myUserId, new Date()));
-  messages.value = [...currentChat.value.getMessages()];
-};
+
 const handleResponse = (response: { animalText: string }) => {
-  currentChat.value.addMessage(new Message(response.animalText, "bot_animal", new Date()));
-  messages.value = [...currentChat.value.getMessages()];
+  chatStore.addBotMessage(response.animalText);
   conversationManager.speak(response.animalText);
-  currentStatus.value = "✅ Response received!";
+  chatStore.setStatus("✅ Response received!");
 };
 </script>
 
 <style scoped>
-/* (Styles remain the same as your previous version) */
+
 .chat-background {
   --background: #f0f2f5; 
 }

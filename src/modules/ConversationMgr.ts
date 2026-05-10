@@ -30,14 +30,6 @@ export class ConversationManager {
         }
         return { userText: this.currentTranscript };
     }
-    /*public async stopAndProcessInteraction(userText: string): Promise<{ animalText: string }> {
-        const result = (!userText || userText.trim() === "")?
-        { userText: "[Nessuna parola rilevata]", animalText: "Scusa umano, c'era troppo rumore o hai parlato pianissimo. Puoi ripetere?" }:
-        await conversationManager.processTextInteraction(userText);
-        return {  
-            animalText: result.animalText 
-        };
-    }*/
 
     public async processTextInteraction(text: string): Promise<{ animalText: string }> {
         try {
@@ -57,5 +49,4 @@ export class ConversationManager {
     }
 }
 
-// Export a singleton instance of ConversationManager to be used across the app
 export const conversationManager = new ConversationManager();
