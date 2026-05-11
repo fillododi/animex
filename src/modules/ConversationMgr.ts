@@ -23,12 +23,22 @@ export class ConversationManager {
             }
         );
     }
-    public async stopListeningAndReturnText(): Promise<{userText: string}>{
+    public async stopListening(): Promise<void>{
         if (this.isListening) {
             await sttService.stopListening(); 
             this.isListening = false;
         }
-        return { userText: this.currentTranscript };
+    }
+    public async forcedStopListening(): Promise<void> {
+        await sttService.forceStopListening();
+        this.isListening = false;
+        this.currentTranscript = "";
+    }
+    public async getCurrentTranscript(): Promise<string> {
+        return this.currentTranscript;
+    }
+    public async resetTranscript(): Promise<void> {
+        this.currentTranscript = "";
     }
 
     public async processTextInteraction(text: string): Promise<{ animalText: string }> {

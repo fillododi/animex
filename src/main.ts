@@ -41,7 +41,8 @@ defineCustomElements(window)
 const pinia = createPinia();
 
 const app = createApp(App)
-  .use(IonicVue)
+  .use(IonicVue,{
+  swipeBackEnabled: false})
   .use(router)
   .use(pinia);
 

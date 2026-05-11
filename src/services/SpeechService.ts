@@ -12,6 +12,7 @@ export class NativeSTTService {
         onError?: (error: string) => void,
         onStart?: () => void  
     ): Promise<void> {
+        await SpeechRecognition.stop().catch(() => {}); 
         try {
             const permissions = await SpeechRecognition.requestPermissions();
             if (permissions.speechRecognition !== 'granted') {
@@ -53,6 +54,21 @@ export class NativeSTTService {
             this.recognitionListener = null;
         }
         
+    }
+
+    public async forceStopListening(): Promise<void> {
+        try {
+            await SpeechRecognition.forceStop().catch(() => {});
+            await SpeechRecognition.removeAllListeners().catch(() => {});
+            
+            if (this.recognitionListener) {
+                await this.recognitionListener.remove();
+                this.recognitionListener = null;
+            }
+            console.log("Microfono disattivato d'emergenza (Abort) e listener pulito.");
+        } catch (error) {
+            console.warn("Il microfono era già chiuso o errore di abort:", error);
+        }
     }
 }
 

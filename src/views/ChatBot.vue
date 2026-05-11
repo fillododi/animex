@@ -3,7 +3,9 @@
     <ion-header>
       <ion-toolbar>
         <ion-buttons slot="start">
-          <ion-back-button default-href="/home" text="Back"></ion-back-button>
+          <ion-button v-show="!isRecording" @click="handleSafeBack">
+            Back
+          </ion-button>
         </ion-buttons>
         <ion-title>Chatbot Interaction</ion-title>
       </ion-toolbar>
@@ -83,10 +85,11 @@
 
 <script setup lang="ts">
 import { ref} from 'vue';
-import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButton, IonButtons, IonBackButton, IonInput, IonFooter } from '@ionic/vue';
+import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButton, IonButtons, IonInput, IonFooter, useBackButton } from '@ionic/vue';
 import { conversationManager } from '@/modules/ConversationMgr';
 import { useChatStore } from '@/stores/chatStore';
 import { EMPTY_INPUT_ANIMAL_TEXT } from '@/utility/constants';
+import { useRouter} from 'vue-router';
 // --- CHAT INITIALIZATION ---
 
 const chatStore = useChatStore();
@@ -95,7 +98,7 @@ const chatStore = useChatStore();
 const isRecording = ref(false);
 const isMicReady = ref(false);
 const inputText = ref("");
-
+const router = useRouter();
 
 // --- EVENT HANDLERS ---
 
@@ -120,10 +123,11 @@ const handleStop = async () => {
   chatStore.setProcessing(true);
   chatStore.setStatus("⚙️ Sto pensando...");
   try {
-    const request = await conversationManager.stopListeningAndReturnText();
-    if(request.userText.trim()) {
-      chatStore.addUserMessage(request.userText);
-      const response = await conversationManager.processTextInteraction(request.userText);
+    await conversationManager.stopListening();
+    const userText = await conversationManager.getCurrentTranscript();
+    if(userText.trim()) {
+      chatStore.addUserMessage(userText);
+      const response = await conversationManager.processTextInteraction(userText);
       handleResponse(response);
     }
     else {
@@ -141,7 +145,7 @@ const handleTextSubmit = async () => {
   if (!text || chatStore.isProcessing) return;
 
   inputText.value = ""; 
-  chatStore.isProcessing = true;
+  chatStore.setProcessing(true);
   chatStore.addUserMessage(text);
   try {
     const result = await conversationManager.processTextInteraction(text);
@@ -160,6 +164,19 @@ const handleResponse = (response: { animalText: string }) => {
   conversationManager.speak(response.animalText);
   chatStore.setStatus("✅ Risposta ricevuta!");
 };
+
+const handleSafeBack = () => {
+  router.replace('/home');
+};
+
+useBackButton(10, (processNextHandler) => {
+  if (isRecording.value) {
+    chatStore.setStatus("⚠️ Devi cliccare STOP prima di uscire!");
+  } else {
+    processNextHandler(); 
+  }
+});
+
 </script>
 
 <style scoped>
