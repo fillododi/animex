@@ -171,6 +171,7 @@ useBackButton(10, async (processNextHandler) => {
     await conversationManager.stopListening();
     await conversationManager.resetTranscript();
     chatStore.setStatus("Pronto ad ascoltare");
+    isRecording.value = false;
     processNextHandler(); 
   }
 });
@@ -179,6 +180,7 @@ onIonViewDidLeave(async () => {
   if(isRecording.value) {
     await conversationManager.stopListening();
     await conversationManager.resetTranscript();
+    isRecording.value = false;
     chatStore.setStatus("Pronto ad ascoltare");
   } 
 });
