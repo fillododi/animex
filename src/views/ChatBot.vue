@@ -3,7 +3,7 @@
     <ion-header>
       <ion-toolbar>
         <ion-buttons slot="start">
-          <ion-button @click="handleSafeBack">
+          <ion-button @click="ionRouter.back()" >
             <ion-icon slot="start" :icon="chevronBackOutline"></ion-icon>
             Back
           </ion-button>
@@ -166,29 +166,21 @@ const handleResponse = (response: { animalText: string }) => {
   chatStore.setStatus("✅ Risposta ricevuta!");
 };
 
-const handleSafeBack = () => {
-  ionRouter.back();
-};
-
 useBackButton(10, async (processNextHandler) => {
   if (isRecording.value) {
-    chatStore.setStatus("⚠️ Devi cliccare STOP prima di uscire!");
     await conversationManager.stopListening();
     await conversationManager.resetTranscript();
-  } else {
+    chatStore.setStatus("Pronto ad ascoltare");
     processNextHandler(); 
   }
 });
 
 onIonViewDidLeave(async () => {
-  console.log("🏠 Lasciato la pagina: Esecuzione KILL del microfono...");
-  try {
+  if(isRecording.value) {
     await conversationManager.stopListening();
     await conversationManager.resetTranscript();
-    console.log("✅ Microfono disattivato dalla Home.");
-  } catch (error) {
-    console.warn("Errore ignorabile durante la pulizia in Home:", error);
-  }
+    chatStore.setStatus("Pronto ad ascoltare");
+  } 
 });
 </script>
 

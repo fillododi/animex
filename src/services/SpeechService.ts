@@ -51,26 +51,11 @@ export class NativeSTTService {
         await SpeechRecognition.stop().catch(() => {});
         if (this.recognitionListener) {
             await this.recognitionListener.remove();
-            console.log("[SS] Microfono disattivato e listener rimosso.");
             this.recognitionListener = null;
         }
         
     }
 
-    public async forceStopListening(): Promise<void> {
-        try {
-            await SpeechRecognition.forceStop();
-            await SpeechRecognition.removeAllListeners().catch(() => {});
-            
-            if (this.recognitionListener) {
-                await this.recognitionListener.remove();
-                this.recognitionListener = null;
-            }
-            console.log("Microfono disattivato d'emergenza (Abort) e listener pulito.");
-        } catch (error) {
-            console.warn("Il microfono era già chiuso o errore di abort:", error);
-        }
-    }
 }
 
 // =============================================================

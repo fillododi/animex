@@ -29,11 +29,6 @@ export class ConversationManager {
             this.isListening = false;
         }
     }
-    public async forcedStopListening(): Promise<void> {
-        await sttService.forceStopListening();
-        this.isListening = false;
-        this.currentTranscript = "";
-    }
     public async getCurrentTranscript(): Promise<string> {
         return this.currentTranscript;
     }
