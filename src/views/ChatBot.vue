@@ -3,7 +3,8 @@
     <ion-header>
       <ion-toolbar>
         <ion-buttons slot="start">
-          <ion-button v-show="!isRecording" @click="handleSafeBack">
+          <ion-button @click="handleSafeBack">
+            <ion-icon slot="start" :icon="chevronBackOutline"></ion-icon>
             Back
           </ion-button>
         </ion-buttons>
@@ -85,11 +86,11 @@
 
 <script setup lang="ts">
 import { ref} from 'vue';
-import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButton, IonButtons, IonInput, IonFooter, useBackButton } from '@ionic/vue';
+import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButton, IonButtons, IonInput, IonFooter, useBackButton, onIonViewDidLeave, useIonRouter } from '@ionic/vue';
 import { conversationManager } from '@/modules/ConversationMgr';
 import { useChatStore } from '@/stores/chatStore';
 import { EMPTY_INPUT_ANIMAL_TEXT } from '@/utility/constants';
-import { useRouter} from 'vue-router';
+import { chevronBackOutline } from 'ionicons/icons';
 // --- CHAT INITIALIZATION ---
 
 const chatStore = useChatStore();
@@ -98,7 +99,7 @@ const chatStore = useChatStore();
 const isRecording = ref(false);
 const isMicReady = ref(false);
 const inputText = ref("");
-const router = useRouter();
+const ionRouter = useIonRouter();
 
 // --- EVENT HANDLERS ---
 
@@ -166,17 +167,29 @@ const handleResponse = (response: { animalText: string }) => {
 };
 
 const handleSafeBack = () => {
-  router.replace('/home');
+  ionRouter.back();
 };
 
-useBackButton(10, (processNextHandler) => {
+useBackButton(10, async (processNextHandler) => {
   if (isRecording.value) {
     chatStore.setStatus("⚠️ Devi cliccare STOP prima di uscire!");
+    await conversationManager.stopListening();
+    await conversationManager.resetTranscript();
   } else {
     processNextHandler(); 
   }
 });
 
+onIonViewDidLeave(async () => {
+  console.log("🏠 Lasciato la pagina: Esecuzione KILL del microfono...");
+  try {
+    await conversationManager.stopListening();
+    await conversationManager.resetTranscript();
+    console.log("✅ Microfono disattivato dalla Home.");
+  } catch (error) {
+    console.warn("Errore ignorabile durante la pulizia in Home:", error);
+  }
+});
 </script>
 
 <style scoped>

@@ -51,6 +51,7 @@ export class NativeSTTService {
         await SpeechRecognition.stop().catch(() => {});
         if (this.recognitionListener) {
             await this.recognitionListener.remove();
+            console.log("[SS] Microfono disattivato e listener rimosso.");
             this.recognitionListener = null;
         }
         
@@ -58,7 +59,7 @@ export class NativeSTTService {
 
     public async forceStopListening(): Promise<void> {
         try {
-            await SpeechRecognition.forceStop().catch(() => {});
+            await SpeechRecognition.forceStop();
             await SpeechRecognition.removeAllListeners().catch(() => {});
             
             if (this.recognitionListener) {
