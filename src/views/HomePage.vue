@@ -57,6 +57,10 @@
           <audio :src="audioUrl" controls style="width: 100%;" />
         </div>
 
+        <!--Connection-->
+        <ion-button v-if="!connection.isActive()" @click="connect"> Connect to server </ion-button>
+        <ion-button v-if="connection.isActive() && capturedImage"> Send pic to server</ion-button>
+
         <p v-if="statusMessage">{{ statusMessage }}</p>
       </div>
     </ion-content>
@@ -70,12 +74,14 @@ import {
   browserRecorder,
 } from '@/services/SpeechService'
 import { DeviceCameraService } from '@/services/CameraService'
+import { ServerConnectionService } from '@/services/ConnectionService'
 
 const audioUrl = ref<string>('')
 const statusMessage = ref('')
 const isRecording = ref(false)
 const capturedImage = ref()
 const cam = new DeviceCameraService(200, 200, "camera")
+const connection = new ServerConnectionService()
 
 async function openCamera() {
   cam.start();
@@ -116,6 +122,18 @@ async function stopMic() {
     isRecording.value = false
     browserRecorder.releaseStream()
   }
+}
+
+async function connect() {
+  statusMessage.value = "Starting Connection..."
+
+  connection.start().then(() => {
+      statusMessage.value = connection.isActive() ? "Connected to server" : "Failed to connect :("
+  })
+}
+
+async function sendPic() {
+  connection.sendRecognitionRequest(capturedImage.value).then(res => statusMessage.value = `Received ${res}`)
 }
 </script>
 

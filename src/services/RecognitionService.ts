@@ -78,8 +78,9 @@ export class VisionRecognitionService implements RecognitionService {
 
         this.cameraService.getCameraFrame().then((frame) =>
             this.connectionService.sendRecognitionRequest(frame.value).then(
-                (data) => this.onAnimalRecognized.invoke(data)
+                (data) => { if (data) this.onAnimalRecognized.invoke(data) }
             )
         )
+        .catch(() => console.warn("Error in recognition loop"))
     }
 }
