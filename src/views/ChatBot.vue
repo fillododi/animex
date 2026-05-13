@@ -14,15 +14,15 @@
 
     <ion-content class="ion-padding chat-background">
       
-      <div class="status-banner" :class="{ active: isRecording }">
-        {{ chatStore.currentStatus }}
+      <div class="status-banner" :class="{ active: uiState.isRecording }">
+        {{ uiState.statusMessage }}
       </div>
 
       <div class="controls-container">
         <ion-button 
           expand="block" 
           @click="handleStart" 
-          :disabled="isRecording || chatStore.isProcessing"
+          :disabled="uiState.isRecording || uiState.isProcessing"
           color="primary"
         >
           1. START SPEAKING
@@ -31,7 +31,7 @@
         <ion-button 
           expand="block" 
           @click="handleStop" 
-          :disabled="!isRecording || !isMicReady || chatStore.isProcessing"
+          :disabled="!uiState.isRecording || !uiState.isMicReady || uiState.isProcessing"
           color="danger"
           style="margin-top: 15px;"
         >
@@ -63,17 +63,17 @@
     <ion-footer>
       <ion-toolbar>
         <ion-input 
-          v-model="inputText" 
+          v-model="uiState.inputText" 
           placeholder="Scrivi un messaggio..." 
           @keyup.enter="handleTextSubmit"
-          :disabled="chatStore.isProcessing || isRecording"
+          :disabled="uiState.isProcessing || uiState.isRecording"
           class="ion-padding-horizontal"
         ></ion-input>
         
         <ion-buttons slot="end">
           <ion-button 
             @click="handleTextSubmit" 
-            :disabled="chatStore.isProcessing || isRecording || !inputText.trim()" 
+            :disabled="uiState.isProcessing || uiState.isRecording || !uiState.inputText.trim()" 
             color="primary"
           >
             >
@@ -85,44 +85,48 @@
 </template>
 
 <script setup lang="ts">
-import { ref} from 'vue';
+import { ref, reactive} from 'vue';
 import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButton, IonButtons, IonInput, IonFooter, useBackButton, onIonViewDidLeave, useIonRouter } from '@ionic/vue';
 import { conversationManager } from '@/modules/ConversationMgr';
 import { useChatStore } from '@/stores/chatStore';
 import { EMPTY_INPUT_ANIMAL_TEXT } from '@/utility/constants';
 import { chevronBackOutline } from 'ionicons/icons';
+import { type ChatUIState } from '@/utility/Types';
 // --- CHAT INITIALIZATION ---
 
 const chatStore = useChatStore();
 
 // --- UI STATE VARIABLES ---
-const isRecording = ref(false);
-const isMicReady = ref(false);
-const inputText = ref("");
 const ionRouter = useIonRouter();
-
+const uiState = reactive<ChatUIState>({
+  isRecording: false,
+  isMicReady: false,
+  isProcessing: false,
+  inputText: "",
+  statusMessage: "Pronto ad ascoltare"
+});
 // --- EVENT HANDLERS ---
 
 const handleStart = async () => {
   try {
-    chatStore.setStatus("⏳ Inizializzazione microfono...");
-    isRecording.value = true;
-    isMicReady.value = false;
+    uiState.statusMessage = "⏳ Inizializzazione microfono...";
+    uiState.isRecording = true;
+    uiState.isMicReady = false;
     
     await conversationManager.startInteraction(() => {
-      isMicReady.value = true;
-      chatStore.setStatus("🎤 Microfono attivo, parla ora!");
+    uiState.isMicReady = true;
+    uiState.statusMessage = "🎤 Microfono attivo, parla ora!";
     });
     
   } catch (error: any) {
-    chatStore.setStatus("Error: " + error.message);
+    uiState.statusMessage = "Errore: " + error.message;
   }
 };
 
 const handleStop = async () => {
-  isRecording.value = false;
-  chatStore.setProcessing(true);
-  chatStore.setStatus("⚙️ Sto pensando...");
+  uiState.isRecording = false;
+  uiState.isProcessing = true;
+  uiState.statusMessage = "⚙️ Sto pensando...";
   try {
     await conversationManager.stopListening();
     const userText = await conversationManager.getCurrentTranscript();
@@ -135,27 +139,27 @@ const handleStop = async () => {
       handleResponse({ animalText: EMPTY_INPUT_ANIMAL_TEXT });
     }
   } catch (error: any) {
-    chatStore.setStatus("Error: " + error.message);
+    uiState.statusMessage = "Errore: " + error.message;
   } finally {
-    chatStore.setProcessing(false);
+    uiState.isProcessing = false;
   }
 };
 
 const handleTextSubmit = async () => {
-  const text = inputText.value.trim();
-  if (!text || chatStore.isProcessing) return;
-
-  inputText.value = ""; 
-  chatStore.setProcessing(true);
+  const text = uiState.inputText.trim();
+  if (!text || uiState.isProcessing) return;
+  uiState.inputText = ""; 
+  uiState.isProcessing = true;
+  uiState.statusMessage = "⚙️ Sto pensando...";
   chatStore.addUserMessage(text);
   try {
     const result = await conversationManager.processTextInteraction(text);
     handleResponse(result);
   } catch (error: any) {
-    chatStore.setStatus("Error: " + error.message);
+    uiState.statusMessage = "Errore: " + error.message;
   }
    finally {
-    chatStore.setProcessing(false);
+    uiState.isProcessing = false;
   }
   
 };
@@ -163,25 +167,25 @@ const handleTextSubmit = async () => {
 const handleResponse = (response: { animalText: string }) => {
   chatStore.addBotMessage(response.animalText);
   conversationManager.speak(response.animalText);
-  chatStore.setStatus("✅ Risposta ricevuta!");
+  uiState.statusMessage = "✅ Risposta ricevuta!";
 };
 
 useBackButton(10, async (processNextHandler) => {
-  if (isRecording.value) {
+  if (uiState.isRecording) {
     await conversationManager.stopListening();
     await conversationManager.resetTranscript();
-    chatStore.setStatus("Pronto ad ascoltare");
-    isRecording.value = false;
+    uiState.isRecording = false;
+    uiState.statusMessage = "Pronto ad ascoltare";
     processNextHandler(); 
   }
 });
 
 onIonViewDidLeave(async () => {
-  if(isRecording.value) {
+  if(uiState.isRecording) {
     await conversationManager.stopListening();
     await conversationManager.resetTranscript();
-    isRecording.value = false;
-    chatStore.setStatus("Pronto ad ascoltare");
+    uiState.isRecording = false;
+    uiState.statusMessage = "Pronto ad ascoltare";
   } 
 });
 </script>
