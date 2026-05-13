@@ -5,7 +5,7 @@
         <ion-buttons slot="start">
           <ion-button @click="ionRouter.back()" >
             <ion-icon slot="start" :icon="chevronBackOutline"></ion-icon>
-            Back
+            Indietro
           </ion-button>
         </ion-buttons>
         <ion-title>Chatbot Interaction</ion-title>
@@ -25,7 +25,7 @@
           :disabled="uiState.isRecording || uiState.isProcessing"
           color="primary"
         >
-          1. START SPEAKING
+          REGISTRA
         </ion-button>
 
         <ion-button 
@@ -35,7 +35,7 @@
           color="danger"
           style="margin-top: 15px;"
         >
-          2. STOP & SEND
+          INTERROMPI
         </ion-button>
       </div>
 
@@ -86,12 +86,13 @@
 
 <script setup lang="ts">
 import { ref, reactive} from 'vue';
-import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButton, IonButtons, IonInput, IonFooter, useBackButton, onIonViewDidLeave, useIonRouter } from '@ionic/vue';
+import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButton, IonButtons, IonInput, IonFooter, useBackButton, onIonViewDidLeave, useIonRouter, alertController } from '@ionic/vue';
 import { conversationManager } from '@/modules/ConversationMgr';
 import { useChatStore } from '@/stores/chatStore';
 import { EMPTY_INPUT_ANIMAL_TEXT } from '@/utility/constants';
 import { chevronBackOutline } from 'ionicons/icons';
 import { type ChatUIState } from '@/utility/Types';
+import { NativeSettings, AndroidSettings, IOSSettings } from 'capacitor-native-settings';
 // --- CHAT INITIALIZATION ---
 
 const chatStore = useChatStore();
@@ -116,6 +117,20 @@ const handleStart = async () => {
     await conversationManager.startInteraction(() => {
     uiState.isMicReady = true;
     uiState.statusMessage = "🎤 Microfono attivo, parla ora!";
+    }, (errorMessage) => {
+      if (errorMessage === 'NEEDS_SETTINGS') {
+        showSettingsAlert();
+        // This if is to prevent overwriting the alert message if the user has already been prompted
+        if(uiState.statusMessage != "⚠️ In attesa dei permessi del microfono"){
+          uiState.statusMessage = "⚠️ In attesa dei permessi del microfono";
+        }
+      } else if (errorMessage === 'FIRST_DENIAL') {
+        uiState.statusMessage = "⚠️ Permesso negato. Riprova e concedi l'accesso al microfono.";
+      } else {
+        uiState.statusMessage = "Errore: " + errorMessage;
+      }
+      uiState.isRecording = false;
+      uiState.isMicReady = false;
     });
     
   } catch (error: any) {
@@ -188,6 +203,44 @@ onIonViewDidLeave(async () => {
     uiState.statusMessage = "Pronto ad ascoltare";
   } 
 });
+
+const showSettingsAlert = async () => {
+  const alert = await alertController.create({
+    header: 'Microfono Disabilitato',
+    message: "L'app ha bisogno del microfono per ascoltare la tua voce. Vuoi aprire le impostazioni del telefono per consentire l'accesso?",
+    buttons: [
+      {
+        text: 'Annulla',
+        role: 'cancel',
+        handler: () => {
+          uiState.statusMessage = "❌ Permesso negato. Scrivi il messaggio usando la tastiera oppure clicca su 'Registra' e concedi l'accesso al microfono.";
+        }
+      },
+      {
+        text: 'Apri Impostazioni',
+        role: 'confirm',
+        handler: () => {
+          openSettings();
+        }
+      }
+    ]
+  });
+
+  await alert.present();
+};
+
+const openSettings = async () => {
+  try {
+    await NativeSettings.open({
+      optionAndroid: AndroidSettings.ApplicationDetails, 
+      optionIOS: IOSSettings.App
+    });
+  } catch (e) {
+    console.error("Impossibile aprire le impostazioni:", e);
+    uiState.statusMessage = "❌ Errore nell'apertura delle impostazioni.";
+  }
+};
+
 </script>
 
 <style scoped>

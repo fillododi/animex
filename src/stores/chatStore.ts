@@ -6,8 +6,6 @@ import { getOrCreateUserId } from '@/utility/user';
 export const useChatStore = defineStore('chat', () => {
   const myUserId = ref(getOrCreateUserId());
   const messages = ref<Message[]>([]); 
-  const isProcessing = ref(false);
-  const currentStatus = ref("Pronto ad ascoltare");
 
   function addUserMessage(text: string) {
     // Use markRaw to prevent Vue from making the Message instance reactive
@@ -20,22 +18,10 @@ export const useChatStore = defineStore('chat', () => {
     messages.value.push(botMsg);
   }
 
-  function setProcessing(value: boolean) {
-    isProcessing.value = value;
-  }
-
-  function setStatus(status: string) {
-    currentStatus.value = status;
-  }
-
   return {
     myUserId,
     messages,
-    isProcessing,
-    currentStatus,
     addUserMessage,
-    addBotMessage,
-    setProcessing,
-    setStatus
+    addBotMessage
   };
 });

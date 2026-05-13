@@ -14,9 +14,14 @@ export class NativeSTTService {
     ): Promise<void> {
         await SpeechRecognition.stop().catch(() => {}); 
         try {
+            const initialStatus = await SpeechRecognition.checkPermissions();
+            if (initialStatus.speechRecognition === 'denied') {
+                onError?.('NEEDS_SETTINGS');
+                return;
+            }
             const permissions = await SpeechRecognition.requestPermissions();
             if (permissions.speechRecognition !== 'granted') {
-                onError?.('Permesso di riconoscimento vocale negato');
+                onError?.('FIRST_DENIAL');
                 return;
             }
 
@@ -42,7 +47,7 @@ export class NativeSTTService {
             onStart?.();
 
         } catch (error: any) {
-            onError?.(error.message);
+            onError?.(error.message);   
         }
     }
 
