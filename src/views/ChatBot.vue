@@ -68,6 +68,11 @@
           @keyup.enter="handleTextSubmit"
           :disabled="uiState.isProcessing || uiState.isRecording"
           class="ion-padding-horizontal"
+          autocomplete="on"
+          autocorrect="on"
+          :spellcheck="true"
+          inputmode="text"
+          autocapitalize="sentences"
         ></ion-input>
         
         <ion-buttons slot="end">
