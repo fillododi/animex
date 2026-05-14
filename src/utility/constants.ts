@@ -16,5 +16,3 @@ export const CHAT_STATUS = {
   DENIED_HARD: "⚠️  In attesa dei permessi del microfono",
   SETTINGS_ERROR: "❌ Errore nell'apertura delle impostazioni.",
 } as const;
-
-export type ChatStatus = typeof CHAT_STATUS[keyof typeof CHAT_STATUS] | `Errore: ${string}`;
