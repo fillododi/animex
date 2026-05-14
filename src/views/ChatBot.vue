@@ -90,7 +90,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive} from 'vue';
+import { reactive} from 'vue';
 import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButton, IonButtons, IonInput, IonFooter, useBackButton, onIonViewDidLeave, useIonRouter, alertController } from '@ionic/vue';
 import { conversationManager } from '@/modules/ConversationMgr';
 import { useChatStore } from '@/stores/chatStore';
@@ -241,7 +241,6 @@ const openSettings = async () => {
       optionIOS: IOSSettings.App
     });
   } catch (e) {
-    console.error("Impossibile aprire le impostazioni:", e);
     uiState.statusMessage = "❌ Errore nell'apertura delle impostazioni.";
   }
 };
