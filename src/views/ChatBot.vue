@@ -94,9 +94,9 @@ import { reactive} from 'vue';
 import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButton, IonButtons, IonInput, IonFooter, useBackButton, onIonViewDidLeave, useIonRouter, alertController } from '@ionic/vue';
 import { conversationManager } from '@/modules/ConversationMgr';
 import { useChatStore } from '@/stores/chatStore';
-import { EMPTY_INPUT_ANIMAL_TEXT } from '@/utility/constants';
+import { CHAT_STATUS, EMPTY_INPUT_ANIMAL_TEXT } from '@/utility/constants';
 import { chevronBackOutline } from 'ionicons/icons';
-import { type ChatUIState } from '@/utility/Types';
+import { type ChatUIState} from '@/utility/Types';
 import { NativeSettings, AndroidSettings, IOSSettings } from 'capacitor-native-settings';
 // --- CHAT INITIALIZATION ---
 
@@ -109,28 +109,28 @@ const uiState = reactive<ChatUIState>({
   isMicReady: false,
   isProcessing: false,
   inputText: "",
-  statusMessage: "Pronto ad ascoltare"
+  statusMessage: CHAT_STATUS.IDLE
 });
 // --- EVENT HANDLERS ---
 
 const handleStart = async () => {
   try {
-    uiState.statusMessage = "⏳ Inizializzazione microfono...";
+    uiState.statusMessage = CHAT_STATUS.INITIALIZING;
     uiState.isRecording = true;
     uiState.isMicReady = false;
     
     await conversationManager.startInteraction(() => {
     uiState.isMicReady = true;
-    uiState.statusMessage = "🎤 Microfono attivo, parla ora!";
+    uiState.statusMessage = CHAT_STATUS.RECORDING;
     }, (errorMessage) => {
       if (errorMessage === 'NEEDS_SETTINGS') {
         showSettingsAlert();
         // This if is to prevent overwriting the alert message if the user has already been prompted
-        if(uiState.statusMessage != "⚠️ In attesa dei permessi del microfono"){
-          uiState.statusMessage = "⚠️ In attesa dei permessi del microfono";
+        if(uiState.statusMessage != CHAT_STATUS.DENIED_HARD){
+          uiState.statusMessage = CHAT_STATUS.DENIED_HARD;
         }
       } else if (errorMessage === 'FIRST_DENIAL') {
-        uiState.statusMessage = "⚠️ Permesso negato. Riprova e concedi l'accesso al microfono.";
+        uiState.statusMessage = CHAT_STATUS.DENIED_SOFT;
       } else {
         uiState.statusMessage = "Errore: " + errorMessage;
       }
@@ -146,7 +146,7 @@ const handleStart = async () => {
 const handleStop = async () => {
   uiState.isRecording = false;
   uiState.isProcessing = true;
-  uiState.statusMessage = "⚙️ Sto pensando...";
+  uiState.statusMessage = CHAT_STATUS.THINKING;
   try {
     await conversationManager.stopListening();
     const userText = await conversationManager.getCurrentTranscript();
@@ -170,7 +170,7 @@ const handleTextSubmit = async () => {
   if (!text || uiState.isProcessing) return;
   uiState.inputText = ""; 
   uiState.isProcessing = true;
-  uiState.statusMessage = "⚙️ Sto pensando...";
+    uiState.statusMessage = CHAT_STATUS.THINKING;
   chatStore.addUserMessage(text);
   try {
     const result = await conversationManager.processTextInteraction(text);
@@ -187,7 +187,7 @@ const handleTextSubmit = async () => {
 const handleResponse = (response: { animalText: string }) => {
   chatStore.addBotMessage(response.animalText);
   conversationManager.speak(response.animalText);
-  uiState.statusMessage = "✅ Risposta ricevuta!";
+  uiState.statusMessage = CHAT_STATUS.SUCCESS;
 };
 
 useBackButton(10, async (processNextHandler) => {
@@ -195,7 +195,7 @@ useBackButton(10, async (processNextHandler) => {
     await conversationManager.stopListening();
     await conversationManager.resetTranscript();
     uiState.isRecording = false;
-    uiState.statusMessage = "Pronto ad ascoltare";
+    uiState.statusMessage = CHAT_STATUS.IDLE;
     processNextHandler(); 
   }
 });
@@ -205,20 +205,20 @@ onIonViewDidLeave(async () => {
     await conversationManager.stopListening();
     await conversationManager.resetTranscript();
     uiState.isRecording = false;
-    uiState.statusMessage = "Pronto ad ascoltare";
+    uiState.statusMessage = CHAT_STATUS.IDLE;
   } 
 });
 
 const showSettingsAlert = async () => {
   const alert = await alertController.create({
     header: 'Microfono Disabilitato',
-    message: "L'app ha bisogno del microfono per ascoltare la tua voce. Vuoi aprire le impostazioni del telefono per consentire l'accesso?",
+    message: "L'app ha bisogno del microfono e del riconoscimento vocale per ascoltare la tua voce. Vuoi aprire le impostazioni del telefono per consentire l'accesso?",
     buttons: [
       {
         text: 'Annulla',
         role: 'cancel',
         handler: () => {
-          uiState.statusMessage = "❌ Permesso negato. Scrivi il messaggio usando la tastiera oppure clicca su 'Registra' e concedi l'accesso al microfono.";
+          uiState.statusMessage = CHAT_STATUS.DENIED_SOFT;
         }
       },
       {
@@ -241,7 +241,7 @@ const openSettings = async () => {
       optionIOS: IOSSettings.App
     });
   } catch (e) {
-    uiState.statusMessage = "❌ Errore nell'apertura delle impostazioni.";
+    uiState.statusMessage = CHAT_STATUS.SETTINGS_ERROR;
   }
 };
 
