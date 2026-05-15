@@ -189,7 +189,7 @@ const handleResponse = (response: { animalText: string }) => {
   conversationManager.speak(response.animalText);
   uiState.statusMessage = CHAT_STATUS.SUCCESS;
 };
-
+/*
 useBackButton(10, async (processNextHandler) => {
   if (uiState.isRecording) {
     await conversationManager.stopListening();
@@ -198,7 +198,7 @@ useBackButton(10, async (processNextHandler) => {
     uiState.statusMessage = CHAT_STATUS.IDLE;
     processNextHandler(); 
   }
-});
+});*/
 
 onIonViewDidLeave(async () => {
   if(uiState.isRecording) {
