@@ -64,7 +64,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted, shallowRef } from 'vue'
 import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButton } from '@ionic/vue'
 import {
   browserRecorder,
@@ -75,15 +75,23 @@ const audioUrl = ref<string>('')
 const statusMessage = ref('')
 const isRecording = ref(false)
 const capturedImage = ref()
-const cam = new DeviceCameraService(200, 200, "camera")
+const cam = shallowRef<DeviceCameraService | null>(null);
+
+onMounted(() => {
+  cam.value = new DeviceCameraService(200, 200, "camera");
+});
 
 async function openCamera() {
-  cam.start();
+  if (cam.value) {
+    cam.value.start();
+  }
 }
 
 async function screenshot() {
-  const res = await cam.getCameraFrame();
-  capturedImage.value = `data:image/jpeg;base64,${res.value}`;
+  if (cam.value) {
+    const res = await cam.value.getCameraFrame();
+    capturedImage.value = `data:image/jpeg;base64,${res.value}`;
+  }
 }
 
 async function startMic() {

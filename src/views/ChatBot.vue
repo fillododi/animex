@@ -3,7 +3,10 @@
     <ion-header>
       <ion-toolbar>
         <ion-buttons slot="start">
-          <ion-back-button default-href="/home" text="Back"></ion-back-button>
+          <ion-button @click="ionRouter.back()" >
+            <ion-icon slot="start" :icon="chevronBackOutline"></ion-icon>
+            Indietro
+          </ion-button>
         </ion-buttons>
         <ion-title>Chatbot Interaction</ion-title>
       </ion-toolbar>
@@ -11,41 +14,41 @@
 
     <ion-content class="ion-padding chat-background">
       
-      <div class="status-banner" :class="{ active: isRecording }">
-        {{ currentStatus }}
+      <div class="status-banner" :class="{ active: uiState.isRecording }">
+        {{ uiState.statusMessage }}
       </div>
 
       <div class="controls-container">
         <ion-button 
           expand="block" 
           @click="handleStart" 
-          :disabled="isRecording || isProcessing"
+          :disabled="uiState.isRecording || uiState.isProcessing"
           color="primary"
         >
-          1. START SPEAKING
+          REGISTRA
         </ion-button>
 
         <ion-button 
           expand="block" 
           @click="handleStop" 
-          :disabled="!isRecording || !isMicReady || isProcessing"
+          :disabled="!uiState.isRecording || !uiState.isMicReady || uiState.isProcessing"
           color="danger"
           style="margin-top: 15px;"
         >
-          2. STOP & SEND
+          INTERROMPI
         </ion-button>
       </div>
 
       <div class="chat-container">
         <div 
-          v-for="(msg, index) in messages" 
+          v-for="(msg, index) in chatStore.messages" 
           :key="index" 
           class="message-wrapper"
-          :class="msg.getSender() === myUserId ? 'wrapper-right' : 'wrapper-left'"
+          :class="msg.getSender() === chatStore.myUserId ? 'wrapper-right' : 'wrapper-left'"
         >
           <div 
             class="message-bubble"
-            :class="msg.getSender() === myUserId ? 'user-bubble' : 'animal-bubble'"
+            :class="msg.getSender() === chatStore.myUserId ? 'user-bubble' : 'animal-bubble'"
           >
             <p>{{ msg.getContent() }}</p>
             
@@ -60,17 +63,22 @@
     <ion-footer>
       <ion-toolbar>
         <ion-input 
-          v-model="inputText" 
+          v-model="uiState.inputText" 
           placeholder="Scrivi un messaggio..." 
           @keyup.enter="handleTextSubmit"
-          :disabled="isProcessing || isRecording"
+          :disabled="uiState.isProcessing || uiState.isRecording"
           class="ion-padding-horizontal"
+          autocomplete="on"
+          autocorrect="on"
+          :spellcheck="true"
+          inputmode="text"
+          autocapitalize="sentences"
         ></ion-input>
         
         <ion-buttons slot="end">
           <ion-button 
             @click="handleTextSubmit" 
-            :disabled="isProcessing || isRecording || !inputText.trim()" 
+            :disabled="uiState.isProcessing || uiState.isRecording || !uiState.inputText.trim()" 
             color="primary"
           >
             >
@@ -82,98 +90,156 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
-import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButton, IonButtons, IonBackButton, IonInput, IonFooter } from '@ionic/vue';
+import { reactive} from 'vue';
+import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButton, IonButtons, IonInput, IonFooter, onIonViewDidLeave, useIonRouter, alertController } from '@ionic/vue';
 import { conversationManager } from '@/modules/ConversationMgr';
-import { Chat } from '@/utility/chat';
-import { Message } from '@/utility/message';
-import { getOrCreateUserId } from '@/utility/user';
-
+import { useChatStore } from '@/stores/chatStore';
+import { CHAT_STATUS, EMPTY_INPUT_ANIMAL_TEXT } from '@/utility/constants';
+import { chevronBackOutline } from 'ionicons/icons';
+import { type ChatUIState} from '@/utility/Types';
+import { NativeSettings, AndroidSettings, IOSSettings } from 'capacitor-native-settings';
 // --- CHAT INITIALIZATION ---
 
-// 1. Get the real persistent User ID
-const myUserId = getOrCreateUserId();
-// 2. Generate a unique ID for this chat session
-const newChatId = ref<Chat>(new Chat(myUserId));
-
-// 3. Initialize the Chat instance
-const currentChat = ref<Chat>(new Chat(newChatId.value.getChatId(), myUserId));
-
-/** * 4. REACTIVITY FIX: 
- * We create a reactive reference to the messages array.
- * Vue will track this array to update the UI.
- */
-const messages = ref<Message[]>([]);
+const chatStore = useChatStore();
 
 // --- UI STATE VARIABLES ---
-const isRecording = ref(false);
-const isProcessing = ref(false);
-const currentStatus = ref("Ready to listen");
-const isMicReady = ref(false);
-const inputText = ref("");
+const ionRouter = useIonRouter();
+const uiState = reactive<ChatUIState>({
+  isRecording: false,
+  isMicReady: false,
+  isProcessing: false,
+  inputText: "",
+  statusMessage: CHAT_STATUS.IDLE
+});
 // --- EVENT HANDLERS ---
 
 const handleStart = async () => {
   try {
-    currentStatus.value = "⏳ Initializing microphone...";
-    isRecording.value = true;
-    isMicReady.value = false;
+    uiState.statusMessage = CHAT_STATUS.INITIALIZING;
+    uiState.isRecording = true;
+    uiState.isMicReady = false;
     
     await conversationManager.startInteraction(() => {
-      isMicReady.value = true;
-      currentStatus.value = "🎤 Microphone active, speak now!";
+    uiState.isMicReady = true;
+    uiState.statusMessage = CHAT_STATUS.RECORDING;
+    }, (errorMessage) => {
+      if (errorMessage === 'NEEDS_SETTINGS') {
+        showSettingsAlert();
+        // This if is to prevent overwriting the alert message if the user has already been prompted
+        if(uiState.statusMessage != CHAT_STATUS.DENIED_HARD){
+          uiState.statusMessage = CHAT_STATUS.DENIED_HARD;
+        }
+      } else if (errorMessage === 'FIRST_DENIAL') {
+        uiState.statusMessage = CHAT_STATUS.DENIED_SOFT;
+      } else {
+        uiState.statusMessage = "Errore: " + errorMessage;
+      }
+      uiState.isRecording = false;
+      uiState.isMicReady = false;
     });
     
   } catch (error: any) {
-    currentStatus.value = "Error: " + error.message;
+    uiState.statusMessage = "Errore: " + error.message;
   }
 };
 
 const handleStop = async () => {
-  isRecording.value = false;
-  isProcessing.value = true;
-  currentStatus.value = "⚙️ Processing interaction...";
-  
+  uiState.isRecording = false;
+  uiState.isProcessing = true;
+  uiState.statusMessage = CHAT_STATUS.THINKING;
   try {
-    const result = await conversationManager.stopAndProcessInteraction();
-    handleResponse(result);
+    await conversationManager.stopListening();
+    const userText = await conversationManager.getCurrentTranscript();
+    if(userText.trim()) {
+      chatStore.addUserMessage(userText);
+      const response = await conversationManager.processTextInteraction(userText);
+      handleResponse(response);
+    }
+    else {
+      handleResponse({ animalText: EMPTY_INPUT_ANIMAL_TEXT });
+    }
   } catch (error: any) {
-    currentStatus.value = "Error: " + error.message;
+    uiState.statusMessage = "Errore: " + error.message;
   } finally {
-    isProcessing.value = false;
+    uiState.isProcessing = false;
   }
 };
 
 const handleTextSubmit = async () => {
-  const text = inputText.value.trim();
-  if (!text || isProcessing.value) return;
-
-  inputText.value = ""; 
-  isProcessing.value = true;
-
+  const text = uiState.inputText.trim();
+  if (!text || uiState.isProcessing) return;
+  uiState.inputText = ""; 
+  uiState.isProcessing = true;
+    uiState.statusMessage = CHAT_STATUS.THINKING;
+  chatStore.addUserMessage(text);
   try {
     const result = await conversationManager.processTextInteraction(text);
     handleResponse(result);
   } catch (error: any) {
-    currentStatus.value = "Error: " + error.message;
+    uiState.statusMessage = "Errore: " + error.message;
   }
    finally {
-    isProcessing.value = false;
+    uiState.isProcessing = false;
   }
   
 };
 
-const handleResponse = (response: { userText: string, animalText: string }) => {
-  currentChat.value.addMessage(new Message(response.userText, myUserId, new Date()));
-  currentChat.value.addMessage(new Message(response.animalText, "bot_animal", new Date()));
-  messages.value = [...currentChat.value.getMessages()];
+const handleResponse = (response: { animalText: string }) => {
+  chatStore.addBotMessage(response.animalText);
   conversationManager.speak(response.animalText);
-  currentStatus.value = "✅ Response received!";
+  uiState.statusMessage = CHAT_STATUS.SUCCESS;
 };
+
+
+onIonViewDidLeave(async () => {
+  if(uiState.isRecording) {
+    await conversationManager.stopListening();
+    await conversationManager.resetTranscript();
+    uiState.isRecording = false;
+    uiState.statusMessage = CHAT_STATUS.IDLE;
+  } 
+});
+
+const showSettingsAlert = async () => {
+  const alert = await alertController.create({
+    header: 'Microfono Disabilitato',
+    message: "L'app ha bisogno del microfono e del riconoscimento vocale per ascoltare la tua voce. Vuoi aprire le impostazioni del telefono per consentire l'accesso?",
+    buttons: [
+      {
+        text: 'Annulla',
+        role: 'cancel',
+        handler: () => {
+          uiState.statusMessage = CHAT_STATUS.DENIED_SOFT;
+        }
+      },
+      {
+        text: 'Apri Impostazioni',
+        role: 'confirm',
+        handler: () => {
+          openSettings();
+        }
+      }
+    ]
+  });
+
+  await alert.present();
+};
+
+const openSettings = async () => {
+  try {
+    await NativeSettings.open({
+      optionAndroid: AndroidSettings.ApplicationDetails, 
+      optionIOS: IOSSettings.App
+    });
+  } catch (e) {
+    uiState.statusMessage = CHAT_STATUS.SETTINGS_ERROR;
+  }
+};
+
 </script>
 
 <style scoped>
-/* (Styles remain the same as your previous version) */
+
 .chat-background {
   --background: #f0f2f5; 
 }
