@@ -7,7 +7,6 @@ export class ConversationManager {
     private currentTranscript = ""; 
 
     public async startInteraction(onReady?: () => void, onError?: (error: string) => void): Promise<void> {
-        this.currentTranscript = "";
         // Use the STT service instance to start listening
         await sttService.startListening(
             (transcript) => {

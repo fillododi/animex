@@ -12,7 +12,6 @@ export class NativeSTTService {
         onError?: (error: string) => void,
         onStart?: () => void  
     ): Promise<void> {
-        await SpeechRecognition.stop().catch(() => {}); 
         try {
             const initialStatus = await SpeechRecognition.checkPermissions();
             if (initialStatus.speechRecognition === 'denied') {
