@@ -66,13 +66,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted, shallowRef } from 'vue'
 import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButton } from '@ionic/vue'
 import {
-  requestMicrophonePermission,
-  startRecording,
-  stopRecording,
-  releaseStream,
+  browserRecorder,
 } from '@/services/SpeechService'
 import { DeviceCameraService } from '@/services/CameraService'
 
@@ -80,46 +77,54 @@ const audioUrl = ref<string>('')
 const statusMessage = ref('')
 const isRecording = ref(false)
 const capturedImage = ref()
-const cam = new DeviceCameraService(200, 200, "camera")
+const cam = shallowRef<DeviceCameraService | null>(null);
+
+onMounted(() => {
+  cam.value = new DeviceCameraService(200, 200, "camera");
+});
 
 async function openCamera() {
-  cam.start();
+  if (cam.value) {
+    cam.value.start();
+  }
 }
 
 async function screenshot() {
-  const res = await cam.getCameraFrame();
-  capturedImage.value = `data:image/jpeg;base64,${res.value}`;
+  if (cam.value) {
+    const res = await cam.value.getCameraFrame();
+    capturedImage.value = `data:image/jpeg;base64,${res.value}`;
+  }
 }
 
 async function startMic() {
   statusMessage.value = ''
   audioUrl.value = ''
 
-  const granted = await requestMicrophonePermission()
+  const granted = await browserRecorder.requestMicrophonePermission()
   if (!granted) {
     statusMessage.value = 'Microphone permission not granted.'
     return
   }
 
   try {
-    startRecording()
+    browserRecorder.startRecording()
     isRecording.value = true
     statusMessage.value = 'Recording… press Stop when done.'
   } catch (e: unknown) {
     statusMessage.value = e instanceof Error? e.message: 'Failed to start recording.'
-    releaseStream()
+    browserRecorder.releaseStream()
   }
 }
 
 async function stopMic() {
   try {
-    audioUrl.value = await stopRecording()
+    audioUrl.value = await browserRecorder.stopRecording()
     statusMessage.value = ''
   } catch {
     statusMessage.value = 'Failed to stop recording.'
   } finally {
     isRecording.value = false
-    releaseStream()
+    browserRecorder.releaseStream()
   }
 }
 </script>

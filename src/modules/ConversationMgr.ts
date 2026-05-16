@@ -1,51 +1,57 @@
-import { requestMicrophonePermission, startRecording, stopRecording, releaseStream, convertSpeechToText,  playTextToSpeech } from '@/services/SpeechService';
+import { sttService, ttsService } from '@/services/SpeechService';
 import { fetchAnimalResponse } from '@/services/AIService';
-// --- PUBLIC FUNCTIONS (Exposed to the View) ---
 
-export async function startInteraction(): Promise<void> {
-    const granted = await requestMicrophonePermission();
-    if (!granted) {
-        throw new Error("Microphone permission denied by the user.");
-    }
+export class ConversationManager {
     
-    startRecording();
-}
+    private isListening = false;
+    private currentTranscript = ""; 
 
-export async function stopAndProcessInteraction(): Promise<{ userText: string, animalText: string }> {
-    const audioUrl = await stopRecording();
-    releaseStream();
-
-    let finalUserText = "";
-    let finalAnimalText = "";
-
-    try {
-        // 1. Perform Speech-to-Text
-        finalUserText = await convertSpeechToText(audioUrl);
-
-        // 2. CHECK: Did the user actually say something?
-        if (!finalUserText || finalUserText.trim() === "") {
-            // SCENARIO A: Silence or audio not understood
-            finalUserText = "[Nessuna parola rilevata]";
-            finalAnimalText = "Scusa umano, c'era troppo rumore o hai parlato pianissimo. Puoi ripetere?";
-        
-        } else {
-            // SCENARIO B: All good, query the AI
-            finalAnimalText = await fetchAnimalResponse(finalUserText);
+    public async startInteraction(onReady?: () => void, onError?: (error: string) => void): Promise<void> {
+        // Use the STT service instance to start listening
+        await sttService.startListening(
+            (transcript) => {
+                this.currentTranscript = transcript;
+            },
+            (error) => {
+                if (onError) {
+                    onError(error);
+                }
+            },
+            () => {
+                this.isListening = true;
+                onReady?.(); 
+            }
+        );
+    }
+    public async stopListening(): Promise<void>{
+        if (this.isListening) {
+            await sttService.stopListening(); 
+            this.isListening = false;
         }
-
-    } catch (error) {
-        // SCENARIO C: Servers (STT or AI) are down / offline
-        finalUserText = "[Errore di sistema]";
-        finalAnimalText = "Roar! Ho un po' di mal di pancia al server... dammi un minuto e riprova!";
+    }
+    public async getCurrentTranscript(): Promise<string> {
+        return this.currentTranscript;
+    }
+    public async resetTranscript(): Promise<void> {
+        this.currentTranscript = "";
     }
 
-    // 3. ALWAYS make the animal speak (whether it's a real response or asking to repeat)
-    await playTextToSpeech(finalAnimalText);
+    public async processTextInteraction(text: string): Promise<{ animalText: string }> {
+        try {
+            const finalAnimalText = await fetchAnimalResponse(text);
+            return {
+                animalText: finalAnimalText
+            };
+        } catch (error) {
+            return {
+                animalText: "Roar! Ho un po' di mal di pancia al server... dammi un minuto e riprova!"
+            };
+        }
+    }
 
-    // 4. Return the result to the View, whatever it is
-    return { 
-        userText: finalUserText, 
-        animalText: finalAnimalText 
-    };
+    public async speak(text: string): Promise<void> {
+        await ttsService.speak(text);
+    }
 }
 
+export const conversationManager = new ConversationManager();

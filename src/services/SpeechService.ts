@@ -1,85 +1,134 @@
-import { TextToSpeech } from "@capacitor-community/text-to-speech"
+import { SpeechRecognition } from '@capgo/capacitor-speech-recognition';
+import { TextToSpeech } from "@capacitor-community/text-to-speech";
 
-let mediaRecorder: MediaRecorder | null = null
-let audioChunks: Blob[] = []
-let audioStream: MediaStream | null = null
+// =============================================================
+// 1. SPEECH-TO-TEXT (LISTENING WITH NATIVE CAPACITOR PLUGIN)
+// =============================================================
+export class NativeSTTService {
+    private recognitionListener: any = null;
 
-export async function requestMicrophonePermission(): Promise<boolean> {
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-    audioStream = stream
-    return true
-  } catch {
-    return false
-  }
-}
+    public async startListening(
+        onResult: (transcript: string) => void,
+        onError?: (error: string) => void,
+        onStart?: () => void  
+    ): Promise<void> {
+        try {
+            const initialStatus = await SpeechRecognition.checkPermissions();
+            if (initialStatus.speechRecognition === 'denied') {
+                onError?.('NEEDS_SETTINGS');
+                return;
+            }
+            const permissions = await SpeechRecognition.requestPermissions();
+            if (permissions.speechRecognition !== 'granted') {
+                onError?.('FIRST_DENIAL');
+                return;
+            }
 
-export function startRecording(): void {
-  if (!audioStream) throw new Error('No audio stream available.')
+            if (this.recognitionListener) {
+                await this.recognitionListener.remove();
+                this.recognitionListener = null;
+            }
 
-  audioChunks = []
-  mediaRecorder = new MediaRecorder(audioStream)
+            this.recognitionListener = await SpeechRecognition.addListener('partialResults', (data: any) => {
+                if (data.matches && data.matches.length > 0) {
+                    onResult(data.matches[0]); 
+                }
+            });
 
-  mediaRecorder.ondataavailable = (event: BlobEvent) => {
-    if (event.data.size > 0) audioChunks.push(event.data)
-  }
+            await SpeechRecognition.start({
+                language: 'it-IT',
+                maxResults: 1,
+                prompt: 'Parla ora...',
+                partialResults: true,
+                popup: false 
+            });
 
-  mediaRecorder.start()
-}
+            onStart?.();
 
-export function stopRecording(): Promise<string> {
-  return new Promise((resolve, reject) => {
-    if (!mediaRecorder) return reject(new Error('No active recording.'))
-
-    mediaRecorder.onstop = () => {
-      const actualMimeType = mediaRecorder?.mimeType || 'audio/mp4'
-      const audioBlob = new Blob(audioChunks, { type: actualMimeType })
-      const audioUrl = URL.createObjectURL(audioBlob)
-      resolve(audioUrl)
+        } catch (error: any) {
+            onError?.(error.message);   
+        }
     }
 
-    mediaRecorder.stop()
-  })
+    public async stopListening(): Promise<void> {
+        
+        await SpeechRecognition.stop().catch(() => {});
+        if (this.recognitionListener) {
+            await this.recognitionListener.remove();
+            this.recognitionListener = null;
+        }
+        
+    }
+
 }
 
-export function releaseStream(): void {
-  audioStream?.getTracks().forEach(track => track.stop())
-  audioStream = null
-  mediaRecorder = null
-  audioChunks = []
+// =============================================================
+// 2. TEXT-TO-SPEECH (NATIVE CAPACITOR PLUGIN)
+// =============================================================
+export class NativeTTSService {
+    public async speak(text: string): Promise<void> {
+        await TextToSpeech.speak({
+            text,
+            lang: 'it-IT',
+            rate: 1.0,
+            pitch: 1.0,
+            volume: 1.0,
+            category: 'ambient',
+            queueStrategy: 1
+        });
+    }
 }
 
-export async function convertSpeechToText(_audioUrl: string): Promise<string> {
-    // Simulate an API call to a Speech-to-Text service (e.g., Whisper)
-    return new Promise((resolve) => {
-        setTimeout(() => {
-            // MODIFY HERE TO TEST:
-            // Change `true` to `false` to simulate the child staying silent
-            const didChildSpeak = false; 
+// =============================================================
+// 3. UTILITY TEST MICROPHONE BROWSER (OLD FLOW)
+// =============================================================
+export class BrowserAudioRecorder {
+    private mediaRecorder: MediaRecorder | null = null;
+    private audioChunks: Blob[] = [];
+    private audioStream: MediaStream | null = null;
 
-            if (didChildSpeak) {
-                resolve("Ciao animale, come stai?");
-            } else {
-                resolve(""); // Return an empty string (silence)
-            }
-        }, 1500);
-    });
+    public async requestMicrophonePermission(): Promise<boolean> {
+        try {
+            this.audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            return true;
+        } catch {
+            return false;
+        }
+    }
+
+    public startRecording(): void {
+        if (!this.audioStream) throw new Error('No audio stream available.');
+        this.audioChunks = [];
+        this.mediaRecorder = new MediaRecorder(this.audioStream);
+        this.mediaRecorder.ondataavailable = (event: BlobEvent) => {
+            if (event.data.size > 0) this.audioChunks.push(event.data);
+        };
+        this.mediaRecorder.start();
+    }
+
+    public stopRecording(): Promise<string> {
+        return new Promise((resolve, reject) => {
+            if (!this.mediaRecorder) return reject(new Error('No active recording.'));
+            this.mediaRecorder.onstop = () => {
+                const actualMimeType = this.mediaRecorder?.mimeType || 'audio/mp4';
+                const audioBlob = new Blob(this.audioChunks, { type: actualMimeType });
+                const audioUrl = URL.createObjectURL(audioBlob);
+                resolve(audioUrl);
+            };
+            this.mediaRecorder.stop();
+        });
+    }
+
+    public releaseStream(): void {
+        this.audioStream?.getTracks().forEach(track => track.stop());
+        this.audioStream = null;
+        this.mediaRecorder = null;
+        this.audioChunks = [];
+    }
 }
 
+// Export singleton instances of the services to be used across the app
+export const sttService = new NativeSTTService();
+export const ttsService = new NativeTTSService();
+export const browserRecorder = new BrowserAudioRecorder();
 
-
-export async function playTextToSpeech(text: string)  {
-  await TextToSpeech.speak({
-    text,
-    lang: 'it-IT',
-    rate: 1.0,
-    pitch: 1.0,
-    volume: 1.0,
-    category: 'ambient',
-    queueStrategy: 1
-  });
-    
-}
-export async function stopTextToSpeech() {
-  await TextToSpeech.stop();
-}
