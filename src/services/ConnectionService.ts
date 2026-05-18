@@ -32,7 +32,7 @@ export class ServerConnectionService implements ConnectionService {
     async start(): Promise<void> {
         assert(!this.active, "Connection Service is already active!")
 
-        const request: RequestInfo = new Request(`${this.url}/healthz`, {method: 'GET'})
+        const request: RequestInfo = new Request(`${this.url}/healthz`, {method: 'GET', headers: {"Content-Type": "application/json"}})
         return fetch(request).then(res => res.json())
             .then(res => {
                 const resp = res as {ok: boolean, status: string}
@@ -58,12 +58,13 @@ export class ServerConnectionService implements ConnectionService {
         const body = {
             imageBase64: `data:image/jpeg;base64,${visionFrame}`,
             mimeType: 'image/jpeg',
-            clientFrameId: frameId,
+            clientFrameId: frameId.toString(),
             sessionId: sessionId,
             //previousAnimalId
         }
         const request: RequestInfo = new Request(`${this.url}/api/v1/vision/identify`, {
             method: 'POST',
+            headers: {"Content-Type": "application/json"},
             body: JSON.stringify(body)
         })
         return fetch(request).then(res => res.json())
