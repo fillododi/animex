@@ -22,6 +22,9 @@
         </p>
 
         <!-- Camera -->
+        <ion-button router-link="/cam">
+          Recognition
+        </ion-button>
         <ion-button @click="openCamera">Open Camera</ion-button>
         <ion-button @click="screenshot">Snap pic</ion-button>
         <div id="camera" class="camera-box" width="500" height="500"></div>
@@ -59,7 +62,6 @@
 
         <!--Connection-->
         <ion-button v-if="!connection.isActive()" @click="connect"> Connect to server </ion-button>
-        <ion-button v-if="connection.isActive() && capturedImage"> Send pic to server</ion-button>
 
         <p v-if="statusMessage">{{ statusMessage }}</p>
       </div>
@@ -138,10 +140,6 @@ async function connect() {
   connection.start().then(() => {
       statusMessage.value = connection.isActive() ? "Connected to server" : "Failed to connect :("
   })
-}
-
-async function sendPic() {
-  connection.sendRecognitionRequest(capturedImage.value).then(res => statusMessage.value = `Received ${res}`)
 }
 </script>
 

@@ -4,10 +4,10 @@ import { useRecognitionStore } from "@/stores/recognitionStore"
 
 export class RecognitionManager {
     private readonly store = useRecognitionStore()
+    private readonly connectionService: ConnectionService
+    private readonly cameraService: CameraService
     private sessionId: string
     private frameId: number
-    private connectionService: ConnectionService
-    private cameraService: CameraService
     private interval: NodeJS.Timeout | undefined
 
     constructor(conn: ConnectionService, cam: CameraService) {
@@ -17,29 +17,43 @@ export class RecognitionManager {
         this.cameraService = cam
     }
     
-    startRecognitionLoop() {
+    /**
+     * Initiates a new recognition loop with a new session ID,
+     * starts the camera and connection services if necessary.
+     */
+    async startRecognitionLoop() {
         if (!this.cameraService.isActive()) {
-            this.cameraService.start()
+            await this.cameraService.start()
         }
         if (!this.connectionService.isActive()) {
-            this.connectionService.start().catch()
+            await this.connectionService.start().catch()
         }
 
         this.sessionId = crypto.randomUUID()
         this.frameId = 0
 
         clearInterval(this.interval)
-        this.interval = setInterval(this.snapshotLoop, import.meta.env.VITE_RECOGNITION_TIMER_MS)
+        let mgr = this
+        this.interval = setInterval(function() {mgr.snapshotLoop()}, import.meta.env.VITE_RECOGNITION_TIMER_MS)
     }
 
-    stopRecognition() {
+    /**
+     * Stops the ongoing recognition loop, stops the camera service if necessary.
+     * 
+     * @remark Does NOT stop the connection service.
+     */
+    async stopRecognitionLoop() {
         if (this.cameraService.isActive()) {
-            this.cameraService.stop()
+            await this.cameraService.stop()
         }
 
         clearInterval(this.interval)
     }
 
+    /**
+     * @returns The pinia store containing the recognitions received by the manager.
+     * @see {@link useRecognitionStore}
+     */
     getStore() {
         return this.store
     }
@@ -47,7 +61,7 @@ export class RecognitionManager {
     private snapshotLoop() {
         //Check if the loop should end
         if (!this.cameraService.isActive() || !this.connectionService.isActive()) {
-            this.stopRecognition()
+            this.stopRecognitionLoop()
             return
         }
 
