@@ -49,7 +49,7 @@
 
 <script setup lang="ts">
 import { onMounted, reactive, shallowRef} from 'vue';
-import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButton, IonButtons, onIonViewDidLeave, useIonRouter, alertController, isPlatform } from '@ionic/vue';
+import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButton, IonButtons, onIonViewDidLeave, useIonRouter } from '@ionic/vue';
 import { chevronBackOutline } from 'ionicons/icons';
 import { RecognitionManager } from '@/modules/RecognitionMgr';
 import { DeviceCameraService } from '@/services/CameraService';
@@ -63,11 +63,11 @@ import { useRecognitionStore } from '@/stores/recognitionStore';
 
 // --- INITIALIZATION ---
 const recog = shallowRef<RecognitionManager | null>(null);
-var recogStore = useRecognitionStore();
+const recogStore = useRecognitionStore();
 
 onMounted(() => {
   let cam: DeviceCameraService;
-  let par = document.getElementById("camera")
+  const par = document.getElementById("camera")
   if (Capacitor.getPlatform() == 'web') {
     cam = new DeviceCameraService(window.innerWidth, window.innerHeight/2, par ? par.id : "camera");
   }
@@ -75,7 +75,7 @@ onMounted(() => {
     cam = new DeviceCameraService(window.innerWidth/2, window.innerHeight/2, new Position(0, par? par.getBoundingClientRect().top : 0));
   }
 
-  let conn = new ServerConnectionService();
+  const conn = new ServerConnectionService();
 
   recog.value = new RecognitionManager(conn, cam);
 })

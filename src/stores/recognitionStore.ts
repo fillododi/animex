@@ -6,7 +6,7 @@ import { RecognitionData } from '@/utility/RecognitionData';
 export const useRecognitionStore = defineStore('recognition', () => {
   const myUserId = ref(getOrCreateUserId());
   const recognitions = ref<RecognitionData[]>([]);
-  var latestRecognition = ref<RecognitionData>()
+  const latestRecognition = ref<RecognitionData>()
 
   function addRecognition(rec: RecognitionData) {
     recognitions.value.push(rec);

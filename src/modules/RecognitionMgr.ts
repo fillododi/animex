@@ -33,7 +33,7 @@ export class RecognitionManager {
         this.frameId = 0
 
         clearInterval(this.interval)
-        let mgr = this
+        const mgr = this
         this.interval = setInterval(function() {mgr.snapshotLoop()}, import.meta.env.VITE_RECOGNITION_TIMER_MS)
     }
 
