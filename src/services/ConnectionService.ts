@@ -39,7 +39,7 @@ export class ServerConnectionService implements ConnectionService {
 
                 this.active = resp.ok
             })
-            .catch()
+            .catch(err => console.error(err))
     }
 
     stop(): void {
