@@ -44,11 +44,11 @@
           v-for="(msg, index) in chatStore.messages" 
           :key="index" 
           class="message-wrapper"
-          :class="msg.getSender() === chatStore.myUserId ? 'wrapper-right' : 'wrapper-left'"
+          :class="msg.getSender() === 'user' ? 'wrapper-right' : 'wrapper-left'"
         >
           <div 
             class="message-bubble"
-            :class="msg.getSender() === chatStore.myUserId ? 'user-bubble' : 'animal-bubble'"
+            :class="msg.getSender() === 'user' ? 'user-bubble' : 'animal-bubble'"
           >
             <p>{{ msg.getContent() }}</p>
             

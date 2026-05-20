@@ -1,10 +1,17 @@
 import { sttService, ttsService } from '@/services/SpeechService';
 import { fetchAnimalResponse } from '@/services/AIService';
+import { connectionService, type ConnectionService } from '@/services/ConnectionService';
 
 export class ConversationManager {
     
     private isListening = false;
     private currentTranscript = ""; 
+    private sessionId : string;
+    private readonly connectionService: ConnectionService;
+    constructor(conn: ConnectionService) {
+        this.sessionId = crypto.randomUUID();
+        this.connectionService = conn;
+    }
 
     public async startInteraction(onReady?: () => void, onError?: (error: string) => void): Promise<void> {
         // Use the STT service instance to start listening
@@ -54,4 +61,4 @@ export class ConversationManager {
     }
 }
 
-export const conversationManager = new ConversationManager();
+export const conversationManager = new ConversationManager(connectionService);

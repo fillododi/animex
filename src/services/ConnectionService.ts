@@ -1,6 +1,7 @@
 import type { RecognitionData } from "@/utility/RecognitionData"
 import type { Service } from "./Service"
 import { assert } from "@/utility/assert"
+import { useChatStore } from "@/stores/chatStore"
 
 export interface ConnectionService extends Service {
     
@@ -13,7 +14,7 @@ export interface ConnectionService extends Service {
      * @throws An Error if the service is not active
      */
     sendRecognitionRequest(sessionId: string, frameId: number, visionFrame: string): Promise<RecognitionData | null>
-    //sendChatRequest
+    sendChatRequest(sessionId: string): Promise<string>
     //sendARRequest
 }
 
@@ -75,4 +76,33 @@ export class ServerConnectionService implements ConnectionService {
                 return null
             })
     }
+
+    async sendChatRequest(sessionId: string): Promise<string> {
+        assert(this.active, "The connection service isn't active!")
+        const body = {
+            sessionId: sessionId,
+            animalId: "lion",
+            history: useChatStore().messages
+        }
+        const request: RequestInfo = new Request(`${this.url}/api/v1/chat`, {
+            method: 'POST',
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify(body)
+        })
+        try {
+            const response = await fetch(request)
+            const res = await response.json()
+            return res.data.answer as string
+        }catch(err){
+            console.error(err)
+            return "Error occurred while sending chat request."
+        }
+        
+        // return the object of the answer that contains:
+        //"ok": true, "data": { "answer": "Lions mostly live in African grasslands
+        //and savannahs. They like open places where they can hunt and rest
+        //together in prides.", "source": "gemini", "animalId": "lion",
+        
+    }
 }
+export const connectionService = new ServerConnectionService()
