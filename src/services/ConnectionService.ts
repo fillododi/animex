@@ -1,7 +1,7 @@
-import type { RecognitionData } from "@/utility/RecognitionData"
 import type { Service } from "./Service"
 import { assert } from "@/utility/assert"
 import { useChatStore } from "@/stores/chatStore"
+import type { RecognitionDTO } from "@/utility/Types"
 
 export interface ConnectionService extends Service {
     
@@ -13,8 +13,8 @@ export interface ConnectionService extends Service {
      * @returns The server's response
      * @throws An Error if the service is not active
      */
-    sendRecognitionRequest(sessionId: string, frameId: number, visionFrame: string): Promise<RecognitionData | null>
-    sendChatRequest(sessionId: string): Promise<string>
+    sendRecognitionRequest(sessionId: string, frameId: number, visionFrame: string): Promise<RecognitionDTO | null>
+    sendChatRequest(sessionId: string, text: string): Promise<string>
     //sendARRequest
 }
 
@@ -53,9 +53,8 @@ export class ServerConnectionService implements ConnectionService {
         return this.active
     }
 
-    async sendRecognitionRequest(sessionId: string, frameId: number, visionFrame: string): Promise<RecognitionData | null> {
+    async sendRecognitionRequest(sessionId: string, frameId: number, visionFrame: string): Promise<RecognitionDTO | null> {
         assert(this.active, "The connection service isn't active!")
-
         const body = {
             imageBase64: `data:image/jpeg;base64,${visionFrame}`,
             mimeType: 'image/jpeg',
@@ -70,19 +69,22 @@ export class ServerConnectionService implements ConnectionService {
         })
         return fetch(request).then(res => res.json())
             .then(res => {
-                return res as RecognitionData
+                return res.data as RecognitionDTO
             })
             .catch(() => {
                 return null
             })
     }
 
-    async sendChatRequest(sessionId: string): Promise<string> {
+    async sendChatRequest(sessionId: string, text: string): Promise<string> {
+        const chatStore = useChatStore()
+        chatStore.addUserMessage(text)
         assert(this.active, "The connection service isn't active!")
         const body = {
             sessionId: sessionId,
             animalId: "lion",
-            history: useChatStore().messages
+            history: chatStore.messages.filter(msg => msg.ok).map(msg => ({role: msg.role, text: msg.content})),
+            message: text
         }
         const request: RequestInfo = new Request(`${this.url}/api/v1/chat`, {
             method: 'POST',
@@ -92,8 +94,11 @@ export class ServerConnectionService implements ConnectionService {
         try {
             const response = await fetch(request)
             const res = await response.json()
+            const message = res.data.answer as string
+            chatStore.addBotMessage(message)
             return res.data.answer as string
         }catch(err){
+            chatStore.addErrorResponse()
             console.error(err)
             return "Error occurred while sending chat request."
         }
@@ -105,4 +110,3 @@ export class ServerConnectionService implements ConnectionService {
         
     }
 }
-export const connectionService = new ServerConnectionService()

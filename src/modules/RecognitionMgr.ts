@@ -1,20 +1,14 @@
-import { type CameraService } from "@/services/CameraService"
-import type { ConnectionService } from "@/services/ConnectionService"
-import { useRecognitionStore } from "@/stores/recognitionStore"
+import { useServiceStore } from "@/stores/serviceStore"
+import { useSessionStore } from "@/stores/sessionStore"
+import type { AnimalData } from "@/utility/AnimalData"
+import type { AnimalType } from "@/utility/AnimalType"
 
 export class RecognitionManager {
-    private readonly store = useRecognitionStore()
-    private readonly connectionService: ConnectionService
-    private readonly cameraService: CameraService
-    private sessionId: string
     private frameId: number
     private interval: NodeJS.Timeout | undefined
 
-    constructor(conn: ConnectionService, cam: CameraService) {
-        this.sessionId = ""
+    constructor() {
         this.frameId = 0
-        this.connectionService = conn
-        this.cameraService = cam
     }
     
     /**
@@ -22,14 +16,16 @@ export class RecognitionManager {
      * starts the camera and connection services if necessary.
      */
     async startRecognitionLoop() {
-        if (!this.cameraService.isActive()) {
-            await this.cameraService.start()
+        const cameraService = useServiceStore().cameraService
+        if (!(cameraService && cameraService.isActive())) {
+            await cameraService?.start()
         }
-        if (!this.connectionService.isActive()) {
-            await this.connectionService.start().catch()
+        const connectionService = useServiceStore().connectionService
+        if (!(connectionService && connectionService.isActive())) {
+            await connectionService?.start()
         }
-
-        this.sessionId = crypto.randomUUID()
+        const sessionStore = useSessionStore()
+        sessionStore.clearSession()
         this.frameId = 0
 
         clearInterval(this.interval)
@@ -43,38 +39,38 @@ export class RecognitionManager {
      * @remark Does NOT stop the connection service.
      */
     async stopRecognitionLoop() {
-        if (this.cameraService.isActive()) {
-            await this.cameraService.stop()
+        const cameraService = useServiceStore().cameraService
+        if (cameraService && cameraService.isActive()) {
+            await cameraService.stop()
         }
 
         clearInterval(this.interval)
     }
 
-    /**
-     * @returns The pinia store containing the recognitions received by the manager.
-     * @see {@link useRecognitionStore}
-     */
-    getStore() {
-        return this.store
-    }
 
-    private snapshotLoop() {
+    private async snapshotLoop() {
+        const cameraService = useServiceStore().cameraService
+        const connectionService = useServiceStore().connectionService
+        const sessionStore = useSessionStore()
         //Check if the loop should end
-        if (!this.cameraService.isActive() || !this.connectionService.isActive()) {
+        if (!cameraService?.isActive() || !connectionService?.isActive()) {
             this.stopRecognitionLoop()
             return
         }
-
-        this.cameraService.getCameraFrame().then((frame) =>
-            this.connectionService.sendRecognitionRequest(this.sessionId, this.frameId, frame.value).then(
-                (data) => { 
-                    if (data) {
-                        this.store.addRecognition(data)
-                        this.frameId++
-                    }
-                }
-            )
-        )
-        .catch()
+        const frame = await cameraService.getCameraFrame()
+        const response =  await connectionService.sendRecognitionRequest(sessionStore.sessionId, this.frameId, frame.value)
+        const sumX = response?.selectedAnimal.boundingPoly?.normalizedVertices?.reduce((sum, vert) => sum + vert.x, 0) ?? 0
+        const sumY = response?.selectedAnimal.boundingPoly?.normalizedVertices?.reduce((sum, vert) => sum + vert.y, 0) ?? 0
+        const numVerts = response?.selectedAnimal.boundingPoly?.normalizedVertices?.length ?? 1
+        const animalData : AnimalData = {
+            id: crypto.randomUUID(),
+            animalType: (response?.selectedAnimal.id ?? "unknown") as AnimalType,
+            pos: {
+                x: sumX / numVerts,
+                y: sumY / numVerts
+            }
+        }
+        sessionStore.updateRecognizedAnimal(animalData)
+        this.frameId++
     }
 }

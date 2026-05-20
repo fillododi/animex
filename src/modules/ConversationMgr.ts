@@ -1,9 +1,8 @@
-import { NativeSTTService, NativeTTSService, sttService, ttsService } from '@/services/SpeechService';
-import { fetchAnimalResponse } from '@/services/AIService';
-import { connectionService, type ConnectionService } from '@/services/ConnectionService';
-import { useConversationManagerStore } from '@/stores/conversationManagerStore';
 import { SOMETHING_BAD_IN_BACKEND } from '@/utility/constants';
-
+import { useServiceStore } from '@/stores/serviceStore';
+import { useSessionStore } from '@/stores/sessionStore';
+import { add } from 'ionicons/icons';
+import { useChatStore } from '@/stores/chatStore';
 export class ConversationManager {
     
     private isListening = false;
@@ -13,9 +12,10 @@ export class ConversationManager {
     }
 
     public async startInteraction(onReady?: () => void, onError?: (error: string) => void): Promise<void> {
+        const sttService = useServiceStore().sttService
         this.currentTranscript = "";
         // Use the STT service instance to start listening
-        await sttService.startListening(
+        await sttService?.startListening(
             (transcript) => {
                 this.currentTranscript = transcript;
             },
@@ -31,8 +31,9 @@ export class ConversationManager {
         );
     }
     public async stopListening(): Promise<void>{
+        const sttService = useServiceStore().sttService
         if (this.isListening) {
-            await sttService.stopListening(); 
+            await sttService?.stopListening(); 
             this.isListening = false;
         }
     }
@@ -42,24 +43,22 @@ export class ConversationManager {
     public async resetTranscript(): Promise<void> {
         this.currentTranscript = "";
     }
-    // Since sendChatRequest directly load from chatStore, we do not need to pass the text as parameter
-    public async processTextInteraction(text: string): Promise<{ animalText: string }> {
+    public async processTextInteraction(text: string): Promise<void> {
         try {
-            const finalAnimalText = await fetchAnimalResponse(text);
-            //const stateStore = useConversationManagerStore();
-            //const currentSessionId = stateStore.sessionId;
-            //const finalAnimalText = await this.connectionService.sendChatRequest(currentSessionId);
-            return {
-                animalText: finalAnimalText
-            };
+            const connectionService = useServiceStore().connectionService
+            const sessionId = useSessionStore().sessionId
+            const finalAnimalText = await connectionService?.sendChatRequest(sessionId, text);
+            await this.speak(finalAnimalText ?? "unknown");
+            
         } catch (error) {
-            return {
-                animalText: SOMETHING_BAD_IN_BACKEND
-            };
+            useChatStore().addErrorResponse();
+            this.speak(SOMETHING_BAD_IN_BACKEND);
+
         }
     }
 
     public async speak(text: string): Promise<void> {
-        await ttsService.speak(text);
+        const ttsService = useServiceStore().ttsService
+        await ttsService?.speak(text);
     }
 }

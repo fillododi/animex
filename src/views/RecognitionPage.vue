@@ -40,44 +40,29 @@
       </div>
 
       <div id="camera" class="camera-box"></div>
-      <div v-if="recogStore">
-        Recogs received: {{ recogStore.recognitions.length }}, Last recog: {{ recogStore.latestRecognition }}
+      <div v-if="sessionStore.recognizedAnimal">
+        Recog received: {{ sessionStore.recognizedAnimal }}
       </div>
     </ion-content>
   </ion-page>
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, shallowRef} from 'vue';
+import { onMounted, reactive } from 'vue';
 import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButton, IonButtons, onIonViewDidLeave, useIonRouter } from '@ionic/vue';
 import { chevronBackOutline } from 'ionicons/icons';
 import { RecognitionManager } from '@/modules/RecognitionMgr';
-import { DeviceCameraService } from '@/services/CameraService';
-import { Capacitor } from '@capacitor/core';
-import { Position } from '@/utility/Position';
-import { ServerConnectionService } from '@/services/ConnectionService';
-import { RecognitionData } from '@/utility/RecognitionData';
-import { AnimalData } from '@/utility/AnimalData';
-import { AnimalType } from '@/utility/AnimalType';
-import { useRecognitionStore } from '@/stores/recognitionStore';
+import { useServiceStore } from '@/stores/serviceStore';
+import { useSessionStore } from '@/stores/sessionStore';
 
 // --- INITIALIZATION ---
-const recog = shallowRef<RecognitionManager | null>(null);
-const recogStore = useRecognitionStore();
+const serviceStore = useServiceStore();
+const recog = new RecognitionManager();
+const sessionStore = useSessionStore();
 
 onMounted(() => {
-  let cam: DeviceCameraService;
   const par = document.getElementById("camera")
-  if (Capacitor.getPlatform() == 'web') {
-    cam = new DeviceCameraService(window.innerWidth, window.innerHeight/2, par ? par.id : "camera");
-  }
-  else {
-    cam = new DeviceCameraService(window.innerWidth/2, window.innerHeight/2, new Position(0, par? par.getBoundingClientRect().top : 0));
-  }
-
-  const conn = new ServerConnectionService();
-
-  recog.value = new RecognitionManager(conn, cam);
+  serviceStore.setCameraService(par);
 })
 
 // --- UI STATE VARIABLES ---
@@ -94,11 +79,10 @@ const handleStart = async () => {
     uiState.statusMessage = "Opening camera";
 
     try {
-      await recog.value?.startRecognitionLoop()
+      await recog.startRecognitionLoop()
 
       uiState.isRecording = true;
       uiState.statusMessage = "Running";
-      recog.value?.getStore().addRecognition(new RecognitionData([new AnimalData(0, AnimalType.ANIMAL, new Position(0,0))]))
     }
     catch (error) {uiState.statusMessage = (error as Error).message;}
 };
@@ -106,7 +90,7 @@ const handleStart = async () => {
 const handleStop = async () => {
   uiState.statusMessage = "Stopping recognition manager";
   
-  await recog.value?.stopRecognitionLoop()
+  await recog.stopRecognitionLoop()
 
   uiState.isRecording = false
   uiState.statusMessage = "Stopped"

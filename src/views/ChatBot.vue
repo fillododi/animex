@@ -44,16 +44,16 @@
           v-for="(msg, index) in chatStore.messages" 
           :key="index" 
           class="message-wrapper"
-          :class="msg.getSender() === 'user' ? 'wrapper-right' : 'wrapper-left'"
+          :class="msg.role === 'user' ? 'wrapper-right' : 'wrapper-left'"
         >
           <div 
             class="message-bubble"
-            :class="msg.getSender() === 'user' ? 'user-bubble' : 'animal-bubble'"
+            :class="msg.role === 'user' ? 'user-bubble' : 'animal-bubble'"
           >
-            <p>{{ msg.getContent() }}</p>
+            <p>{{ msg.content }}</p>
             
             <span class="time-stamp">
-              {{ msg.getTimestamp().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }}
+              {{ msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }}
             </span>
           </div>
         </div>
@@ -94,7 +94,7 @@ import { reactive, shallowRef, onMounted} from 'vue';
 import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButton, IonButtons, IonInput, IonFooter, onIonViewDidLeave, useIonRouter, alertController } from '@ionic/vue';
 import { ConversationManager } from '@/modules/ConversationMgr';
 import { useChatStore } from '@/stores/chatStore';
-import { CHAT_STATUS, EMPTY_INPUT_ANIMAL_TEXT, SOMETHING_BAD_IN_BACKEND } from '@/utility/constants';
+import { CHAT_STATUS, EMPTY_INPUT_ANIMAL_TEXT } from '@/utility/constants';
 import { chevronBackOutline } from 'ionicons/icons';
 import { type ChatUIState} from '@/utility/Types';
 import { NativeSettings, AndroidSettings, IOSSettings } from 'capacitor-native-settings';
@@ -156,18 +156,16 @@ const handleStop = async () => {
     await conversationManager.value?.stopListening();
     const userText = await conversationManager.value?.getCurrentTranscript();
     if(userText?.trim()) {
-      chatStore.addUserMessage(userText);
       const response = await conversationManager.value?.processTextInteraction(userText);
       if (response) {
-        handleResponse(response);
-      }
-      else {
-        handleResponse({ animalText: SOMETHING_BAD_IN_BACKEND });
+        handleResponse();
       }
     }
     else {
-      handleResponse({ animalText: EMPTY_INPUT_ANIMAL_TEXT });
+      chatStore.addEmptyResponse();
+      await conversationManager.value?.speak(EMPTY_INPUT_ANIMAL_TEXT);
     }
+    uiState.statusMessage = CHAT_STATUS.SUCCESS;
   } catch (error: any) {
     uiState.statusMessage = "Errore: " + error.message;
   } finally {
@@ -182,15 +180,9 @@ const handleTextSubmit = async () => {
   uiState.inputText = ""; 
   uiState.isProcessing = true;
     uiState.statusMessage = CHAT_STATUS.THINKING;
-  chatStore.addUserMessage(text);
   try {
-    const result = await conversationManager.value?.processTextInteraction(text);
-    if (result) {
-      handleResponse(result);
-    }
-    else {
-      handleResponse({ animalText: SOMETHING_BAD_IN_BACKEND });
-    }
+    await conversationManager.value?.processTextInteraction(text);
+    handleResponse();
   } catch (error: any) {
     uiState.statusMessage = "Errore: " + error.message;
   }
@@ -200,9 +192,7 @@ const handleTextSubmit = async () => {
   
 };
 
-const handleResponse = (response: { animalText: string }) => {
-  chatStore.addBotMessage(response.animalText);
-  conversationManager.value?.speak(response.animalText);
+const handleResponse = () => {
   uiState.statusMessage = CHAT_STATUS.SUCCESS;
 };
 

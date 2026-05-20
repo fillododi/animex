@@ -21,37 +21,11 @@
           </a>
         </p>
 
-        <!-- Camera -->
-        <ion-button router-link="/cam">
-          Recognition
-        </ion-button>
-        <ion-button @click="openCamera">Open Camera</ion-button>
-        <ion-button @click="screenshot">Snap pic</ion-button>
-        <div id="camera" class="camera-box" width="500" height="500"></div>
-        <div v-if="capturedImage" class="overlay">
-          <img :src="capturedImage" alt="CAMERA-ALT" />
-        </div>
         <!-- ChatBot -->
         <ion-button router-link="/chat">
           Entra nella Chat Animex!
         </ion-button>
-        <!-- Microphone -->
-        <ion-button
-          v-if="!isRecording"
-          color="danger"
-          style="margin-top: 12px;"
-          @click="startMic"
-        >
-          🎙 Test Microphone
-        </ion-button>
-        <ion-button
-          v-else
-          color="warning"
-          style="margin-top: 12px;"
-          @click="stopMic"
-        >
-          ⏹ Stop Recording
-        </ion-button>
+        
 
         <div v-if="audioUrl" style="margin-top: 16px;">
           <p style="color: #4caf50; margin-bottom: 8px;">
@@ -61,7 +35,7 @@
         </div>
 
         <!--Connection-->
-        <ion-button v-if="!connection.isActive()" @click="connect"> Connect to server </ion-button>
+        <ion-button v-if="!(connection && connection.isActive())" @click="connect"> Connect to server </ion-button>
 
         <p v-if="statusMessage">{{ statusMessage }}</p>
       </div>
@@ -70,76 +44,28 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, shallowRef } from 'vue'
+import { ref } from 'vue'
 import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButton } from '@ionic/vue'
-import {
-  browserRecorder,
-} from '@/services/SpeechService'
-import { DeviceCameraService } from '@/services/CameraService'
-import { ServerConnectionService } from '@/services/ConnectionService'
+import { useServiceStore } from '@/stores/serviceStore';
 
 const audioUrl = ref<string>('')
 const statusMessage = ref('')
-const isRecording = ref(false)
-const capturedImage = ref()
-const cam = shallowRef<DeviceCameraService | null>(null);
-const connection = new ServerConnectionService()
 
-onMounted(() => {
-  cam.value = new DeviceCameraService(200, 200, "camera");
-});
 
-async function openCamera() {
-  if (cam.value) {
-    cam.value.start();
-  }
-}
-
-async function screenshot() {
-  if (cam.value) {
-    const res = await cam.value.getCameraFrame();
-    capturedImage.value = `data:image/jpeg;base64,${res.value}`;
-  }
-}
-
-async function startMic() {
-  statusMessage.value = ''
-  audioUrl.value = ''
-
-  const granted = await browserRecorder.requestMicrophonePermission()
-  if (!granted) {
-    statusMessage.value = 'Microphone permission not granted.'
-    return
-  }
-
-  try {
-    browserRecorder.startRecording()
-    isRecording.value = true
-    statusMessage.value = 'Recording… press Stop when done.'
-  } catch (e: unknown) {
-    statusMessage.value = e instanceof Error? e.message: 'Failed to start recording.'
-    browserRecorder.releaseStream()
-  }
-}
-
-async function stopMic() {
-  try {
-    audioUrl.value = await browserRecorder.stopRecording()
-    statusMessage.value = ''
-  } catch {
-    statusMessage.value = 'Failed to stop recording.'
-  } finally {
-    isRecording.value = false
-    browserRecorder.releaseStream()
-  }
-}
-
+const serviceStore = useServiceStore();
+const connection = serviceStore.connectionService;
 async function connect() {
   statusMessage.value = "Starting Connection..."
-
-  connection.start().then(() => {
-      statusMessage.value = connection.isActive() ? "Connected to server" : "Failed to connect :("
-  })
+  if(!connection) {
+    statusMessage.value = "Connection service not initialized :(";
+    return;
+  }
+  try{
+    await connection.start()
+    statusMessage.value = connection.isActive() ? "Connected to server" : "Failed to connect :("
+  } catch (error) {
+    statusMessage.value = "Error connecting to server :(";
+  }
 }
 </script>
 

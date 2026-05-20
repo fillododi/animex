@@ -79,56 +79,6 @@ export class NativeTTSService {
     }
 }
 
-// =============================================================
-// 3. UTILITY TEST MICROPHONE BROWSER (OLD FLOW)
-// =============================================================
-export class BrowserAudioRecorder {
-    private mediaRecorder: MediaRecorder | null = null;
-    private audioChunks: Blob[] = [];
-    private audioStream: MediaStream | null = null;
 
-    public async requestMicrophonePermission(): Promise<boolean> {
-        try {
-            this.audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            return true;
-        } catch {
-            return false;
-        }
-    }
 
-    public startRecording(): void {
-        if (!this.audioStream) throw new Error('No audio stream available.');
-        this.audioChunks = [];
-        this.mediaRecorder = new MediaRecorder(this.audioStream);
-        this.mediaRecorder.ondataavailable = (event: BlobEvent) => {
-            if (event.data.size > 0) this.audioChunks.push(event.data);
-        };
-        this.mediaRecorder.start();
-    }
-
-    public stopRecording(): Promise<string> {
-        return new Promise((resolve, reject) => {
-            if (!this.mediaRecorder) return reject(new Error('No active recording.'));
-            this.mediaRecorder.onstop = () => {
-                const actualMimeType = this.mediaRecorder?.mimeType || 'audio/mp4';
-                const audioBlob = new Blob(this.audioChunks, { type: actualMimeType });
-                const audioUrl = URL.createObjectURL(audioBlob);
-                resolve(audioUrl);
-            };
-            this.mediaRecorder.stop();
-        });
-    }
-
-    public releaseStream(): void {
-        this.audioStream?.getTracks().forEach(track => track.stop());
-        this.audioStream = null;
-        this.mediaRecorder = null;
-        this.audioChunks = [];
-    }
-}
-
-// Export singleton instances of the services to be used across the app
-export const sttService = new NativeSTTService();
-export const ttsService = new NativeTTSService();
-export const browserRecorder = new BrowserAudioRecorder();
 

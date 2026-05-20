@@ -64,3 +64,5 @@ export class DeviceCameraService implements CameraService {
         return await CameraPreview.captureSample({quality: 100});
     }
 }
+//export const cameraService = new DeviceCameraService(window.innerWidth/2, window.innerHeight/2, 
+//    new Position(0, document.getElementById("camera")? document.getElementById("camera").getBoundingClientRect().top : 0));
