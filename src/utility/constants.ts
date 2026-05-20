@@ -4,7 +4,7 @@ export const STORAGE_CHAT_KEY = 'animex_chat_id';
 
 //Labels for answer an empty user input
 export const EMPTY_INPUT_ANIMAL_TEXT = "Scusa umano, c'era troppo rumore o hai parlato pianissimo. Puoi ripetere?";
-
+export const SOMETHING_BAD_IN_BACKEND = "Ops, sembra che ci sia un problema con il mio cervello elettronico. Riprova tra poco!";
 // Labels for chat status
 export const CHAT_STATUS = {
   IDLE: "Pronto ad ascoltare",

@@ -18,10 +18,15 @@ export const useChatStore = defineStore('chat', () => {
     messages.value.push(botMsg);
   }
 
+  function clearMessages() {
+    messages.value = [];
+  }
+
   return {
     //myUserId,
     messages,
     addUserMessage,
-    addBotMessage
+    addBotMessage,
+    clearMessages
   };
 });

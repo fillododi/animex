@@ -1,19 +1,19 @@
-import { sttService, ttsService } from '@/services/SpeechService';
+import { NativeSTTService, NativeTTSService, sttService, ttsService } from '@/services/SpeechService';
 import { fetchAnimalResponse } from '@/services/AIService';
 import { connectionService, type ConnectionService } from '@/services/ConnectionService';
+import { useConversationManagerStore } from '@/stores/conversationManagerStore';
+import { SOMETHING_BAD_IN_BACKEND } from '@/utility/constants';
 
 export class ConversationManager {
     
     private isListening = false;
     private currentTranscript = ""; 
-    private sessionId : string;
-    private readonly connectionService: ConnectionService;
-    constructor(conn: ConnectionService) {
-        this.sessionId = crypto.randomUUID();
-        this.connectionService = conn;
+
+    constructor() {
     }
 
     public async startInteraction(onReady?: () => void, onError?: (error: string) => void): Promise<void> {
+        this.currentTranscript = "";
         // Use the STT service instance to start listening
         await sttService.startListening(
             (transcript) => {
@@ -42,16 +42,19 @@ export class ConversationManager {
     public async resetTranscript(): Promise<void> {
         this.currentTranscript = "";
     }
-
+    // Since sendChatRequest directly load from chatStore, we do not need to pass the text as parameter
     public async processTextInteraction(text: string): Promise<{ animalText: string }> {
         try {
             const finalAnimalText = await fetchAnimalResponse(text);
+            //const stateStore = useConversationManagerStore();
+            //const currentSessionId = stateStore.sessionId;
+            //const finalAnimalText = await this.connectionService.sendChatRequest(currentSessionId);
             return {
                 animalText: finalAnimalText
             };
         } catch (error) {
             return {
-                animalText: "Roar! Ho un po' di mal di pancia al server... dammi un minuto e riprova!"
+                animalText: SOMETHING_BAD_IN_BACKEND
             };
         }
     }
@@ -60,5 +63,3 @@ export class ConversationManager {
         await ttsService.speak(text);
     }
 }
-
-export const conversationManager = new ConversationManager(connectionService);

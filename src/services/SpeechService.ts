@@ -51,7 +51,7 @@ export class NativeSTTService {
     }
 
     public async stopListening(): Promise<void> {
-        
+        await new Promise(resolve => setTimeout(resolve, 500));
         await SpeechRecognition.stop().catch(() => {});
         if (this.recognitionListener) {
             await this.recognitionListener.remove();

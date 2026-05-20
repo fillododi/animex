@@ -90,11 +90,11 @@
 </template>
 
 <script setup lang="ts">
-import { reactive} from 'vue';
+import { reactive, shallowRef, onMounted} from 'vue';
 import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButton, IonButtons, IonInput, IonFooter, onIonViewDidLeave, useIonRouter, alertController } from '@ionic/vue';
-import { conversationManager } from '@/modules/ConversationMgr';
+import { ConversationManager } from '@/modules/ConversationMgr';
 import { useChatStore } from '@/stores/chatStore';
-import { CHAT_STATUS, EMPTY_INPUT_ANIMAL_TEXT } from '@/utility/constants';
+import { CHAT_STATUS, EMPTY_INPUT_ANIMAL_TEXT, SOMETHING_BAD_IN_BACKEND } from '@/utility/constants';
 import { chevronBackOutline } from 'ionicons/icons';
 import { type ChatUIState} from '@/utility/Types';
 import { NativeSettings, AndroidSettings, IOSSettings } from 'capacitor-native-settings';
@@ -111,6 +111,11 @@ const uiState = reactive<ChatUIState>({
   inputText: "",
   statusMessage: CHAT_STATUS.IDLE
 });
+
+const conversationManager = shallowRef<ConversationManager | null>(null);
+onMounted(() => {
+  conversationManager.value = new ConversationManager();
+});
 // --- EVENT HANDLERS ---
 
 const handleStart = async () => {
@@ -119,7 +124,7 @@ const handleStart = async () => {
     uiState.isRecording = true;
     uiState.isMicReady = false;
     
-    await conversationManager.startInteraction(() => {
+    await conversationManager.value?.startInteraction(() => {
     uiState.isMicReady = true;
     uiState.statusMessage = CHAT_STATUS.RECORDING;
     }, (errorMessage) => {
@@ -148,12 +153,17 @@ const handleStop = async () => {
   uiState.isProcessing = true;
   uiState.statusMessage = CHAT_STATUS.THINKING;
   try {
-    await conversationManager.stopListening();
-    const userText = await conversationManager.getCurrentTranscript();
-    if(userText.trim()) {
+    await conversationManager.value?.stopListening();
+    const userText = await conversationManager.value?.getCurrentTranscript();
+    if(userText?.trim()) {
       chatStore.addUserMessage(userText);
-      const response = await conversationManager.processTextInteraction(userText);
-      handleResponse(response);
+      const response = await conversationManager.value?.processTextInteraction(userText);
+      if (response) {
+        handleResponse(response);
+      }
+      else {
+        handleResponse({ animalText: SOMETHING_BAD_IN_BACKEND });
+      }
     }
     else {
       handleResponse({ animalText: EMPTY_INPUT_ANIMAL_TEXT });
@@ -161,6 +171,7 @@ const handleStop = async () => {
   } catch (error: any) {
     uiState.statusMessage = "Errore: " + error.message;
   } finally {
+    await conversationManager.value?.resetTranscript();
     uiState.isProcessing = false;
   }
 };
@@ -173,8 +184,13 @@ const handleTextSubmit = async () => {
     uiState.statusMessage = CHAT_STATUS.THINKING;
   chatStore.addUserMessage(text);
   try {
-    const result = await conversationManager.processTextInteraction(text);
-    handleResponse(result);
+    const result = await conversationManager.value?.processTextInteraction(text);
+    if (result) {
+      handleResponse(result);
+    }
+    else {
+      handleResponse({ animalText: SOMETHING_BAD_IN_BACKEND });
+    }
   } catch (error: any) {
     uiState.statusMessage = "Errore: " + error.message;
   }
@@ -186,15 +202,15 @@ const handleTextSubmit = async () => {
 
 const handleResponse = (response: { animalText: string }) => {
   chatStore.addBotMessage(response.animalText);
-  conversationManager.speak(response.animalText);
+  conversationManager.value?.speak(response.animalText);
   uiState.statusMessage = CHAT_STATUS.SUCCESS;
 };
 
 
 onIonViewDidLeave(async () => {
   if(uiState.isRecording) {
-    await conversationManager.stopListening();
-    await conversationManager.resetTranscript();
+    await conversationManager.value?.stopListening();
+    await conversationManager.value?.resetTranscript();
     uiState.isRecording = false;
     uiState.statusMessage = CHAT_STATUS.IDLE;
   } 
