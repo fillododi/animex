@@ -66,6 +66,7 @@ export class NativeSTTService {
 // 2. TEXT-TO-SPEECH (NATIVE CAPACITOR PLUGIN)
 // =============================================================
 export class NativeTTSService {
+    
     public async speak(text: string): Promise<void> {
         await TextToSpeech.speak({
             text,
@@ -76,6 +77,10 @@ export class NativeTTSService {
             category: 'ambient',
             queueStrategy: 1
         });
+    }
+
+    public async stopSpeaking(): Promise<void> {
+        await TextToSpeech.stop();
     }
 }
 

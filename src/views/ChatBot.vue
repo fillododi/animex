@@ -204,6 +204,7 @@ onIonViewDidLeave(async () => {
     uiState.isRecording = false;
     uiState.statusMessage = CHAT_STATUS.IDLE;
   } 
+  await conversationManager.value?.stopSpeaking();
 });
 
 const showSettingsAlert = async () => {

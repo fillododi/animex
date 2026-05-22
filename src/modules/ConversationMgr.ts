@@ -61,4 +61,9 @@ export class ConversationManager {
         const ttsService = useServiceStore().ttsService
         await ttsService?.speak(text);
     }
+
+    public async stopSpeaking(): Promise<void> {
+        const ttsService = useServiceStore().ttsService
+        await ttsService?.stopSpeaking();
+    }
 }
