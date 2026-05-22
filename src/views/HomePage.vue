@@ -25,6 +25,10 @@
         <ion-button router-link="/chat">
           Entra nella Chat Animex!
         </ion-button>
+        <!-- Recognition -->
+        <ion-button router-link="/cam">
+          Inizia riconoscimento!
+        </ion-button>
         
 
         <div v-if="audioUrl" style="margin-top: 16px;">

@@ -22,7 +22,7 @@
         <ion-button 
           expand="block" 
           @click="handleStart" 
-          :disabled="uiState.isRecording || uiState.isProcessing"
+          :disabled="uiState.isRecording"
           color="primary"
         >
           BEGIN RECOGNITION
@@ -31,7 +31,7 @@
         <ion-button 
           expand="block" 
           @click="handleStop" 
-          :disabled="!uiState.isRecording || uiState.isProcessing"
+          :disabled="!uiState.isRecording"
           color="danger"
           style="margin-top: 15px;"
         >
@@ -40,7 +40,7 @@
       </div>
 
       <div id="camera" class="camera-box"></div>
-      <div v-if="sessionStore.recognizedAnimal">
+      <div>
         Recog received: {{ sessionStore.recognizedAnimal }}
       </div>
     </ion-content>
@@ -69,8 +69,6 @@ onMounted(() => {
 const ionRouter = useIonRouter();
 const uiState = reactive({
   isRecording: false,
-  isProcessing: false,
-  inputText: "",
   statusMessage: ""
 });
 
@@ -90,10 +88,10 @@ const handleStart = async () => {
 const handleStop = async () => {
   uiState.statusMessage = "Stopping recognition manager";
   
-  await recog.stopRecognitionLoop()
+  await recog.stopRecognitionLoop();
 
-  uiState.isRecording = false
-  uiState.statusMessage = "Stopped"
+  uiState.isRecording = false;
+  uiState.statusMessage = "Stopped";
 };
 
 
@@ -101,6 +99,7 @@ onIonViewDidLeave(async () => {
   if(uiState.isRecording) {
     uiState.isRecording = false;
     uiState.statusMessage = "";
+    recog.stopRecognitionLoop();
   } 
 });
 

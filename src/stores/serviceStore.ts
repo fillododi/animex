@@ -4,6 +4,7 @@ import { DeviceCameraService, type CameraService } from '@/services/CameraServic
 import { ServerConnectionService, type ConnectionService } from '@/services/ConnectionService';
 import { NativeSTTService, NativeTTSService } from '@/services/SpeechService';
 import { Position } from '@/utility/Position';
+import { Capacitor } from '@capacitor/core';
 
 export const useServiceStore = defineStore('service', () => {
   
@@ -15,11 +16,20 @@ export const useServiceStore = defineStore('service', () => {
 // --- ACTIONS --- //
     
     function setCameraService(cameraRef: HTMLElement | null) {
-        cameraService.value = new DeviceCameraService(
+        if (Capacitor.getPlatform() == "web") {
+            cameraService.value = new DeviceCameraService(
+            window.innerWidth/2, 
+            window.innerHeight/2, 
+            cameraRef ? cameraRef?.id : ""
+            );  
+        }
+        else {
+            cameraService.value = new DeviceCameraService(
             window.innerWidth/2, 
             window.innerHeight/2, 
             new Position(0, cameraRef? cameraRef.getBoundingClientRect().top : 0)
-        );
+            );
+        }
     }
 
     function setConnectionService(){
