@@ -8,7 +8,7 @@ export const useChatStore = defineStore('chat', () => {
 
   function addUserMessage(text: string) {
     // Use markRaw to prevent Vue from making the Message instance reactive
-    const userMsg = markRaw({ content: text, role: "user" as MessageRole, timestamp: new Date(), ok: true });
+    const userMsg = markRaw({ content: text, role: "user" as MessageRole, timestamp: new Date(), ok: false });
     messages.value.push(userMsg);
   }
 
@@ -31,12 +31,22 @@ export const useChatStore = defineStore('chat', () => {
     messages.value = [];
   }
 
+  function setOk(ok: boolean) {
+    if(messages.value.length > 0){
+      const lastMessage = messages.value[messages.value.length - 1];
+      if(lastMessage?.role === "user"){
+        lastMessage.ok = ok;
+      }
+    }
+  }
+
   return {
     messages,
     addUserMessage,
     addBotMessage,
     addEmptyResponse,
     addErrorResponse,
-    clearMessages
+    clearMessages,
+    setOk
   };
 });

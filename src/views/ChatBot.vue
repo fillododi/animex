@@ -179,7 +179,7 @@ const handleTextSubmit = async () => {
   if (!text || uiState.isProcessing) return;
   uiState.inputText = ""; 
   uiState.isProcessing = true;
-    uiState.statusMessage = CHAT_STATUS.THINKING;
+  uiState.statusMessage = CHAT_STATUS.THINKING;
   try {
     await conversationManager.value?.processTextInteraction(text);
     handleResponse();

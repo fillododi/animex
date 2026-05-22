@@ -2,6 +2,7 @@ import type { Service } from "./Service"
 import { assert } from "@/utility/assert"
 import { useChatStore } from "@/stores/chatStore"
 import type { RecognitionDTO } from "@/utility/Types"
+import { useSessionStore } from "@/stores/sessionStore"
 
 export interface ConnectionService extends Service {
     
@@ -55,12 +56,13 @@ export class ServerConnectionService implements ConnectionService {
 
     async sendRecognitionRequest(sessionId: string, frameId: number, visionFrame: string): Promise<RecognitionDTO | null> {
         assert(this.active, "The connection service isn't active!")
+        const recognizedAnimal = useSessionStore().recognizedAnimal
         const body = {
             imageBase64: `data:image/jpeg;base64,${visionFrame}`,
             mimeType: 'image/jpeg',
             clientFrameId: frameId.toString(),
             sessionId: sessionId,
-            //previousAnimalId
+            ...(recognizedAnimal ? {previousAnimalId: recognizedAnimal.id} : {})
         }
         const request: RequestInfo = new Request(`${this.url}/api/v1/vision/identify`, {
             method: 'POST',
@@ -80,9 +82,11 @@ export class ServerConnectionService implements ConnectionService {
         const chatStore = useChatStore()
         chatStore.addUserMessage(text)
         assert(this.active, "The connection service isn't active!")
+        const sessionStore = useSessionStore()
+        const recognizedAnimal = sessionStore.recognizedAnimal
         const body = {
             sessionId: sessionId,
-            animalId: "lion",
+            animalId: recognizedAnimal?.id || "unknown",
             history: chatStore.messages.filter(msg => msg.ok).map(msg => ({role: msg.role, text: msg.content})),
             message: text
         }
@@ -95,6 +99,9 @@ export class ServerConnectionService implements ConnectionService {
             const response = await fetch(request)
             const res = await response.json()
             const message = res.data.answer as string
+            if(message && message.trim() != ""){
+                chatStore.setOk(true)
+            }
             chatStore.addBotMessage(message)
             return res.data.answer as string
         }catch(err){
