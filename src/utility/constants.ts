@@ -14,4 +14,12 @@ export const CHAT_STATUS = {
   DENIED_SOFT: "❌ Permesso negato. Scrivi il messaggio usando la tastiera oppure clicca su 'Registra' e concedi l'accesso al microfono.",
   DENIED_HARD: "⚠️  In attesa dei permessi del microfono",
   SETTINGS_ERROR: "❌ Errore nell'apertura delle impostazioni.",
+  QUIZ_LOADING: "⏳ Caricamento quiz in corso...",
+  QUIZ_LOADED: "✅ Quiz pronto! Scegli la risposta corretta.",
+  NO_QUIZ_AVAILABLE: "❌ Nessun quiz disponibile per questo animale."
+} as const;
+// Labels for active quiz status
+export const QUIZ_STATUS = {
+  ACTIVE: "active",
+  INACTIVE: "inactive",
 } as const;

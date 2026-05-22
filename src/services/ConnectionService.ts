@@ -1,8 +1,9 @@
 import type { Service } from "./Service"
 import { assert } from "@/utility/assert"
 import { useChatStore } from "@/stores/chatStore"
-import type { RecognitionDTO } from "@/utility/Types"
+import type { MessageRole, QuizQuestionDTO, QuizValidationResultDTO, RecognitionDTO } from "@/utility/Types"
 import { useSessionStore } from "@/stores/sessionStore"
+import { type DifficultyLevel } from "@/utility/Types"
 
 export interface ConnectionService extends Service {
     
@@ -16,6 +17,8 @@ export interface ConnectionService extends Service {
      */
     sendRecognitionRequest(sessionId: string, frameId: number, visionFrame: string): Promise<RecognitionDTO | null>
     sendChatRequest(sessionId: string, text: string): Promise<string>
+    sendQuizNextRequest(sessionId: string, animalId: string, difficulty: DifficultyLevel): Promise<QuizQuestionDTO | null>
+    sendQuizValidateRequest(sessionId: string, animalId: string, questionId: string, answer: string, prompt: string): Promise<QuizValidationResultDTO | null>
     //sendARRequest
 }
 
@@ -87,7 +90,7 @@ export class ServerConnectionService implements ConnectionService {
         const body = {
             sessionId: sessionId,
             animalId: recognizedAnimal?.id || "lion",
-            history: chatStore.messages.filter(msg => msg.ok).map(msg => ({role: msg.role, text: msg.content})),
+            history: chatStore.messages.filter((msg: { ok: boolean }) => msg.ok).map((msg: { role: MessageRole; content: string }) => ({role: msg.role, text: msg.content})),
             message: text
         }
         const request: RequestInfo = new Request(`${this.url}/api/v1/chat`, {
@@ -115,5 +118,50 @@ export class ServerConnectionService implements ConnectionService {
         //and savannahs. They like open places where they can hunt and rest
         //together in prides.", "source": "gemini", "animalId": "lion",
         
+    }
+
+    async sendQuizNextRequest(sessionId: string, animalId: string, difficulty: DifficultyLevel): Promise<QuizQuestionDTO | null> {
+        const body = {
+            sessionId,
+            animalId,
+            difficulty,
+            mode : "animal"
+        };
+        const request = new Request(`${this.url}/api/v1/quiz/next`, {
+            method: 'POST',
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify(body)
+        });
+        try {
+            const response = await fetch(request);
+            const res = await response.json();
+            return res.data.question ; 
+        } catch(err) {
+            console.error(err);
+            return null;
+        }
+    }
+
+    async sendQuizValidateRequest(sessionId: string, animalId: string, questionId: string, answer: string, prompt: string): Promise<QuizValidationResultDTO | null> {
+        const body = {
+            sessionId: sessionId,
+            animalId: animalId,
+            questionId: questionId,
+            answer: answer,
+            prompt: prompt,
+        };
+        const request = new Request(`${this.url}/api/v1/quiz/validate`, {
+            method: 'POST',
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify(body)
+        });
+        try {
+            const response = await fetch(request);
+            const res = await response.json();
+            return res.data ; 
+        } catch(err) {
+            console.error(err);
+            return null;
+        }
     }
 }

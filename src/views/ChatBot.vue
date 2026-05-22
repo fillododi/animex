@@ -37,6 +37,15 @@
         >
           INTERROMPI
         </ion-button>
+        <ion-button 
+          expand="block" 
+          @click="handleQuizRequest" 
+          :disabled="uiState.isRecording || uiState.isProcessing "
+          color="secondary"
+          style="margin-top: 15px;"
+        >
+          FAMMI UN QUIZ
+        </ion-button>
       </div>
 
       <div class="chat-container">
@@ -55,6 +64,34 @@
             <span class="time-stamp">
               {{ msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }}
             </span>
+          </div>
+        </div>
+        <div v-if="chatStore.activeQuestion" class="message-wrapper wrapper-left animate-pop">
+          <div class="message-bubble animal-bubble quiz-bubble">
+      
+            <p><strong>🧩 Quiz:</strong> {{ chatStore.activeQuestion.prompt }}</p>
+      
+            <div v-if="chatStore.activeQuestion.choices && chatStore.activeQuestion.choices.length > 0" class="inline-quiz-options">
+              <ion-button 
+                v-for="(choice, i) in chatStore.activeQuestion.choices" 
+                :key="i"
+                size="small"
+                fill="outline"
+                class="quiz-choice-btn"
+                @click="handleQuizAnswer(choice)"
+                :disabled="uiState.isProcessing"
+              >
+                {{ choice }}
+              </ion-button>
+            </div>
+
+            <div v-else>
+              <p class="info-text">Rispondi scrivendo o parlando...</p>
+            </div>
+      
+            <ion-button size="small" fill="clear" color="medium" @click="chatStore.clearQuiz()">
+              Annulla
+            </ion-button>
           </div>
         </div>
       </div>
@@ -90,7 +127,7 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, shallowRef, onMounted} from 'vue';
+import { reactive, shallowRef, onMounted, ref} from 'vue';
 import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButton, IonButtons, IonInput, IonFooter, onIonViewDidLeave, useIonRouter, alertController } from '@ionic/vue';
 import { ConversationManager } from '@/modules/ConversationMgr';
 import { useChatStore } from '@/stores/chatStore';
@@ -101,7 +138,6 @@ import { NativeSettings, AndroidSettings, IOSSettings } from 'capacitor-native-s
 // --- CHAT INITIALIZATION ---
 
 const chatStore = useChatStore();
-
 // --- UI STATE VARIABLES ---
 const ionRouter = useIonRouter();
 const uiState = reactive<ChatUIState>({
@@ -109,7 +145,7 @@ const uiState = reactive<ChatUIState>({
   isMicReady: false,
   isProcessing: false,
   inputText: "",
-  statusMessage: CHAT_STATUS.IDLE
+  statusMessage: CHAT_STATUS.IDLE,
 });
 
 const conversationManager = shallowRef<ConversationManager | null>(null);
@@ -177,7 +213,11 @@ const handleStop = async () => {
 const handleTextSubmit = async () => {
   const text = uiState.inputText.trim();
   if (!text || uiState.isProcessing) return;
-  uiState.inputText = ""; 
+  uiState.inputText = "";
+  if(chatStore.activeQuestion) {
+    handleQuizAnswer(text);
+    return;
+  }
   uiState.isProcessing = true;
   uiState.statusMessage = CHAT_STATUS.THINKING;
   try {
@@ -194,6 +234,52 @@ const handleTextSubmit = async () => {
 
 const handleResponse = () => {
   uiState.statusMessage = CHAT_STATUS.SUCCESS;
+};
+
+const handleQuizRequest = async () => {
+  uiState.isProcessing = true;
+  uiState.statusMessage = CHAT_STATUS.THINKING;
+  try {
+    // Ask the backend for a quiz question related to the currently recognized animal
+    const question = await conversationManager.value?.requestQuiz();
+    // If a question is returned, speak the prompt and choices
+    if (question) {
+      uiState.statusMessage = CHAT_STATUS.QUIZ_LOADED;
+      await conversationManager.value?.speak(question.prompt);
+      for (const choice of question.choices) {
+        await conversationManager.value?.speak(choice);
+      }
+    } else {
+      console.warn("[ChatBot] Nessun quiz disponibile al momento.");
+      uiState.statusMessage = CHAT_STATUS.NO_QUIZ_AVAILABLE;
+    }
+  } catch (error: any) {
+    uiState.statusMessage = "Errore quiz: " + error.message;
+  } finally {
+    uiState.isProcessing = false;
+  }
+};
+
+const handleQuizAnswer = async (selectedAnswer: string) => {
+  if (!chatStore.activeQuestion) return;
+  
+  uiState.isProcessing = true;
+  uiState.statusMessage = CHAT_STATUS.THINKING;
+
+  try {
+    await conversationManager.value?.validateQuiz(
+      chatStore.activeQuestion.id,
+      selectedAnswer,
+      chatStore.activeQuestion.prompt,
+      chatStore.activeQuestion.choices
+    );
+    uiState.statusMessage = CHAT_STATUS.SUCCESS;
+
+  } catch (error: any) {
+    uiState.statusMessage = "Errore validazione: " + error.message;
+  } finally {
+    uiState.isProcessing = false;
+  }
 };
 
 
@@ -323,5 +409,41 @@ const openSettings = async () => {
   align-self: flex-end;
   margin-top: 4px;
   margin-left: 15px;
+}
+.quiz-bubble {
+  border: 2px solid #3880ff; /* Dà un bordo colorato per far capire che è un quiz */
+  min-width: 250px;
+}
+
+.inline-quiz-options {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 12px;
+  margin-bottom: 6px;
+}
+
+.quiz-choice-btn {
+  --border-radius: 8px;
+  --border-color: #3880ff;
+  --color: #3880ff;
+  margin: 0;
+  text-transform: none; /* Evita tutto maiuscolo per le risposte lunghe */
+}
+
+.info-text {
+  font-size: 13px;
+  color: #666;
+  font-style: italic;
+  margin-top: 10px;
+}
+
+.animate-pop {
+  animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes popIn {
+  from { opacity: 0; transform: scale(0.9) translateY(10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
 }
 </style>

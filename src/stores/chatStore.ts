@@ -1,10 +1,11 @@
 import { defineStore } from 'pinia';
 import { ref, markRaw } from 'vue';
-import { type Message, type MessageRole } from '@/utility/Types';
+import { type Message, type MessageRole, type QuizQuestionDTO } from '@/utility/Types';
 import { EMPTY_INPUT_ANIMAL_TEXT, SOMETHING_BAD_IN_BACKEND } from '@/utility/constants';
 
 export const useChatStore = defineStore('chat', () => {
   const messages = ref<Message[]>([]); 
+   const activeQuestion = ref<QuizQuestionDTO | null>(null);
 
   function addUserMessage(text: string) {
     // Use markRaw to prevent Vue from making the Message instance reactive
@@ -31,6 +32,15 @@ export const useChatStore = defineStore('chat', () => {
     messages.value = [];
   }
 
+  function setActiveQuestion(question: QuizQuestionDTO) {
+        activeQuestion.value = question;
+    }
+
+
+    function clearQuiz() {
+        activeQuestion.value = null;
+    }
+
   function setOk(ok: boolean) {
     if(messages.value.length > 0){
       const lastMessage = messages.value[messages.value.length - 1];
@@ -42,11 +52,14 @@ export const useChatStore = defineStore('chat', () => {
 
   return {
     messages,
+    activeQuestion,
     addUserMessage,
     addBotMessage,
     addEmptyResponse,
     addErrorResponse,
     clearMessages,
-    setOk
+    setOk,
+    setActiveQuestion,
+    clearQuiz
   };
 });

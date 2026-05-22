@@ -33,3 +33,24 @@ export type Message = {
     timestamp: Date;
     ok: boolean;
 };
+
+export type Quizstatus = "active" | "inactive";
+
+export type QuizQuestionDTO = {
+    id: string;
+    type: string;
+    prompt: string;
+    choices: string[];
+    correctAnswer?: string;
+    trueOrFalseAnswer?: boolean;
+    suggest?: string;
+}
+
+export type DifficultyLevel = "easy" | "medium" ;
+
+export type QuizValidationResultDTO = {
+    correct: boolean;
+    score: number;
+    feedback: string;
+    //nextAction: "nextQuestion" | "retry" | "endQuiz";
+}
