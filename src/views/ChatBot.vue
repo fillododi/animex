@@ -20,32 +20,67 @@
 
       <div class="controls-container">
         <ion-button 
+          v-if="!uiState.isRecording"
           expand="block" 
           @click="handleStart" 
-          :disabled="uiState.isRecording || uiState.isProcessing"
+          :disabled="uiState.isProcessing"
           color="primary"
         >
           REGISTRA
         </ion-button>
 
         <ion-button 
+          v-else
           expand="block" 
           @click="handleStop" 
-          :disabled="!uiState.isRecording || !uiState.isMicReady || uiState.isProcessing"
+          :disabled="!uiState.isMicReady || uiState.isProcessing"
           color="danger"
           style="margin-top: 15px;"
         >
           INTERROMPI
         </ion-button>
+
         <ion-button 
+          v-if="!uiState.showQuizOptions"
           expand="block" 
-          @click="handleQuizRequest" 
-          :disabled="uiState.isRecording || uiState.isProcessing "
+          @click="uiState.showQuizOptions = true" 
+          :disabled="uiState.isRecording || uiState.isProcessing || chatStore.activeQuestion != null "
           color="secondary"
           style="margin-top: 15px;"
         >
           FAMMI UN QUIZ
         </ion-button>
+
+        <div v-else style="margin-top: 15px; display: flex; gap: 10px; align-items: center;">
+          <ion-button 
+            expand="block" 
+            @click="handleQuizRequest('easy')" 
+            :disabled="uiState.isProcessing"
+            color="success"
+            style="flex: 1; margin: 0;"
+          >
+            FACILE
+          </ion-button>
+          
+          <ion-button 
+            expand="block" 
+            @click="handleQuizRequest('medium')" 
+            :disabled="uiState.isProcessing"
+            color="warning"
+            style="flex: 1; margin: 0;"
+          >
+            MEDIO
+          </ion-button>
+
+          <ion-button 
+            fill="clear" 
+            color="medium" 
+            @click="uiState.showQuizOptions = false"
+            style="margin: 0;"
+          >
+            X
+          </ion-button>
+        </div>
       </div>
 
       <div class="chat-container">
@@ -78,7 +113,7 @@
                 size="small"
                 fill="outline"
                 class="quiz-choice-btn"
-                @click="handleQuizAnswer(choice)"
+                @click="handleTextSubmit(choice)"
                 :disabled="uiState.isProcessing"
               >
                 {{ choice }}
@@ -127,13 +162,13 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, shallowRef, onMounted, ref} from 'vue';
+import { reactive, shallowRef, onMounted } from 'vue';
 import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButton, IonButtons, IonInput, IonFooter, onIonViewDidLeave, useIonRouter, alertController } from '@ionic/vue';
 import { ConversationManager } from '@/modules/ConversationMgr';
 import { useChatStore } from '@/stores/chatStore';
-import { CHAT_STATUS, EMPTY_INPUT_ANIMAL_TEXT } from '@/utility/constants';
+import { CHAT_STATUS } from '@/utility/constants';
 import { chevronBackOutline } from 'ionicons/icons';
-import { type ChatUIState} from '@/utility/Types';
+import { type ChatUIState, type DifficultyLevel} from '@/utility/Types';
 import { NativeSettings, AndroidSettings, IOSSettings } from 'capacitor-native-settings';
 // --- CHAT INITIALIZATION ---
 
@@ -146,6 +181,8 @@ const uiState = reactive<ChatUIState>({
   isProcessing: false,
   inputText: "",
   statusMessage: CHAT_STATUS.IDLE,
+  quizStatus: false,
+  showQuizOptions: false,
 });
 
 const conversationManager = shallowRef<ConversationManager | null>(null);
@@ -161,23 +198,23 @@ const handleStart = async () => {
     uiState.isMicReady = false;
     
     await conversationManager.value?.startInteraction(() => {
-    uiState.isMicReady = true;
-    uiState.statusMessage = CHAT_STATUS.RECORDING;
-    }, (errorMessage) => {
-      if (errorMessage === 'NEEDS_SETTINGS') {
-        showSettingsAlert();
-        // This if is to prevent overwriting the alert message if the user has already been prompted
-        if(uiState.statusMessage != CHAT_STATUS.DENIED_HARD){
-          uiState.statusMessage = CHAT_STATUS.DENIED_HARD;
+      uiState.isMicReady = true;
+      uiState.statusMessage = CHAT_STATUS.RECORDING;
+      }, (errorMessage) => {
+        if (errorMessage === 'NEEDS_SETTINGS') {
+          showSettingsAlert();
+          // This if is to prevent overwriting the alert message if the user has already been prompted
+          if(uiState.statusMessage != CHAT_STATUS.DENIED_HARD){
+            uiState.statusMessage = CHAT_STATUS.DENIED_HARD;
+          }
+        } else if (errorMessage === 'FIRST_DENIAL') {
+          uiState.statusMessage = CHAT_STATUS.DENIED_SOFT;
+        } else {
+          uiState.statusMessage = "Errore: " + errorMessage;
         }
-      } else if (errorMessage === 'FIRST_DENIAL') {
-        uiState.statusMessage = CHAT_STATUS.DENIED_SOFT;
-      } else {
-        uiState.statusMessage = "Errore: " + errorMessage;
-      }
-      uiState.isRecording = false;
-      uiState.isMicReady = false;
-    });
+        uiState.isRecording = false;
+        uiState.isMicReady = false;
+      });
     
   } catch (error: any) {
     uiState.statusMessage = "Errore: " + error.message;
@@ -185,23 +222,15 @@ const handleStart = async () => {
 };
 
 const handleStop = async () => {
+  await conversationManager.value?.stopSpeaking();
   uiState.isRecording = false;
   uiState.isProcessing = true;
   uiState.statusMessage = CHAT_STATUS.THINKING;
   try {
     await conversationManager.value?.stopListening();
-    const userText = await conversationManager.value?.getCurrentTranscript();
-    if(userText?.trim()) {
-      const response = await conversationManager.value?.processTextInteraction(userText);
-      if (response) {
-        handleResponse();
-      }
-    }
-    else {
-      chatStore.addEmptyResponse();
-      await conversationManager.value?.speak(EMPTY_INPUT_ANIMAL_TEXT);
-    }
-    uiState.statusMessage = CHAT_STATUS.SUCCESS;
+    const userText = conversationManager.value ? await conversationManager.value?.getCurrentTranscript() : "";
+    await conversationManager.value?.processTextInteraction(userText)? 
+    uiState.statusMessage = CHAT_STATUS.SUCCESS : uiState.statusMessage = CHAT_STATUS.IDLE;
   } catch (error: any) {
     uiState.statusMessage = "Errore: " + error.message;
   } finally {
@@ -210,70 +239,54 @@ const handleStop = async () => {
   }
 };
 
-const handleTextSubmit = async () => {
+const handleTextSubmit = async (selectedAnswer?: string) => {
   const text = uiState.inputText.trim();
-  if (!text || uiState.isProcessing) return;
+  await conversationManager.value?.stopSpeaking();
+  if ((!text && !selectedAnswer) || uiState.isProcessing) return;
   uiState.inputText = "";
-  if(chatStore.activeQuestion) {
-    handleQuizAnswer(text);
-    return;
-  }
   uiState.isProcessing = true;
   uiState.statusMessage = CHAT_STATUS.THINKING;
   try {
-    await conversationManager.value?.processTextInteraction(text);
-    handleResponse();
+    if(uiState.quizStatus && selectedAnswer) {
+      await conversationManager.value?.validateQuiz(selectedAnswer);
+    }else {
+      await conversationManager.value?.processTextInteraction(text);
+    }
+     uiState.statusMessage = CHAT_STATUS.SUCCESS;  
   } catch (error: any) {
     uiState.statusMessage = "Errore: " + error.message;
   }
    finally {
     uiState.isProcessing = false;
+    uiState.quizStatus = false;
   }
   
 };
 
-const handleResponse = () => {
-  uiState.statusMessage = CHAT_STATUS.SUCCESS;
-};
-
-const handleQuizRequest = async () => {
+const handleQuizRequest = async (difficulty: DifficultyLevel) => {
+  uiState.showQuizOptions = false;
   uiState.isProcessing = true;
   uiState.statusMessage = CHAT_STATUS.THINKING;
   try {
-    // Ask the backend for a quiz question related to the currently recognized animal
-    const question = await conversationManager.value?.requestQuiz();
-    // If a question is returned, speak the prompt and choices
-    if (question) {
-      uiState.statusMessage = CHAT_STATUS.QUIZ_LOADED;
-      await conversationManager.value?.speak(question.prompt);
-      for (const choice of question.choices) {
-        await conversationManager.value?.speak(choice);
-      }
-    } else {
-      console.warn("[ChatBot] Nessun quiz disponibile al momento.");
-      uiState.statusMessage = CHAT_STATUS.NO_QUIZ_AVAILABLE;
-    }
+    uiState.quizStatus = conversationManager.value ? await conversationManager.value.requestQuiz(difficulty) : false;
+    uiState.quizStatus ? uiState.statusMessage = CHAT_STATUS.QUIZ_LOADED : uiState.statusMessage = CHAT_STATUS.NO_QUIZ_AVAILABLE;
   } catch (error: any) {
     uiState.statusMessage = "Errore quiz: " + error.message;
   } finally {
     uiState.isProcessing = false;
   }
 };
-
+/*
 const handleQuizAnswer = async (selectedAnswer: string) => {
-  if (!chatStore.activeQuestion) return;
+  if (!uiState.quizStatus) return;
   
   uiState.isProcessing = true;
   uiState.statusMessage = CHAT_STATUS.THINKING;
 
   try {
-    await conversationManager.value?.validateQuiz(
-      chatStore.activeQuestion.id,
-      selectedAnswer,
-      chatStore.activeQuestion.prompt,
-      chatStore.activeQuestion.choices
-    );
+    await conversationManager.value?.validateQuiz(selectedAnswer);
     uiState.statusMessage = CHAT_STATUS.SUCCESS;
+    uiState.quizStatus = false;
 
   } catch (error: any) {
     uiState.statusMessage = "Errore validazione: " + error.message;
@@ -281,7 +294,7 @@ const handleQuizAnswer = async (selectedAnswer: string) => {
     uiState.isProcessing = false;
   }
 };
-
+*/
 
 onIonViewDidLeave(async () => {
   if(uiState.isRecording) {

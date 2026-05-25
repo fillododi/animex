@@ -6,6 +6,8 @@ export interface ChatUIState {
   isProcessing: boolean;
   inputText: string;
   statusMessage?: string;
+  quizStatus: boolean;
+  showQuizOptions: boolean;
 }
 
 export type ChatStatus = typeof CHAT_STATUS[keyof typeof CHAT_STATUS] | `Errore: ${string}`;
@@ -34,8 +36,6 @@ export type Message = {
     ok: boolean;
 };
 
-export type Quizstatus = "active" | "inactive";
-
 export type QuizQuestionDTO = {
     id: string;
     type: string;
@@ -52,5 +52,4 @@ export type QuizValidationResultDTO = {
     correct: boolean;
     score: number;
     feedback: string;
-    //nextAction: "nextQuestion" | "retry" | "endQuiz";
 }
