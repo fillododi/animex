@@ -5,7 +5,8 @@ import { EMPTY_INPUT_ANIMAL_TEXT, SOMETHING_BAD_IN_BACKEND } from '@/utility/con
 
 export const useChatStore = defineStore('chat', () => {
   const messages = ref<Message[]>([]); 
-   const activeQuestion = ref<QuizQuestionDTO | null>(null);
+  const activeQuestion = ref<QuizQuestionDTO | null>(null);
+  const oldQuestions = ref<QuizQuestionDTO[]>([]);
 
   function addUserMessage(text: string) {
     // Use markRaw to prevent Vue from making the Message instance reactive
@@ -37,9 +38,12 @@ export const useChatStore = defineStore('chat', () => {
     }
 
 
-    function clearQuiz() {
-        activeQuestion.value = null;
+  function clearQuiz() {
+    if(activeQuestion.value){
+      oldQuestions.value.push(activeQuestion.value);
     }
+    activeQuestion.value = null;
+  }
 
   function setOk(ok: boolean) {
     if(messages.value.length > 0){

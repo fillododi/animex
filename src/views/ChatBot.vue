@@ -106,7 +106,7 @@
       
             <p><strong>🧩 Quiz:</strong> {{ chatStore.activeQuestion.prompt }}</p>
       
-            <div v-if="chatStore.activeQuestion.choices && chatStore.activeQuestion.choices.length > 0" class="inline-quiz-options">
+            <div v-if="chatStore.activeQuestion.type === 'multiple_choice' && chatStore.activeQuestion.choices && chatStore.activeQuestion.choices.length > 0" class="inline-quiz-options">              
               <ion-button 
                 v-for="(choice, i) in chatStore.activeQuestion.choices" 
                 :key="i"
@@ -120,7 +120,28 @@
               </ion-button>
             </div>
 
-            <div v-else>
+            <div v-else-if="chatStore.activeQuestion.type === 'yes_no'" class="inline-quiz-options">
+              <ion-button 
+                size="small"
+                fill="outline"
+                class="quiz-choice-btn"
+                @click="handleTextSubmit('Vero')"
+                :disabled="uiState.isProcessing"
+              >
+                Vero
+              </ion-button>
+              <ion-button 
+                size="small"
+                fill="outline"
+                class="quiz-choice-btn"
+                @click="handleTextSubmit('Falso')"
+                :disabled="uiState.isProcessing"
+              >
+                Falso
+              </ion-button>
+            </div>
+
+            <div v-else >
               <p class="info-text">Rispondi scrivendo o parlando...</p>
             </div>
       
@@ -229,26 +250,34 @@ const handleStop = async () => {
   try {
     await conversationManager.value?.stopListening();
     const userText = conversationManager.value ? await conversationManager.value?.getCurrentTranscript() : "";
-    await conversationManager.value?.processTextInteraction(userText)? 
-    uiState.statusMessage = CHAT_STATUS.SUCCESS : uiState.statusMessage = CHAT_STATUS.IDLE;
+    if(uiState.quizStatus){
+      await conversationManager.value?.validateQuiz(userText)? 
+      uiState.statusMessage = CHAT_STATUS.SUCCESS : uiState.statusMessage = CHAT_STATUS.NO_QUIZ_AVAILABLE;
+    } 
+    else{
+      await conversationManager.value?.processTextInteraction(userText)? 
+      uiState.statusMessage = CHAT_STATUS.SUCCESS : uiState.statusMessage = CHAT_STATUS.IDLE;
+    }
   } catch (error: any) {
     uiState.statusMessage = "Errore: " + error.message;
   } finally {
     await conversationManager.value?.resetTranscript();
     uiState.isProcessing = false;
+    uiState.quizStatus = false;
   }
 };
 
-const handleTextSubmit = async (selectedAnswer?: string) => {
-  const text = uiState.inputText.trim();
+const handleTextSubmit = async (selectedAnswer?: string | Event) => {
+  const clickedAnswer = typeof selectedAnswer === 'string' ? selectedAnswer : "";
+  const text = clickedAnswer || uiState.inputText.trim();
   await conversationManager.value?.stopSpeaking();
-  if ((!text && !selectedAnswer) || uiState.isProcessing) return;
+  if (!text  || uiState.isProcessing) return;
   uiState.inputText = "";
   uiState.isProcessing = true;
   uiState.statusMessage = CHAT_STATUS.THINKING;
   try {
-    if(uiState.quizStatus && selectedAnswer) {
-      await conversationManager.value?.validateQuiz(selectedAnswer);
+    if(uiState.quizStatus){ 
+      await conversationManager.value?.validateQuiz(text);
     }else {
       await conversationManager.value?.processTextInteraction(text);
     }

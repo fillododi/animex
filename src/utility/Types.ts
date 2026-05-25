@@ -38,18 +38,35 @@ export type Message = {
 
 export type QuizQuestionDTO = {
     id: string;
-    type: string;
+    type: QuizType;
     prompt: string;
-    choices: string[];
-    correctAnswer?: string;
-    trueOrFalseAnswer?: boolean;
-    suggest?: string;
+    choices?: string[];
+    acceptedAnswer?: string | boolean;
+    feedback: string;
+    habitatRelated: boolean;
 }
 
 export type DifficultyLevel = "easy" | "medium" ;
+export type QuizType = "yes_no" | "multiple_choice" | "open_text";
 
 export type QuizValidationResultDTO = {
     correct: boolean;
     score: number;
     feedback: string;
 }
+// Copied from backend
+export type ChatDTO = {
+    answer: string,
+    animalId: string,
+    source: ChatSource,
+    safety: {
+        filtered: boolean,
+        reason?: string
+    },
+    suggestedActions: ChatSuggestedAction[],
+    fallbackReason?: string
+}
+
+export type ChatSource = "gemini" | "fallback"
+
+export type ChatSuggestedAction = "showHabitat" | "askQuiz" | "useTextInput"

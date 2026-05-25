@@ -53,13 +53,21 @@ export class ConversationManager {
             }else { 
                 const connectionService = useServiceStore().connectionService
                 const sessionId = useSessionStore().sessionId
-                const finalAnimalText = await connectionService?.sendChatRequest(sessionId, text);
-                this.speak(finalAnimalText ?? "unknown");
+                const response = await connectionService?.sendChatRequest(sessionId, text);
+                if(!response || response.answer.trim() === ""){
+                    console.log("[CM] No response received from the server for the chat request.");
+                    this.speakErrorResponse();
+                    return false;
+                } 
+                else{
+                    chatStore.addBotMessage(response.answer);
+                    this.speak(response.answer);
+                }
             }
             
         } catch (error) {
-            chatStore.addErrorResponse();
-            this.speak(SOMETHING_BAD_IN_BACKEND);
+            console.log("[CM] 2 No response received from the server for the chat request.");
+            this.speakErrorResponse()
             return false;
         }
         return true;
@@ -71,7 +79,7 @@ export class ConversationManager {
             try {
                 const connectionService = useServiceStore().connectionService;
                 const stateStore = useSessionStore();
-                const currentAnimalId = stateStore.recognizedAnimal?.id;
+                const currentAnimalId = stateStore.recognizedAnimal?.animalType;
                 console.log("[CM] Requesting quiz for animal ID:", currentAnimalId, "with difficulty:", difficulty);
                 if (!currentAnimalId || !connectionService) {
                     this.speakErrorResponse();
@@ -87,8 +95,13 @@ export class ConversationManager {
                 if (question) {
                     chatStore.setActiveQuestion(question);
                     this.speak(question.prompt);
-                    for (const choice of question.choices) {
-                        this.speak(choice);
+                    if(question.type === "yes_no"){
+                        this.speak("Vero o Falso");
+                    }
+                    else if(question.type === "multiple_choice" && question.choices){
+                        for (const choice of question.choices?? []) {
+                            this.speak(choice);
+                        }
                     }
                 } 
                 else {
@@ -109,18 +122,18 @@ export class ConversationManager {
         public async validateQuiz(answer: string): Promise<void> {
             
             const chatStore = useChatStore();
-            
 
             try {
-
+                console.log("[CM] Validating quiz answer:", answer);
                 chatStore.addUserMessage(answer);
                 const result = await this.evaluateQuizAnswer(answer);
-
+                console.log("[CM] Quiz validation result:", result);
                 if (result && result.feedback) {
                     chatStore.addBotMessage(result.feedback);
                     this.speak(result.feedback);
                     chatStore.clearQuiz();
                 } else {
+                    console.log("[CM] No feedback received from quiz validation.");
                     this.speakErrorResponse();
                 }
                 
@@ -133,19 +146,19 @@ export class ConversationManager {
         private async evaluateQuizAnswer(answer: string): Promise<QuizValidationResultDTO | null> {
 
             const stateStore = useSessionStore();
-            const currentAnimalId = stateStore.recognizedAnimal?.id;
+            const currentAnimalId = stateStore.recognizedAnimal?.animalType;
             const chatStore = useChatStore();
             const activeQuestion = chatStore.activeQuestion;
             
             if (!currentAnimalId) return null;
             const questionId = activeQuestion?.id;
             const prompt = activeQuestion?.prompt;
-            const choices = activeQuestion?.choices;
+            //const choices = activeQuestion?.choices;
 
             if (!questionId || !prompt) return null;
-
+            console.log("[CM] Evaluating quiz answer for question ID:", questionId, "with prompt:", prompt);
             // CASE A: Open-ended question (no choices provided) - delegate validation to the backend
-            if (!choices || choices.length === 0) {
+            if (activeQuestion.type === "open_text") {
                 const connectionService = useServiceStore().connectionService;
                 const result = await connectionService?.sendQuizValidateRequest(
                     stateStore.sessionId,
@@ -158,10 +171,11 @@ export class ConversationManager {
             }
 
             // CASE B: True/False 
-            if (choices.length === 2 && choices.includes("True") && choices.includes("False")) {
-                const correctAnswer = chatStore.activeQuestion?.trueOrFalseAnswer;
-                const isCorrect = (answer.toLowerCase() === "true" && correctAnswer === true) || 
-                                (answer.toLowerCase() === "false" && correctAnswer === false);
+            if (activeQuestion.type === "yes_no") {
+                console.log("[CM] Evaluating True/False quiz answer. User answer:", answer);
+                const correctAnswer = chatStore.activeQuestion?.acceptedAnswer;
+                const isCorrect = (answer.toLowerCase() === "vero" && correctAnswer === true) || 
+                                (answer.toLowerCase() === "falso" && correctAnswer === false);
                 return {
                     correct: isCorrect,
                     score: isCorrect ? 1 : 0,
@@ -170,9 +184,10 @@ export class ConversationManager {
             }
 
             // CASE C: Multiple Choice (>=2 choices)
-            if (choices.length >= 2) {
-                const correctAnswer = chatStore.activeQuestion?.correctAnswer;
-                const isCorrect = (answer.toLowerCase() === correctAnswer?.toLowerCase());
+            if (activeQuestion.type === "multiple_choice") {
+                console.log("[CM] Evaluating multiple-choice quiz answer. User answer:", answer);
+                const correctAnswer = chatStore.activeQuestion?.acceptedAnswer;
+                const isCorrect = (answer.toLowerCase() === correctAnswer?.toString().toLowerCase());
                 return {
                     correct: isCorrect,
                     score: isCorrect ? 1 : 0,

@@ -1,7 +1,7 @@
 import type { Service } from "./Service"
 import { assert } from "@/utility/assert"
 import { useChatStore } from "@/stores/chatStore"
-import type { MessageRole, QuizQuestionDTO, QuizValidationResultDTO, RecognitionDTO } from "@/utility/Types"
+import type { ChatDTO, MessageRole, QuizQuestionDTO, QuizValidationResultDTO, RecognitionDTO } from "@/utility/Types"
 import { useSessionStore } from "@/stores/sessionStore"
 import { type DifficultyLevel } from "@/utility/Types"
 
@@ -16,7 +16,7 @@ export interface ConnectionService extends Service {
      * @throws An Error if the service is not active
      */
     sendRecognitionRequest(sessionId: string, frameId: number, visionFrame: string): Promise<RecognitionDTO | null>
-    sendChatRequest(sessionId: string, text: string): Promise<string>
+    sendChatRequest(sessionId: string, text: string): Promise<ChatDTO | null>
     sendQuizNextRequest(sessionId: string, animalId: string, difficulty: DifficultyLevel): Promise<QuizQuestionDTO | null>
     sendQuizValidateRequest(sessionId: string, animalId: string, questionId: string, answer: string, prompt: string): Promise<QuizValidationResultDTO | null>
     //sendARRequest
@@ -81,7 +81,7 @@ export class ServerConnectionService implements ConnectionService {
             })
     }
 
-    async sendChatRequest(sessionId: string, text: string): Promise<string> {
+    async sendChatRequest(sessionId: string, text: string): Promise<ChatDTO | null> {
         const chatStore = useChatStore()
         chatStore.addUserMessage(text)
         assert(this.active, "The connection service isn't active!")
@@ -89,28 +89,31 @@ export class ServerConnectionService implements ConnectionService {
         const recognizedAnimal = sessionStore.recognizedAnimal
         const body = {
             sessionId: sessionId,
-            animalId: recognizedAnimal?.id || "lion",
+            animalId: recognizedAnimal?.animalType,
             history: chatStore.messages.filter((msg: { ok: boolean }) => msg.ok).map((msg: { role: MessageRole; content: string }) => ({role: msg.role, text: msg.content})),
             message: text
         }
+        console.log("[ConnectionService] Sending chat request with body:", body);
         const request: RequestInfo = new Request(`${this.url}/api/v1/chat`, {
             method: 'POST',
             headers: {"Content-Type": "application/json"},
             body: JSON.stringify(body)
         })
         try {
+            console.log("[ConnectionService] Awaiting response from server...");
             const response = await fetch(request)
+            console.log("[ConnectionService] Received response from server."+ " Status:", response.status);
             const res = await response.json()
+            console.log("[ConnectionService] Response data:", res.data);
             const message = res.data.answer as string
             if(message && message.trim() != ""){
                 chatStore.setOk(true)
             }
-            chatStore.addBotMessage(message)
-            return res.data.answer as string
+            return res.data as ChatDTO
         }catch(err){
-            chatStore.addErrorResponse()
             console.error(err)
-            return "Error occurred while sending chat request."
+            console.log("[ConnectionService] Error occurred while sending chat request.");
+            return null
         }
         
         // return the object of the answer that contains:
@@ -126,17 +129,23 @@ export class ServerConnectionService implements ConnectionService {
             animalId,
             difficulty,
             mode : "animal"
+            // add id of historical question and types of questions (yes_no, multiple_choice,)
         };
+        console.log("[ConnectionService] Sending quiz next request with body:", body);
         const request = new Request(`${this.url}/api/v1/quiz/next`, {
             method: 'POST',
             headers: {"Content-Type": "application/json"},
             body: JSON.stringify(body)
         });
         try {
+            console.log("[ConnectionService] Awaiting quiz question response from server...");
             const response = await fetch(request);
             const res = await response.json();
+            console.log(res);
+            console.log("[ConnectionService] Received quiz question:", res.data.question);
             return res.data.question ; 
         } catch(err) {
+            console.log("[ConnectionService] Error occurred while sending quiz next request.");
             console.error(err);
             return null;
         }
@@ -150,14 +159,17 @@ export class ServerConnectionService implements ConnectionService {
             answer: answer,
             prompt: prompt,
         };
+        console.log("[ConnectionService] Sending quiz validate request with body:", body);
         const request = new Request(`${this.url}/api/v1/quiz/validate`, {
             method: 'POST',
             headers: {"Content-Type": "application/json"},
             body: JSON.stringify(body)
         });
         try {
+            console.log("[ConnectionService] Awaiting quiz validation response from server...");
             const response = await fetch(request);
             const res = await response.json();
+            console.log("[ConnectionService] Received quiz validation response:", res.data);
             return res.data ; 
         } catch(err) {
             console.error(err);
