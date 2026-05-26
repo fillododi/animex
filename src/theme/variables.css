@@ -1,2 +1,26 @@
-/* For information on how to create your own theme, please refer to:
-http://ionicframework.com/docs/theming/ */
+:root {
+  /* Palette Colori */
+  --lime: #deff9a;
+  --dark: #0a0a0a;
+  --gray: #1a1a1a;
+  --white: #ffffff;
+  --danger: #ff4757;
+
+  /* Font e Tipografia */
+  --font-main: 'Urbanist', sans-serif;
+  --text-sm: 12px;
+  --text-base: 15px;
+  --text-xl: 22px;
+  
+  /* Spaziature e Bordi */
+  --radius-round: 50px;
+  --radius-card: 18px;
+}
+
+/* Stile base per tutta l'app */
+body {
+  background-color: var(--dark);
+  color: var(--white);
+  font-family: var(--font-main);
+  margin: 0;
+}
