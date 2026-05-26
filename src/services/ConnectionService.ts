@@ -36,16 +36,10 @@ export class ServerConnectionService implements ConnectionService {
 
     async start(): Promise<void> {
         assert(!this.active, "Connection Service is already active!")
-        console.log("[ConnectionService] Starting connection service. Checking server health...");
         const request: RequestInfo = new Request(`${this.url}/healthz`, {method: 'GET', headers: {"Content-Type": "application/json"}})
-        try{
-            const res = await fetch(request)
-            console.log(res);
-            const json = await res.json()
-            this.active = json.ok
-        }catch(err){
-            console.error("[ConnectionService] Error while checking server health:", err);
-        }
+        const res = await fetch(request)
+        const json = await res.json()
+        this.active = json.ok
     }
 
     stop(): void {
@@ -94,26 +88,20 @@ export class ServerConnectionService implements ConnectionService {
             history: chatStore.messages.filter((msg: { ok: boolean }) => msg.ok).map((msg: { role: MessageRole; content: string }) => ({role: msg.role, text: msg.content})),
             message: text
         }
-        console.log("[ConnectionService] Sending chat request with body:", body);
         const request: RequestInfo = new Request(`${this.url}/api/v1/chat`, {
             method: 'POST',
             headers: {"Content-Type": "application/json"},
             body: JSON.stringify(body)
         })
         try {
-            console.log("[ConnectionService] Awaiting response from server...");
             const response = await fetch(request)
-            console.log("[ConnectionService] Received response from server."+ " Status:", response.status);
             const res = await response.json()
-            console.log("[ConnectionService] Response data:", res.data);
             const message = res.data.answer as string
             if(message && message.trim() != ""){
                 chatStore.setOk(true)
             }
             return res.data as ChatDTO
-        }catch(err){
-            console.error(err)
-            console.log("[ConnectionService] Error occurred while sending chat request.");
+        }catch{
             return null
         }
         
@@ -133,22 +121,16 @@ export class ServerConnectionService implements ConnectionService {
             allowedQuizTypes: types,
             mode : "animal"
         };
-        console.log("[ConnectionService] Sending quiz next request with body:", body);
         const request = new Request(`${this.url}/api/v1/quiz/next`, {
             method: 'POST',
             headers: {"Content-Type": "application/json"},
             body: JSON.stringify(body)
         });
         try {
-            console.log("[ConnectionService] Awaiting quiz question response from server...");
             const response = await fetch(request);
             const res = await response.json();
-            console.log(res);
-            console.log("[ConnectionService] Received quiz question:", res.data.question);
             return res.data.question ; 
-        } catch(err) {
-            console.log("[ConnectionService] Error occurred while sending quiz next request.");
-            console.error(err);
+        } catch{
             return null;
         }
     }
@@ -161,20 +143,16 @@ export class ServerConnectionService implements ConnectionService {
             answer: answer,
             prompt: prompt,
         };
-        console.log("[ConnectionService] Sending quiz validate request with body:", body);
         const request = new Request(`${this.url}/api/v1/quiz/validate`, {
             method: 'POST',
             headers: {"Content-Type": "application/json"},
             body: JSON.stringify(body)
         });
         try {
-            console.log("[ConnectionService] Awaiting quiz validation response from server...");
             const response = await fetch(request);
             const res = await response.json();
-            console.log("[ConnectionService] Received quiz validation response:", res.data);
             return res.data ; 
-        } catch(err) {
-            console.error(err);
+        } catch{
             return null;
         }
     }
