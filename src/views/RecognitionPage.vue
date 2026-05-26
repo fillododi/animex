@@ -38,7 +38,7 @@
 
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue';
-import { IonPage, IonContent, onIonViewDidLeave, useIonRouter, alertController } from '@ionic/vue';
+import { IonPage, IonContent, onIonViewDidLeave, alertController } from '@ionic/vue';
 import { RecognitionManager } from '@/modules/RecognitionMgr';
 import { useServiceStore } from '@/stores/serviceStore';
 import { useSessionStore } from '@/stores/sessionStore';
@@ -51,11 +51,14 @@ const sessionStore = useSessionStore();
 const videoElement = ref<HTMLVideoElement | null>(null);
 
 onMounted(() => {
+  if(!videoElement.value) {
+    uiState.statusMessage = "Camera video element not found.";
+    return;
+  }
   serviceStore.setCameraService(videoElement.value);
 })
 
 // --- UI STATE VARIABLES ---
-const ionRouter = useIonRouter();
 const uiState = reactive({
   isRecording: false,
   statusMessage: ""
@@ -69,9 +72,7 @@ const handleStart = async () => {
       uiState.isRecording = true;
       document.documentElement.style.setProperty('--nav-display', 'none');
       
-    } catch (error: any) {
-      console.error("Errore avvio fotocamera:", error);
-      
+    } catch (error: any) {      
       const alert = await alertController.create({
         header: 'Fotocamera non disponibile',
         message: 'Temporaneo inutilizzo della fotocamera. Dettagli: ' + error.message,
