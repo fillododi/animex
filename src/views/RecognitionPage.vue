@@ -39,7 +39,7 @@
         </ion-button>
       </div>
 
-      <div id="camera" class="camera-box"></div>
+      <video ref="videoElement" class="camera-video" autoplay playsinline muted></video>
       <div>
         Recog received: {{ sessionStore.recognizedAnimal }}
       </div>
@@ -48,7 +48,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive } from 'vue';
+import { onMounted, reactive, ref } from 'vue';
 import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButton, IonButtons, onIonViewDidLeave, useIonRouter } from '@ionic/vue';
 import { chevronBackOutline } from 'ionicons/icons';
 import { RecognitionManager } from '@/modules/RecognitionMgr';
@@ -59,10 +59,10 @@ import { useSessionStore } from '@/stores/sessionStore';
 const serviceStore = useServiceStore();
 const recog = new RecognitionManager();
 const sessionStore = useSessionStore();
+const videoElement = ref<HTMLVideoElement | null>(null);
 
 onMounted(() => {
-  const par = document.getElementById("camera")
-  serviceStore.setCameraService(par);
+  serviceStore.setCameraService(videoElement.value);
 })
 
 // --- UI STATE VARIABLES ---
@@ -109,4 +109,7 @@ onIonViewDidLeave(async () => {
 <style>
   body { background: transparent; }
   ion-content { --background: transparent; }
+  .camera-video {
+    z-index: -1; /* Ensure the video is behind other content */
+  }
 </style>

@@ -15,21 +15,12 @@ export const useServiceStore = defineStore('service', () => {
 
 // --- ACTIONS --- //
     
-    function setCameraService(cameraRef: HTMLElement | null) {
-        if (Capacitor.getPlatform() == "web") {
-            cameraService.value = new DeviceCameraService(
-            window.innerWidth/2, 
-            window.innerHeight/2, 
-            cameraRef ? cameraRef?.id : ""
-            );  
+    function setCameraService(videoElement: HTMLVideoElement | null) {
+        if(!videoElement) {
+            cameraService.value = null
+            return
         }
-        else {
-            cameraService.value = new DeviceCameraService(
-            window.innerWidth/2, 
-            window.innerHeight/2, 
-            new Position(0, cameraRef? cameraRef.getBoundingClientRect().top : 0)
-            );
-        }
+        cameraService.value = new DeviceCameraService(videoElement);
     }
 
     function setConnectionService(){
