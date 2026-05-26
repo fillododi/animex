@@ -3,8 +3,6 @@ import { ref } from 'vue';
 import { DeviceCameraService, type CameraService } from '@/services/CameraService';
 import { ServerConnectionService, type ConnectionService } from '@/services/ConnectionService';
 import { NativeSTTService, NativeTTSService } from '@/services/SpeechService';
-import { Position } from '@/utility/Position';
-import { Capacitor } from '@capacitor/core';
 
 export const useServiceStore = defineStore('service', () => {
   
