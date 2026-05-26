@@ -14,7 +14,6 @@
     "type-check": "vue-tsc --noEmit"
   },
   "dependencies": {
-    "@capacitor-community/camera-preview": "^8.0.1",
     "@capacitor-community/text-to-speech": "^8.0.0",
     "@capacitor/android": "^8.3.0",
     "@capacitor/app": "8.1.0",
@@ -29,6 +28,7 @@
     "@ionic/vue": "^8.0.0",
     "@ionic/vue-router": "^8.0.0",
     "capacitor-native-settings": "^8.1.0",
+    "dotenv": "^17.4.2",
     "ionicons": "^7.0.0",
     "pinia": "^3.0.4",
     "vue": "^3.3.0",

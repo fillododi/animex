@@ -1,5 +1,2 @@
-export enum AnimalType {
-    ANIMAL,
-    LION,
-    TIGER
-}
+export type AnimalType = "lion" | "tiger"  | "hippopotamus" | 
+"italian-stream-frog" | "japanese-fire-bellied-newt"| "unknown"

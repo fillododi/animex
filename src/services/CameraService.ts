@@ -1,7 +1,5 @@
 import { type Service } from "./Service"
-import { CameraPreview, type CameraPreviewOptions } from "@capacitor-community/camera-preview";
 import { assert } from "@/utility/assert";
-import { Position } from "@/utility/Position";
 
 export interface CameraService extends Service {
     /**
@@ -14,44 +12,39 @@ export interface CameraService extends Service {
 }
 
 export class DeviceCameraService implements CameraService {
-    private previewOpts: CameraPreviewOptions
     private active: boolean
+    private stream: MediaStream |  undefined
+    private videoElement: HTMLVideoElement
 
-    /**
-     * @param width The width of the camera preview in pixels.
-     * @param height The height of the camera view in pixels.
-     * @param parent The id of the html object to use as a parent (web only).
-     */
-    constructor(width: number, height: number, parent: string)
-    /**
-     * @param width The width of the camera preview in pixels.
-     * @param height The height of the camera view in pixels.
-     * @param origin The screen coordinates of the preview's origin (mobile only).
-     */
-    constructor(width: number, height: number, origin: Position)
-    constructor(width: number, height: number, position: string | Position, toBack?: boolean) {
+    constructor(videoElement: HTMLVideoElement) {
+        this.stream = undefined
         this.active = false
-        this.previewOpts = {
-            position: 'rear',
-            toBack: toBack ?? true,
-            width: width,
-            height: height,
-            parent: typeof(position) == 'string' ? position : undefined,
-            x: position instanceof Position ? position.x : undefined,
-            y: position instanceof Position ? position.y : undefined
-        }
+        this.videoElement = videoElement
     }
 
     async start() {
         assert(!this.active, "Camera Service already active!")
-
-        await CameraPreview.start(this.previewOpts).then(() => this.active = true);
+        this.stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+                facingMode: {
+                    ideal: "environment"
+                }
+            },
+            audio: false
+        })
+        this.videoElement.srcObject = this.stream
+        this.videoElement.muted = true
+        this.videoElement.playsInline = true
+        this.videoElement.autoplay = true
+        await this.videoElement.play()
+        this.active = true
     }
 
     async stop() {
         assert(this.active, "Camera Service already stopped!")
-
-        await CameraPreview.stop().then(() => this.active = false)
+        this.stream?.getTracks().forEach(track => track.stop())
+        this.videoElement.srcObject = null
+        this.active = false
     }
 
     isActive(): boolean {
@@ -60,7 +53,16 @@ export class DeviceCameraService implements CameraService {
 
     async getCameraFrame(): Promise<{value: string}> {
         assert(this.active, "Can't capture a frame from an inactive camera!")
-
-        return await CameraPreview.captureSample({quality: 100});
+        const width = this.videoElement.videoWidth
+        const height = this.videoElement.videoHeight
+        const canvas = document.createElement("canvas")
+        canvas.width = width
+        canvas.height = height
+        const context = canvas.getContext("2d")
+        assert(context !== null, "Failed to get canvas context!")
+        context.drawImage(this.videoElement, 0, 0, width, height)
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.8)
+        const base64 = dataUrl.split(",")[1]
+        return { value: base64 ?? "" }
     }
 }

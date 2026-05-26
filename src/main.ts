@@ -35,6 +35,7 @@ import '@ionic/vue/css/palettes/dark.system.css';
 
 /* Theme variables */
 import './theme/variables.css';
+import { useServiceStore } from './stores/serviceStore';
 
 defineCustomElements(window)
 
@@ -44,6 +45,11 @@ const app = createApp(App)
   .use(IonicVue)
   .use(router)
   .use(pinia);
+
+const serviceStore = useServiceStore();
+serviceStore.setConnectionService();
+serviceStore.setTTSService();
+serviceStore.setSTTService();
 
 router.isReady().then(() => {
   app.mount('#app');

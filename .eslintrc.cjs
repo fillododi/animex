@@ -21,6 +21,7 @@ module.exports = {
     'no-console': 'warn',
     'vue/no-deprecated-slot-attribute': 'off',
     '@typescript-eslint/no-explicit-any': 'off',
+    '@typescript-eslint/no-this-alias': 'off',
     "@typescript-eslint/no-unused-vars": [
       "warn", 
       {
