@@ -28,7 +28,7 @@ defineProps({
 
   <div class="chat-bubble" :class="[role, { 'thinking': isThinking }]">
     <div class="role-tag" v-if="!isThinking">
-      {{ ruolo === 'ai' ? 'IA EXPERT' : 'TU' }}
+      {{ role === 'ai' ? 'IA EXPERT' : 'TU' }}
     </div>
     
     <!-- Testo del messaggio -->
