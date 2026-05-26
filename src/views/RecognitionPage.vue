@@ -5,8 +5,6 @@
         Rilevato: <strong>{{ sessionStore.recognizedAnimal }}</strong>
       </div>
 
-      <div id="camera" class="camera-box"></div>
-
       <div class="floating-controls">
         
         <!-- Camera Spenta -->
@@ -29,15 +27,18 @@
           class="btn-action"
         />
       </div>
+      <video ref="videoElement" class="camera-video" autoplay playsinline muted></video>
+      <div>
+        Recog received: {{ sessionStore.recognizedAnimal }}
+      </div>
 
     </ion-content>
   </ion-page>
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive } from 'vue';
+import { onMounted, reactive, ref } from 'vue';
 import { IonPage, IonContent, onIonViewDidLeave, useIonRouter, alertController } from '@ionic/vue';
-import { chevronBackOutline } from 'ionicons/icons';
 import { RecognitionManager } from '@/modules/RecognitionMgr';
 import { useServiceStore } from '@/stores/serviceStore';
 import { useSessionStore } from '@/stores/sessionStore';
@@ -47,10 +48,10 @@ import BaseButton from '@/components/BaseButton.vue';
 const serviceStore = useServiceStore();
 const recog = new RecognitionManager();
 const sessionStore = useSessionStore();
+const videoElement = ref<HTMLVideoElement | null>(null);
 
 onMounted(() => {
-  const par = document.getElementById("camera")
-  serviceStore.setCameraService(par);
+  serviceStore.setCameraService(videoElement.value);
 })
 
 // --- UI STATE VARIABLES ---
@@ -151,4 +152,7 @@ onIonViewDidLeave(async () => {
 /* --- MAKES CAMERA VISIBLE --- */
   body { background: transparent; }
   ion-content { --background: transparent; }
+  .camera-video {
+    z-index: -1; /* Ensure the video is behind other content */
+  }
 </style>
