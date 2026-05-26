@@ -67,6 +67,7 @@ function onInput(event) {
   border-top: 1px solid #eee;
   flex-shrink: 0;
   z-index: 15;
+  color: var(--dark)
 }
 
 .global-input-bar input {
