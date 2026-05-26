@@ -1,48 +1,41 @@
-import { defineStore } from 'pinia';
-import { ref } from 'vue';
-import { DeviceCameraService, type CameraService } from '@/services/CameraService';
-import { ServerConnectionService, type ConnectionService } from '@/services/ConnectionService';
-import { NativeSTTService, NativeTTSService } from '@/services/SpeechService';
-import { Position } from '@/utility/Position';
-import { Capacitor } from '@capacitor/core';
+import { defineStore } from "pinia";
+import { ref } from "vue";
 
-export const useServiceStore = defineStore('service', () => {
-  
-    const cameraService = ref<CameraService | null>(null);
-    const connectionService = ref<ConnectionService | null>(null);
-    const ttsService = ref<NativeTTSService | null>(null);
-    const sttService = ref<NativeSTTService | null>(null);
+import { DeviceCameraService, type CameraService } from "@/services/CameraService";
+import {
+  ServerConnectionService,
+  type ConnectionService,
+} from "@/services/ConnectionService";
+import { NativeSTTService, NativeTTSService } from "@/services/SpeechService";
 
-// --- ACTIONS --- //
-    
-    function setCameraService(cameraRef: HTMLElement | null) {
-        if (Capacitor.getPlatform() == "web") {
-            cameraService.value = new DeviceCameraService(
-            window.innerWidth/2, 
-            window.innerHeight/2, 
-            cameraRef ? cameraRef?.id : ""
-            );  
-        }
-        else {
-            cameraService.value = new DeviceCameraService(
-            window.innerWidth/2, 
-            window.innerHeight/2, 
-            new Position(0, cameraRef? cameraRef.getBoundingClientRect().top : 0)
-            );
-        }
+export const useServiceStore = defineStore("service", () => {
+  const cameraService = ref<CameraService | null>(null);
+  const connectionService = ref<ConnectionService | null>(null);
+  const ttsService = ref<NativeTTSService | null>(null);
+  const sttService = ref<NativeSTTService | null>(null);
+
+  // --- ACTIONS --- //
+
+  function setCameraService(videoElement: HTMLVideoElement | null) {
+    if (!videoElement) {
+      cameraService.value = null;
+      return;
     }
 
-    function setConnectionService(){
-        connectionService.value = new ServerConnectionService();
-    }
+    cameraService.value = new DeviceCameraService(videoElement);
+  }
 
-    function setTTSService(){
-        ttsService.value = new NativeTTSService();
-    }
+  function setConnectionService() {
+    connectionService.value = new ServerConnectionService();
+  }
 
-    function setSTTService(){
-        sttService.value = new NativeSTTService();
-    }
+  function setTTSService() {
+    ttsService.value = new NativeTTSService();
+  }
+
+  function setSTTService() {
+    sttService.value = new NativeSTTService();
+  }
 
   return {
     cameraService,
@@ -52,6 +45,6 @@ export const useServiceStore = defineStore('service', () => {
     setCameraService,
     setConnectionService,
     setTTSService,
-    setSTTService
+    setSTTService,
   };
 });
