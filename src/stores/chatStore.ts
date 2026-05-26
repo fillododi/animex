@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref, markRaw } from 'vue';
 import { type Message, type MessageRole, type QuizQuestionDTO } from '@/utility/Types';
-import { EMPTY_INPUT_ANIMAL_TEXT, SOMETHING_BAD_IN_BACKEND } from '@/utility/constants';
+import { EMPTY_INPUT_ANIMAL_TEXT, SOMETHING_BAD_IN_BACKEND, TRY_TO_WRITE_TEXT } from '@/utility/constants';
 
 export const useChatStore = defineStore('chat', () => {
   const messages = ref<Message[]>([]); 
@@ -26,6 +26,11 @@ export const useChatStore = defineStore('chat', () => {
 
   function addErrorResponse() {
     const userMsg = markRaw({ content: SOMETHING_BAD_IN_BACKEND, role: "model" as MessageRole, timestamp: new Date(), ok: false });
+    messages.value.push(userMsg);
+  }
+
+  function addFallbackResponse() {
+    const userMsg = markRaw({ content: EMPTY_INPUT_ANIMAL_TEXT + " " + TRY_TO_WRITE_TEXT, role: "model" as MessageRole, timestamp: new Date(), ok: false });
     messages.value.push(userMsg);
   }
 
@@ -69,6 +74,7 @@ export const useChatStore = defineStore('chat', () => {
     setOk,
     setActiveQuestion,
     clearQuiz,
-    getOldQuestions
+    getOldQuestions,
+    addFallbackResponse
   };
 });

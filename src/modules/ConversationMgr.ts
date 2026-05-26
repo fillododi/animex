@@ -1,4 +1,4 @@
-import { EMPTY_INPUT_ANIMAL_TEXT, SOMETHING_BAD_IN_BACKEND } from '@/utility/constants';
+import { EMPTY_INPUT_ANIMAL_TEXT, SOMETHING_BAD_IN_BACKEND, TRY_TO_WRITE_TEXT } from '@/utility/constants';
 import { useServiceStore } from '@/stores/serviceStore';
 import { useSessionStore } from '@/stores/sessionStore';
 import { useChatStore } from '@/stores/chatStore';
@@ -7,6 +7,7 @@ export class ConversationManager {
     
     private isListening = false;
     private currentTranscript = ""; 
+    private counter = 0;
 
     constructor() {
     }
@@ -47,13 +48,21 @@ export class ConversationManager {
         const chatStore = useChatStore();
         try {
             if(!text) {
-                chatStore.addEmptyResponse();
-                this.speak(EMPTY_INPUT_ANIMAL_TEXT);
-                return false;
+                if(this.counter === 0){
+                    chatStore.addEmptyResponse();
+                    this.speak(EMPTY_INPUT_ANIMAL_TEXT);
+                    this.counter++;
+                    return false;
+                } else {
+                    chatStore.addFallbackResponse();
+                    this.speak(EMPTY_INPUT_ANIMAL_TEXT + " " + TRY_TO_WRITE_TEXT);
+                    return false;
+                }
             }else { 
                 const connectionService = useServiceStore().connectionService
                 const sessionId = useSessionStore().sessionId
                 const response = await connectionService?.sendChatRequest(sessionId, text);
+                this.counter = 0;
                 if(!response || response.answer.trim() === ""){
                     this.speakErrorResponse();
                     return false;
