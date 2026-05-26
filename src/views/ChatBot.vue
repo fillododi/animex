@@ -1,90 +1,48 @@
 <template>
   <ion-page>
-    <ion-header>
-      <ion-toolbar>
-        <ion-buttons slot="start">
-          <ion-button @click="ionRouter.back()" >
-            <ion-icon slot="start" :icon="chevronBackOutline"></ion-icon>
-            Indietro
-          </ion-button>
-        </ion-buttons>
-        <ion-title>Chatbot Interaction</ion-title>
-      </ion-toolbar>
-    </ion-header>
 
     <ion-content class="ion-padding chat-background">
       
+      <!-- Banner di stato invariato -->
       <div class="status-banner" :class="{ active: uiState.isRecording }">
         {{ uiState.statusMessage }}
       </div>
-
-      <div class="controls-container">
-        <ion-button 
-          expand="block" 
-          @click="handleStart" 
-          :disabled="uiState.isRecording || uiState.isProcessing"
-          color="primary"
-        >
+      
+      <!-- <div class="controls-container">
+        <ion-button expand="block" @click="handleStart" :disabled="uiState.isRecording || uiState.isProcessing" color="primary">
           REGISTRA
         </ion-button>
-
-        <ion-button 
-          expand="block" 
-          @click="handleStop" 
-          :disabled="!uiState.isRecording || !uiState.isMicReady || uiState.isProcessing"
-          color="danger"
-          style="margin-top: 15px;"
-        >
+        <ion-button expand="block" @click="handleStop" :disabled="!uiState.isRecording || !uiState.isMicReady || uiState.isProcessing" color="danger" style="margin-top: 15px;">
           INTERROMPI
         </ion-button>
-      </div>
+      </div> -->
 
       <div class="chat-container">
-        <div 
+        <!-- Ciclo che stampa i messaggi usando il nostro componente -->
+        <ChatBubble 
           v-for="(msg, index) in chatStore.messages" 
           :key="index" 
-          class="message-wrapper"
-          :class="msg.role === 'user' ? 'wrapper-right' : 'wrapper-left'"
-        >
-          <div 
-            class="message-bubble"
-            :class="msg.role === 'user' ? 'user-bubble' : 'animal-bubble'"
-          >
-            <p>{{ msg.content }}</p>
-            
-            <span class="time-stamp">
-              {{ msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }}
-            </span>
-          </div>
-        </div>
+          :role="msg.role === 'user' ? 'utente' : 'ai'"
+          :text="msg.content" 
+        />
+        
+        <ChatBubble 
+          v-if="uiState.isProcessing" 
+          role="ai" 
+          text="Elaborazione in corso..." 
+          isThinking 
+        />
       </div>
 
     </ion-content>
+    
     <ion-footer>
-      <ion-toolbar>
-        <ion-input 
-          v-model="uiState.inputText" 
-          placeholder="Scrivi un messaggio..." 
-          @keyup.enter="handleTextSubmit"
-          :disabled="uiState.isProcessing || uiState.isRecording"
-          class="ion-padding-horizontal"
-          autocomplete="on"
-          autocorrect="on"
-          :spellcheck="true"
-          inputmode="text"
-          autocapitalize="sentences"
-        ></ion-input>
-        
-        <ion-buttons slot="end">
-          <ion-button 
-            @click="handleTextSubmit" 
-            :disabled="uiState.isProcessing || uiState.isRecording || !uiState.inputText.trim()" 
-            color="primary"
-          >
-            >
-          </ion-button>
-        </ion-buttons>
-      </ion-toolbar>
+      <InputBar 
+        v-model="uiState.inputText"
+        :isAscoltando="uiState.isRecording"
+        @toggle-microphone="toggleMicrophone"
+        @send="handleTextSubmit"
+      />
     </ion-footer>
   </ion-page>
 </template>
@@ -92,6 +50,8 @@
 <script setup lang="ts">
 import { reactive, shallowRef, onMounted} from 'vue';
 import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButton, IonButtons, IonInput, IonFooter, onIonViewDidLeave, useIonRouter, alertController } from '@ionic/vue';
+import ChatBubble from '@/components/ChatBubble.vue';
+import InputBar from '@/components/InputBar.vue';
 import { ConversationManager } from '@/modules/ConversationMgr';
 import { useChatStore } from '@/stores/chatStore';
 import { CHAT_STATUS, EMPTY_INPUT_ANIMAL_TEXT } from '@/utility/constants';
@@ -145,6 +105,7 @@ const handleStart = async () => {
     
   } catch (error: any) {
     uiState.statusMessage = "Errore: " + error.message;
+    uiState.isRecording = false;
   }
 };
 
@@ -171,6 +132,17 @@ const handleStop = async () => {
   } finally {
     await conversationManager.value?.resetTranscript();
     uiState.isProcessing = false;
+  }
+};
+
+const toggleMicrophone = () => {
+
+  if (uiState.isProcessing) return;
+
+  if (uiState.isRecording) {
+    handleStop();
+  } else {
+    handleStart();
   }
 };
 
