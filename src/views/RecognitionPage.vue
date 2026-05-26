@@ -1,7 +1,6 @@
 <template>
   <ion-page>
     <ion-content :class="uiState.isRecording ? 'camera-on' : 'camera-off'">
-      
       <div class="result-banner" v-if="sessionStore.recognizedAnimal">
         Rilevato: <strong>{{ sessionStore.recognizedAnimal }}</strong>
       </div>
@@ -16,8 +15,7 @@
           testo="AVVIA SCANNER" 
           icona="📷"
           variante="stile-input"
-          @click="handleStart" 
-          :disabled="uiState.isProcessing"
+          @click="handleStart"
           class="btn-action"
         />
 
@@ -28,10 +26,8 @@
           icona="✖️"
           variante="pericolo" 
           @click="handleStop" 
-          :disabled="uiState.isProcessing"
           class="btn-action"
         />
-
       </div>
 
     </ion-content>
@@ -61,8 +57,6 @@ onMounted(() => {
 const ionRouter = useIonRouter();
 const uiState = reactive({
   isRecording: false,
-  isProcessing: false,
-  inputText: "",
   statusMessage: ""
 });
 
@@ -89,7 +83,6 @@ const handleStart = async () => {
 const handleStop = async () => {
   await recog.stopRecognitionLoop();
   uiState.isRecording = false;
-  
 };
 
 onIonViewDidLeave(async () => {

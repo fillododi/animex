@@ -6,6 +6,8 @@ export interface ChatUIState {
   isProcessing: boolean;
   inputText: string;
   statusMessage?: string;
+  quizStatus: boolean;
+  showQuizOptions: boolean;
 }
 
 export type ChatStatus = typeof CHAT_STATUS[keyof typeof CHAT_STATUS] | `Errore: ${string}`;
@@ -33,3 +35,38 @@ export type Message = {
     timestamp: Date;
     ok: boolean;
 };
+
+export type QuizQuestionDTO = {
+    id: string;
+    type: QuizType;
+    prompt: string;
+    choices?: string[];
+    acceptedAnswers?: string[];
+    feedback: string;
+    habitatRelated: boolean;
+}
+
+export type DifficultyLevel = "easy" | "medium" ;
+export type QuizType = "yes_no" | "multiple_choice" | "open_text";
+
+export type QuizValidationResultDTO = {
+    correct: boolean;
+    score: number;
+    feedback: string;
+}
+// Copied from backend
+export type ChatDTO = {
+    answer: string,
+    animalId: string,
+    source: ChatSource,
+    safety: {
+        filtered: boolean,
+        reason?: string
+    },
+    suggestedActions: ChatSuggestedAction[],
+    fallbackReason?: string
+}
+
+export type ChatSource = "gemini" | "fallback"
+
+export type ChatSuggestedAction = "showHabitat" | "askQuiz" | "useTextInput"

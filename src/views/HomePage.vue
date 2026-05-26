@@ -25,6 +25,10 @@
         <ion-button router-link="/chat">
           Entra nella Chat Animex!
         </ion-button>
+        <!-- Recognition -->
+        <ion-button router-link="/cam">
+          Inizia riconoscimento!
+        </ion-button>
         
 
         <div v-if="audioUrl" style="margin-top: 16px;">
@@ -47,6 +51,8 @@
 import { ref } from 'vue'
 import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButton } from '@ionic/vue'
 import { useServiceStore } from '@/stores/serviceStore';
+import { useSessionStore } from '@/stores/sessionStore';
+import type { AnimalData } from '@/utility/AnimalData';
 
 const audioUrl = ref<string>('')
 const statusMessage = ref('')
@@ -62,6 +68,14 @@ async function connect() {
   }
   try{
     await connection.start()
+    //todo: remove this hardcoded animal 
+    const lion: AnimalData = {
+      id: "lion0",
+      animalType : "lion",
+      pos : { x: 0, y: 0},
+    }
+    useSessionStore().updateRecognizedAnimal(lion);
+    // to there
     statusMessage.value = connection.isActive() ? "Connected to server" : "Failed to connect :("
   } catch (error) {
     statusMessage.value = "Error connecting to server :(";

@@ -8,7 +8,6 @@ export const useSessionStore = defineStore('session', () => {
   const recognizedAnimal = ref<AnimalData | null>(null);
   const sessionId = ref(crypto.randomUUID());
 
-
   function updateRecognizedAnimal(newAnimal: AnimalData) {
     recognizedAnimal.value = newAnimal;
     const chatStore = useChatStore();
