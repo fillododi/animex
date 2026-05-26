@@ -259,6 +259,7 @@ const handleQuizRequest = async (difficulty: DifficultyLevel) => {
   uiState.showQuizOptions = false;
   uiState.isProcessing = true;
   uiState.statusMessage = CHAT_STATUS.THINKING;
+  await conversationManager.value?.stopSpeaking();
   try {
     uiState.quizStatus = conversationManager.value ? await conversationManager.value.requestQuiz(difficulty) : false;
     uiState.quizStatus ? uiState.statusMessage = CHAT_STATUS.QUIZ_LOADED : uiState.statusMessage = CHAT_STATUS.NO_QUIZ_AVAILABLE;
