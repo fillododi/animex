@@ -41,7 +41,7 @@ export type QuizQuestionDTO = {
     type: QuizType;
     prompt: string;
     choices?: string[];
-    acceptedAnswer?: string | boolean;
+    acceptedAnswers?: string[];
     feedback: string;
     habitatRelated: boolean;
 }

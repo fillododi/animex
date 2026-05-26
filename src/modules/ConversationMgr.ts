@@ -85,11 +85,12 @@ export class ConversationManager {
                     this.speakErrorResponse();
                     return false; 
                 }
-
                 const question = await connectionService.sendQuizNextRequest(
                     stateStore.sessionId, 
                     currentAnimalId,  
-                    difficulty
+                    difficulty,
+                    chatStore.getOldQuestions().length > 0 ? chatStore.getOldQuestions() : [],
+                    ["yes_no", "multiple_choice"]
                 );
 
                 if (question) {
@@ -153,7 +154,6 @@ export class ConversationManager {
             if (!currentAnimalId) return null;
             const questionId = activeQuestion?.id;
             const prompt = activeQuestion?.prompt;
-            //const choices = activeQuestion?.choices;
 
             if (!questionId || !prompt) return null;
             console.log("[CM] Evaluating quiz answer for question ID:", questionId, "with prompt:", prompt);
@@ -173,146 +173,29 @@ export class ConversationManager {
             // CASE B: True/False 
             if (activeQuestion.type === "yes_no") {
                 console.log("[CM] Evaluating True/False quiz answer. User answer:", answer);
-                const correctAnswer = chatStore.activeQuestion?.acceptedAnswer;
-                const isCorrect = (answer.toLowerCase() === "vero" && correctAnswer === true) || 
-                                (answer.toLowerCase() === "falso" && correctAnswer === false);
+                const correctAnswers = chatStore.activeQuestion?.acceptedAnswers?.map(ans => ans.toLowerCase());
+                const isCorrect = correctAnswers?.includes(answer.toLowerCase()) ?? false;
                 return {
                     correct: isCorrect,
                     score: isCorrect ? 1 : 0,
-                    feedback: isCorrect ? "Risposta corretta!" : "Risposta errata, mi dispiace!"
+                    feedback: isCorrect ? activeQuestion?.feedback : "Risposta errata, mi dispiace!"
                 };
             }
 
             // CASE C: Multiple Choice (>=2 choices)
             if (activeQuestion.type === "multiple_choice") {
                 console.log("[CM] Evaluating multiple-choice quiz answer. User answer:", answer);
-                const correctAnswer = chatStore.activeQuestion?.acceptedAnswer;
-                const isCorrect = (answer.toLowerCase() === correctAnswer?.toString().toLowerCase());
+                const correctAnswers = chatStore.activeQuestion?.acceptedAnswers?.map(ans => ans.toLowerCase());
+                const isCorrect = correctAnswers?.includes(answer.toLowerCase()) ?? false;
                 return {
                     correct: isCorrect,
                     score: isCorrect ? 1 : 0,
-                    feedback: isCorrect ? "Risposta corretta!" : `Risposta errata, mi dispiace! La risposta corretta è: ${correctAnswer}`
+                    feedback: isCorrect ? activeQuestion?.feedback : "Risposta errata, mi dispiace!"
                 };
-            }
+            };
 
             return null;
         }
-
-
-    /*public async requestQuiz(difficulty: DifficultyLevel): Promise<QuizQuestionDTO  | null> {
-        const chatStore = useChatStore();
-        try {
-            const connectionService = useServiceStore().connectionService;
-            const stateStore = useSessionStore();
-            const currentAnimalId = stateStore.recognizedAnimal?.id;
-            
-
-            if (currentAnimalId && connectionService) {
-                try {
-                    const question = await connectionService.sendQuizNextRequest(stateStore.sessionId, currentAnimalId,  difficulty?? "easy");
-                    if(question){
-                        chatStore.setActiveQuestion(question);
-                        return question; 
-                    }
-                    else{
-                        chatStore.clearQuiz();
-                        await this.speakErrorResponse();
-                        return null;
-                    }    
-                } catch (error) {
-                    chatStore.clearQuiz();
-                    await this.speakErrorResponse();
-                    return null;
-                }
-            }
-        } catch (error) {
-            await this.speakErrorResponse();
-            return null;
-        }
-        await this.speakErrorResponse();
-        return null;
-    }
-    
-    public async validateQuiz(questionId: string, answer: string, prompt: string, choices?: string[]): Promise<QuizValidationResultDTO | null> {
-        const chatStore = useChatStore();
-        try {
-            const connectionService = useServiceStore().connectionService;
-            const stateStore = useSessionStore();
-            const currentAnimalId = stateStore.recognizedAnimal?.id;
-            chatStore.addUserMessage(answer);
-            if (!currentAnimalId) return null;
-
-            // If choices are provided, it's a multiple-choice question or true/false, otherwise it's an open-ended question
-            if(!choices){
-                const result = await connectionService?.sendQuizValidateRequest(
-                    stateStore.sessionId,
-                    currentAnimalId,
-                    questionId,
-                    answer,
-                    prompt,
-                );
-                if(result && result.feedback){
-                    chatStore.addBotMessage(result.feedback);
-                    await this.speak(result.feedback);
-                    chatStore.clearQuiz();
-                }
-                else {                    
-                    await this.speakErrorResponse();
-                }
-                return result? result : null;
-                 
-            }
-            else if(choices.length === 2 && choices.includes("True") && choices.includes("False")){
-                const correctAnswer = chatStore.activeQuestion?.trueOrFalseAnswer;
-                // Validate the user's answer against the correct answer
-                const isCorrect = (answer.toLowerCase() === "true" && correctAnswer === true) || (answer.toLowerCase() === "false" && correctAnswer === false);
-                const feedback = isCorrect ? "Risposta corretta!" : "Risposta errata, mi dispiace!";
-                const result: QuizValidationResultDTO = {
-                    correct: isCorrect,
-                    score: isCorrect ? 1 : 0,
-                    feedback,
-                    //nextAction
-                };
-                if(result && result.feedback){
-                    chatStore.addBotMessage(result.feedback);
-                    await this.speak(result.feedback);
-                    chatStore.clearQuiz();    
-                }
-                else {                    
-                    await this.speakErrorResponse();
-                }
-                return result;
-            }
-            else if(choices.length >= 2){
-                const correctAnswer = chatStore.activeQuestion?.correctAnswer;
-                const isCorrect = (answer.toLowerCase() === correctAnswer?.toLowerCase());
-                const feedback = isCorrect ? "Risposta corretta!" : `Risposta errata, mi dispiace! La risposta corretta è: ${correctAnswer}`;
-                const result: QuizValidationResultDTO = {
-                    correct: isCorrect,
-                    score: isCorrect ? 1 : 0,
-                    feedback,
-                    //nextAction
-                };
-                if(result && result.feedback){
-                    chatStore.addBotMessage(result.feedback);
-                    await this.speak(result.feedback);
-                    chatStore.clearQuiz();    
-                }
-                else {                    
-                    await this.speakErrorResponse();
-                }
-                return result;
-                
-            }
-            
-            
-        } catch (error) {
-            console.error("Errore nella validazione del quiz:", error);
-            await this.speakErrorResponse();
-            return null;
-        }
-        return null;
-    }*/
 
     async speakErrorResponse() {
         const chatStore = useChatStore();

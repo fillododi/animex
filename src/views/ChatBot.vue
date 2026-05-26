@@ -305,25 +305,7 @@ const handleQuizRequest = async (difficulty: DifficultyLevel) => {
     uiState.isProcessing = false;
   }
 };
-/*
-const handleQuizAnswer = async (selectedAnswer: string) => {
-  if (!uiState.quizStatus) return;
-  
-  uiState.isProcessing = true;
-  uiState.statusMessage = CHAT_STATUS.THINKING;
 
-  try {
-    await conversationManager.value?.validateQuiz(selectedAnswer);
-    uiState.statusMessage = CHAT_STATUS.SUCCESS;
-    uiState.quizStatus = false;
-
-  } catch (error: any) {
-    uiState.statusMessage = "Errore validazione: " + error.message;
-  } finally {
-    uiState.isProcessing = false;
-  }
-};
-*/
 
 onIonViewDidLeave(async () => {
   if(uiState.isRecording) {

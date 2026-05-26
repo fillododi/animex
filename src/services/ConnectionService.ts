@@ -1,7 +1,7 @@
 import type { Service } from "./Service"
 import { assert } from "@/utility/assert"
 import { useChatStore } from "@/stores/chatStore"
-import type { ChatDTO, MessageRole, QuizQuestionDTO, QuizValidationResultDTO, RecognitionDTO } from "@/utility/Types"
+import type { ChatDTO, MessageRole, QuizQuestionDTO, QuizType, QuizValidationResultDTO, RecognitionDTO } from "@/utility/Types"
 import { useSessionStore } from "@/stores/sessionStore"
 import { type DifficultyLevel } from "@/utility/Types"
 
@@ -17,7 +17,7 @@ export interface ConnectionService extends Service {
      */
     sendRecognitionRequest(sessionId: string, frameId: number, visionFrame: string): Promise<RecognitionDTO | null>
     sendChatRequest(sessionId: string, text: string): Promise<ChatDTO | null>
-    sendQuizNextRequest(sessionId: string, animalId: string, difficulty: DifficultyLevel): Promise<QuizQuestionDTO | null>
+    sendQuizNextRequest(sessionId: string, animalId: string, difficulty: DifficultyLevel, oldQuestions: string[], types: QuizType[]): Promise<QuizQuestionDTO | null>
     sendQuizValidateRequest(sessionId: string, animalId: string, questionId: string, answer: string, prompt: string): Promise<QuizValidationResultDTO | null>
     //sendARRequest
 }
@@ -36,15 +36,16 @@ export class ServerConnectionService implements ConnectionService {
 
     async start(): Promise<void> {
         assert(!this.active, "Connection Service is already active!")
-
+        console.log("[ConnectionService] Starting connection service. Checking server health...");
         const request: RequestInfo = new Request(`${this.url}/healthz`, {method: 'GET', headers: {"Content-Type": "application/json"}})
-        return fetch(request).then(res => res.json())
-            .then(res => {
-                const resp = res as {ok: boolean, status: string}
-
-                this.active = resp.ok
-            })
-            .catch(err => console.error(err))
+        try{
+            const res = await fetch(request)
+            console.log(res);
+            const json = await res.json()
+            this.active = json.ok
+        }catch(err){
+            console.error("[ConnectionService] Error while checking server health:", err);
+        }
     }
 
     stop(): void {
@@ -123,13 +124,14 @@ export class ServerConnectionService implements ConnectionService {
         
     }
 
-    async sendQuizNextRequest(sessionId: string, animalId: string, difficulty: DifficultyLevel): Promise<QuizQuestionDTO | null> {
+    async sendQuizNextRequest(sessionId: string, animalId: string, difficulty: DifficultyLevel, oldQuestions: string[], types: QuizType[]): Promise<QuizQuestionDTO | null> {
         const body = {
             sessionId,
             animalId,
             difficulty,
+            previousQuestionIds: oldQuestions,
+            allowedQuizTypes: types,
             mode : "animal"
-            // add id of historical question and types of questions (yes_no, multiple_choice,)
         };
         console.log("[ConnectionService] Sending quiz next request with body:", body);
         const request = new Request(`${this.url}/api/v1/quiz/next`, {

@@ -6,7 +6,7 @@ import { EMPTY_INPUT_ANIMAL_TEXT, SOMETHING_BAD_IN_BACKEND } from '@/utility/con
 export const useChatStore = defineStore('chat', () => {
   const messages = ref<Message[]>([]); 
   const activeQuestion = ref<QuizQuestionDTO | null>(null);
-  const oldQuestions = ref<QuizQuestionDTO[]>([]);
+  const oldQuestions = ref<string[]>([]);
 
   function addUserMessage(text: string) {
     // Use markRaw to prevent Vue from making the Message instance reactive
@@ -35,12 +35,12 @@ export const useChatStore = defineStore('chat', () => {
 
   function setActiveQuestion(question: QuizQuestionDTO) {
         activeQuestion.value = question;
-    }
+  }
 
 
   function clearQuiz() {
     if(activeQuestion.value){
-      oldQuestions.value.push(activeQuestion.value);
+      oldQuestions.value.push(activeQuestion.value.id);
     }
     activeQuestion.value = null;
   }
@@ -54,6 +54,10 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
+  function getOldQuestions(){
+    return oldQuestions.value;
+  }
+
   return {
     messages,
     activeQuestion,
@@ -64,6 +68,7 @@ export const useChatStore = defineStore('chat', () => {
     clearMessages,
     setOk,
     setActiveQuestion,
-    clearQuiz
+    clearQuiz,
+    getOldQuestions
   };
 });
