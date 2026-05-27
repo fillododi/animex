@@ -38,7 +38,7 @@
 
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue';
-import { IonPage, IonContent, onIonViewDidLeave, useIonRouter, alertController } from '@ionic/vue';
+import { IonPage, IonContent, onIonViewDidLeave, alertController } from '@ionic/vue';
 import { NativeSettings, AndroidSettings, IOSSettings } from 'capacitor-native-settings';
 import { RecognitionManager } from '@/modules/RecognitionMgr';
 import { useServiceStore } from '@/stores/serviceStore';
@@ -56,7 +56,6 @@ onMounted(() => {
 })
 
 // --- UI STATE VARIABLES ---
-const ionRouter = useIonRouter();
 const uiState = reactive({
   isRecording: false,
   statusMessage: ""
@@ -71,7 +70,6 @@ const handleStart = async () => {
       document.documentElement.style.setProperty('--nav-display', 'none');
       
     } catch (error: any) {
-      console.error("Errore avvio fotocamera:", error);
       if (error.name === 'NotAllowedError') {
         await showSettingsAlert();
       }
@@ -129,8 +127,13 @@ const openSettings = async () => {
       optionAndroid: AndroidSettings.ApplicationDetails, 
       optionIOS: IOSSettings.App
     });
-  } catch (e) {
-    console.error("Errore nell'apertura delle impostazioni:", e);
+  }catch{
+    const alert = await alertController.create({
+      header: 'Errore',
+      message: 'Impossibile aprire le impostazioni. Per favore, aprile manualmente e consenti l\'accesso alla fotocamera.',
+      buttons: ['OK']
+    });
+    await alert.present();
   }
 };
 

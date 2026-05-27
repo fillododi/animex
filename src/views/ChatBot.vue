@@ -132,20 +132,18 @@
 
 <script setup lang="ts">
 import { reactive, shallowRef, onMounted } from 'vue';
-import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButton, IonButtons, IonInput, IonFooter, onIonViewDidLeave, useIonRouter, alertController } from '@ionic/vue';
+import { IonPage, IonContent, IonButton, IonFooter, onIonViewDidLeave, alertController } from '@ionic/vue';
 import ChatBubble from '@/components/ChatBubble.vue';
 import InputBar from '@/components/InputBar.vue';
 import { ConversationManager } from '@/modules/ConversationMgr';
 import { useChatStore } from '@/stores/chatStore';
 import { CHAT_STATUS } from '@/utility/constants';
-import { chevronBackOutline } from 'ionicons/icons';
 import { type ChatUIState, type DifficultyLevel} from '@/utility/Types';
 import { NativeSettings, AndroidSettings, IOSSettings } from 'capacitor-native-settings';
 // --- CHAT INITIALIZATION ---
 
 const chatStore = useChatStore();
 // --- UI STATE VARIABLES ---
-const ionRouter = useIonRouter();
 const uiState = reactive<ChatUIState>({
   isRecording: false,
   isMicReady: false,
