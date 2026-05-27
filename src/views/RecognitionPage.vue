@@ -39,6 +39,7 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue';
 import { IonPage, IonContent, onIonViewDidLeave, useIonRouter, alertController } from '@ionic/vue';
+import { NativeSettings, AndroidSettings, IOSSettings } from 'capacitor-native-settings';
 import { RecognitionManager } from '@/modules/RecognitionMgr';
 import { useServiceStore } from '@/stores/serviceStore';
 import { useSessionStore } from '@/stores/sessionStore';
@@ -71,13 +72,17 @@ const handleStart = async () => {
       
     } catch (error: any) {
       console.error("Errore avvio fotocamera:", error);
-      
-      const alert = await alertController.create({
-        header: 'Fotocamera non disponibile',
-        message: 'Temporaneo inutilizzo della fotocamera. Dettagli: ' + error.message,
-        buttons: ['OK']
-      });
-      await alert.present();
+      if (error.name === 'NotAllowedError') {
+        await showSettingsAlert();
+      }
+      else {
+        const alert = await alertController.create({
+          header: 'Fotocamera non disponibile',
+          message: 'Temporaneo inutilizzo della fotocamera. Dettagli: ' + error.message,
+          buttons: ['OK']
+        });
+        await alert.present();
+      }
     }
 };
 
@@ -92,6 +97,42 @@ onIonViewDidLeave(async () => {
     document.documentElement.style.setProperty('--nav-display', 'flex');
   } 
 });
+
+const showSettingsAlert = async () => {
+  const alert = await alertController.create({
+    header: 'Fotocamera Disabilitata',
+    message: "L'app ha bisogno della fotocamera per riconoscere gli animali. Vuoi aprire le impostazioni del telefono per consentire l'accesso?",
+    buttons: [
+      {
+        text: 'Annulla',
+        role: 'cancel',
+        handler: () => {
+          uiState.statusMessage = "Permessi fotocamera negati";
+        }
+      },
+      {
+        text: 'Apri Impostazioni',
+        role: 'confirm',
+        handler: () => {
+          openSettings();
+        }
+      }
+    ]
+  });
+
+  await alert.present();
+};
+
+const openSettings = async () => {
+  try {
+    await NativeSettings.open({
+      optionAndroid: AndroidSettings.ApplicationDetails, 
+      optionIOS: IOSSettings.App
+    });
+  } catch (e) {
+    console.error("Errore nell'apertura delle impostazioni:", e);
+  }
+};
 
 </script>
 
