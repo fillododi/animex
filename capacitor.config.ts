@@ -3,7 +3,11 @@ import type { CapacitorConfig } from '@capacitor/cli';
 const config: CapacitorConfig = {
   appId: 'io.ionic.starter',
   appName: 'animex',
-  webDir: 'dist'
+  webDir: 'dist',
+  server: {
+    androidScheme: "http",
+    iosScheme: "http"
+  }
 };
 
 export default config;

@@ -28,10 +28,15 @@ npm install -g @ionic/cli
 npm install
 ```
 
+### Create environment file
+```bash
+cp .env.example .env
+```
+
 ### Run in the browser
 
 ```bash
-ionic serve
+npm run dev
 ```
 
 ### Run on a device
