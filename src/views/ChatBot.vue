@@ -132,7 +132,7 @@
 
 <script setup lang="ts">
 import { reactive, shallowRef, onMounted } from 'vue';
-import { IonPage,IonContent, IonButton, IonFooter, onIonViewDidLeave, alertController } from '@ionic/vue';
+import { IonPage, IonContent, IonButton, IonFooter, onIonViewDidLeave, alertController } from '@ionic/vue';
 import ChatBubble from '@/components/ChatBubble.vue';
 import InputBar from '@/components/InputBar.vue';
 import { ConversationManager } from '@/modules/ConversationMgr';
