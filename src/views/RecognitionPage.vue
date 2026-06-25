@@ -52,6 +52,10 @@ const sessionStore = useSessionStore();
 const videoElement = ref<HTMLVideoElement | null>(null);
 
 onMounted(() => {
+  if(!videoElement.value) {
+    uiState.statusMessage = "Camera video element not found.";
+    return;
+  }
   serviceStore.setCameraService(videoElement.value);
 })
 
