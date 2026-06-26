@@ -30,10 +30,7 @@
 
         <!-- PAGINA 2: VISIONE AR -->
         <div class="page-wrapper">
-          <div class="placeholder-ar">
-            <h2>Visione AR in arrivo...</h2>
-            <!-- Sostituisci questo div con <ARView /> quando avrai il file -->
-          </div>
+          <AugmentedReality />
         </div>
 
       </div>
@@ -52,6 +49,7 @@ import BottomNav from '@/components/BottomNav.vue';
 
 import ChatView from '@/views/ChatBot.vue';
 import ScannerView from '@/views/RecognitionPage.vue';
+import AugmentedReality from './AugmentedReality.vue';
 // import ARView from '@/views/ARView.vue'; // Scommenta quando hai la pagina AR
 
 // Imposta la pagina di partenza (1 = Scanner al centro)
