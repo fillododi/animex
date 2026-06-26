@@ -30,7 +30,7 @@
 
         <!-- PAGINA 2: VISIONE AR -->
         <div class="page-wrapper">
-          <AugmentedReality />
+          <VirtualReality />
         </div>
 
       </div>
@@ -49,8 +49,7 @@ import BottomNav from '@/components/BottomNav.vue';
 
 import ChatView from '@/views/ChatBot.vue';
 import ScannerView from '@/views/RecognitionPage.vue';
-import AugmentedReality from './AugmentedReality.vue';
-// import ARView from '@/views/ARView.vue'; // Scommenta quando hai la pagina AR
+import VirtualReality from './VirtualReality.vue';
 
 // Imposta la pagina di partenza (1 = Scanner al centro)
 const paginaAttiva = ref(1);

@@ -3,7 +3,7 @@ import type { RouteRecordRaw } from 'vue-router';
 
 import HomePage from '../views/HomePage.vue';
 import ChatView from '../views/ChatBot.vue';
-import AugmentedReality from '@/views/AugmentedReality.vue';
+import VirtualReality from '@/views/VirtualReality.vue';
 import RecogView from '../views/RecognitionPage.vue';
 import MainLayout from '../views/MainLayout.vue';
 
@@ -28,9 +28,9 @@ const routes: Array<RouteRecordRaw> = [
     component: ChatView
   },
   {
-    path: '/ar',
-    name: 'AR',
-    component: AugmentedReality
+    path: '/vr',
+    name: 'VR',
+    component: VirtualReality
   },
   {
     path: '/cam',
