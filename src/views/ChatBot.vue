@@ -2,8 +2,12 @@
   <ion-page>
 
     <ion-content class="ion-padding chat-background">
-      
-      <!-- Banner di stato invariato -->
+
+      <div class="recognized-animal-banner" 
+      v-if="sessionStore.recognizedAnimal">
+        {{ sessionStore.recognizedAnimal.animalType }}
+      </div>
+
       <div class="status-banner" :class="{ active: uiState.isRecording }">
         {{ uiState.statusMessage }}
       </div>
@@ -140,9 +144,11 @@ import { useChatStore } from '@/stores/chatStore';
 import { CHAT_STATUS } from '@/utility/constants';
 import { type ChatUIState, type DifficultyLevel} from '@/utility/Types';
 import { NativeSettings, AndroidSettings, IOSSettings } from 'capacitor-native-settings';
+import { useSessionStore } from '@/stores/sessionStore';
 // --- CHAT INITIALIZATION ---
 
 const chatStore = useChatStore();
+const sessionStore = useSessionStore();
 // --- UI STATE VARIABLES ---
 const uiState = reactive<ChatUIState>({
   isRecording: false,
@@ -322,7 +328,16 @@ const openSettings = async () => {
 .chat-background {
   --background: #f0f2f5; 
 }
-
+.recognized-animal-banner {
+  background-color: #4caf50;
+  color: white;
+  text-align: center;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  font-weight: bold;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
 .status-banner {
   background-color: #ffffff;
   color: #2f3542;

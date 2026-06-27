@@ -1,4 +1,8 @@
 <script setup>
+import { useSessionStore } from '@/stores/sessionStore';
+
+const sessionStore = useSessionStore();
+
 // Riceviamo da App.vue il numero della pagina attuale (0, 1 o 2)
 defineProps({
   modelValue: {
@@ -11,8 +15,10 @@ defineProps({
 const emit = defineEmits(['update:modelValue'])
 
 // Cambio pagina
-function cambiaPagina(indice) {
-  emit('update:modelValue', indice)
+function changePage(indice) {
+  if(sessionStore.recognizedAnimal !== null) {
+    emit('update:modelValue', indice)
+  }
 }
 </script>
 
@@ -22,18 +28,20 @@ function cambiaPagina(indice) {
     <!-- Tasto 0: Assistente -->
     <div 
       class="nav-item" 
-      :class="{ active: modelValue === 0 }" 
-      @click="cambiaPagina(0)"
+      :class="{
+        active: sessionStore.recognizedAnimal !== null && modelValue === 0
+      }" 
+      @click="changePage(0)"
     >
       <i class="fa-solid fa-message"></i>
-      <span>Assistente</span>
+      <span>{{ sessionStore.recognizedAnimal ? 'Assistente' : '' }}</span>
     </div>
     
     <!-- Tasto 1: Scanner -->
     <div 
       class="nav-item" 
       :class="{ active: modelValue === 1 }" 
-      @click="cambiaPagina(1)"
+      @click="changePage(1)"
     >
       <i class="fa-solid fa-camera"></i>
       <span>Scanner</span>
@@ -42,11 +50,11 @@ function cambiaPagina(indice) {
     <!-- Tasto 2: Visione AR -->
     <div 
       class="nav-item" 
-      :class="{ active: modelValue === 2 }" 
-      @click="cambiaPagina(2)"
+      :class="{ active: sessionStore.recognizedAnimal !== null && modelValue === 2 }" 
+      @click="changePage(2)"
     >
       <i class="fa-solid fa-vr-cardboard"></i>
-      <span>Visione AR</span>
+      <span>{{ sessionStore.recognizedAnimal ? 'Visione AR' : '' }}</span>
     </div>
 
   </nav>

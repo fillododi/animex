@@ -68,14 +68,6 @@ async function connect() {
   }
   try{
     await connection.start()
-    //todo: remove this hardcoded animal 
-    const lion: AnimalData = {
-      id: "lion0",
-      animalType : "lion",
-      pos : { x: 0, y: 0},
-    }
-    useSessionStore().updateRecognizedAnimal(lion);
-    // to there
     statusMessage.value = connection.isActive() ? "Connected to server" : "Failed to connect :("
   } catch (error) {
     statusMessage.value = "Error connecting to server :(";
