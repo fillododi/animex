@@ -1,8 +1,9 @@
 <script setup>
 import { useSessionStore } from '@/stores/sessionStore';
+import { globalUiState } from '@/utility/UiState';
 
 const sessionStore = useSessionStore();
-
+const uiState = globalUiState;
 // Riceviamo da App.vue il numero della pagina attuale (0, 1 o 2)
 defineProps({
   modelValue: {
@@ -23,7 +24,7 @@ function changePage(indice) {
 </script>
 
 <template>
-  <nav class="bottom-nav">
+  <nav class="bottom-nav" v-show="!uiState.getUsingKeyboard()">
     
     <!-- Tasto 0: Assistente -->
     <div 

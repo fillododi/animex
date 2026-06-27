@@ -8,15 +8,15 @@
         {{ sessionStore.recognizedAnimal.animalType }}
       </div>
 
-      <div class="status-banner" :class="{ active: uiState.isRecording }">
-        {{ uiState.statusMessage }}
+      <div class="status-banner" :class="{ active: uiState.getRecording() }">
+        {{ uiState.getStatusMessage() }}
       </div>
 
         <ion-button 
-          v-if="!uiState.showQuizOptions"
+          v-if="!uiState.getShowQuizOptions()"
           expand="block" 
-          @click="uiState.showQuizOptions = true" 
-          :disabled="uiState.isRecording || uiState.isProcessing || chatStore.activeQuestion != null "
+          @click="uiState.setShowQuizOptions(true)" 
+          :disabled="uiState.getRecording() || uiState.getProcessing() || chatStore.activeQuestion != null "
           color="secondary"
           style="margin-top: 15px;"
         >
@@ -27,7 +27,7 @@
           <ion-button 
             expand="block" 
             @click="handleQuizRequest('easy')" 
-            :disabled="uiState.isProcessing"
+            :disabled="uiState.getProcessing()"
             color="success"
             style="flex: 1; margin: 0;"
           >
@@ -37,7 +37,7 @@
           <ion-button 
             expand="block" 
             @click="handleQuizRequest('medium')" 
-            :disabled="uiState.isProcessing"
+            :disabled="uiState.getProcessing()"
             color="warning"
             style="flex: 1; margin: 0;"
           >
@@ -47,7 +47,7 @@
           <ion-button 
             fill="clear" 
             color="medium" 
-            @click="uiState.showQuizOptions = false"
+            @click="uiState.setShowQuizOptions(false)"
             style="margin: 0;"
           >
             X
@@ -64,7 +64,7 @@
         />
         
         <ChatBubble 
-          v-if="uiState.isProcessing" 
+          v-if="uiState.getProcessing()" 
           role="ai" 
           text="Elaborazione in corso..." 
           isThinking 
@@ -83,7 +83,7 @@
                 fill="outline"
                 class="quiz-choice-btn"
                 @click="handleTextSubmit(choice)"
-                :disabled="uiState.isProcessing"
+                :disabled="uiState.getProcessing()"
               >
                 {{ choice }}
               </ion-button>
@@ -95,7 +95,7 @@
                 fill="outline"
                 class="quiz-choice-btn"
                 @click="handleTextSubmit('Vero')"
-                :disabled="uiState.isProcessing"
+                :disabled="uiState.getProcessing()"
               >
                 Vero
               </ion-button>
@@ -104,7 +104,7 @@
                 fill="outline"
                 class="quiz-choice-btn"
                 @click="handleTextSubmit('Falso')"
-                :disabled="uiState.isProcessing"
+                :disabled="uiState.getProcessing()"
               >
                 Falso
               </ion-button>
@@ -125,41 +125,43 @@
     
     <ion-footer>
       <InputBar 
-        v-model="uiState.inputText"
-        :isAscoltando="uiState.isRecording"
+        v-model="inputTextModel"
+        :isAscoltando="uiState.getRecording()"
         @toggle-microphone="toggleMicrophone"
         @send="handleTextSubmit"
+        @focus="uiState.setUsingKeyboard(true)"
+        @blur="uiState.setUsingKeyboard(false)"
       />
     </ion-footer>
   </ion-page>
 </template>
 
 <script setup lang="ts">
-import { reactive, shallowRef, onMounted } from 'vue';
+import { computed, shallowRef, onMounted } from 'vue';
 import { IonPage, IonContent, IonButton, IonFooter, onIonViewDidLeave, alertController } from '@ionic/vue';
 import ChatBubble from '@/components/ChatBubble.vue';
 import InputBar from '@/components/InputBar.vue';
 import { ConversationManager } from '@/modules/ConversationMgr';
 import { useChatStore } from '@/stores/chatStore';
 import { CHAT_STATUS } from '@/utility/constants';
-import { type ChatUIState, type DifficultyLevel} from '@/utility/Types';
+import { type DifficultyLevel} from '@/utility/Types';
 import { NativeSettings, AndroidSettings, IOSSettings } from 'capacitor-native-settings';
 import { useSessionStore } from '@/stores/sessionStore';
+import {globalUiState} from '@/utility/UiState';
 // --- CHAT INITIALIZATION ---
 
 const chatStore = useChatStore();
 const sessionStore = useSessionStore();
 // --- UI STATE VARIABLES ---
-const uiState = reactive<ChatUIState>({
-  isRecording: false,
-  isMicReady: false,
-  isProcessing: false,
-  inputText: "",
-  statusMessage: CHAT_STATUS.IDLE,
-  quizStatus: false,
-  showQuizOptions: false,
+const uiState = globalUiState;
+const inputTextModel = computed({
+  get() {
+    return uiState.getInputText();
+  },
+  set(newValue: string) {
+    uiState.setInputText(newValue);
+  }
 });
-
 const conversationManager = shallowRef<ConversationManager | null>(null);
 onMounted(() => {
   conversationManager.value = new ConversationManager();
@@ -168,66 +170,67 @@ onMounted(() => {
 
 const handleStart = async () => {
   try {
-    uiState.statusMessage = CHAT_STATUS.INITIALIZING;
-    uiState.isRecording = true;
-    uiState.isMicReady = false;
-    
+     uiState.setStatusMessage(CHAT_STATUS.INITIALIZING);
+     uiState.setRecording(true);
+     uiState.setMicReady(false);
+
     await conversationManager.value?.startInteraction(() => {
-      uiState.isMicReady = true;
-      uiState.statusMessage = CHAT_STATUS.RECORDING;
+      uiState.setMicReady(true);
+      uiState.setStatusMessage(CHAT_STATUS.RECORDING);
       }, (errorMessage) => {
         if (errorMessage === 'NEEDS_SETTINGS') {
           showSettingsAlert();
           // This if is to prevent overwriting the alert message if the user has already been prompted
-          if(uiState.statusMessage != CHAT_STATUS.DENIED_HARD){
-            uiState.statusMessage = CHAT_STATUS.DENIED_HARD;
+          if(uiState.getStatusMessage() != CHAT_STATUS.DENIED_HARD){
+            uiState.setStatusMessage(CHAT_STATUS.DENIED_HARD);
           }
         } else if (errorMessage === 'FIRST_DENIAL') {
-          uiState.statusMessage = CHAT_STATUS.DENIED_SOFT;
+          uiState.setStatusMessage(CHAT_STATUS.DENIED_SOFT);
         } else {
-          uiState.statusMessage = "Errore: " + errorMessage;
+          uiState.setStatusMessage(("Errore: " + errorMessage) as any);
         }
-        uiState.isRecording = false;
-        uiState.isMicReady = false;
+         uiState.setRecording(false);
+         uiState.setMicReady(false);
       });
     
   } catch (error: any) {
-    uiState.statusMessage = "Errore: " + error.message;
-    uiState.isRecording = false;
+    await uiState.setStatusMessage(("Errore: " + error.message) as any);
+    uiState.setRecording(false);
   }
 };
 
 const handleStop = async () => {
   await conversationManager.value?.stopSpeaking();
-  uiState.isRecording = false;
-  uiState.isProcessing = true;
-  uiState.statusMessage = CHAT_STATUS.THINKING;
+  uiState.setRecording(false);
+  uiState.setProcessing(true);
+  uiState.setStatusMessage(CHAT_STATUS.THINKING);
+  uiState.setUsingKeyboard(false);
   try {
     await conversationManager.value?.stopListening();
     const userText = conversationManager.value ? await conversationManager.value?.getCurrentTranscript() : "";
-    if(uiState.quizStatus){
+    if(uiState.getQuizStatus()){
       await conversationManager.value?.validateQuiz(userText)? 
-      uiState.statusMessage = CHAT_STATUS.SUCCESS : uiState.statusMessage = CHAT_STATUS.NO_QUIZ_AVAILABLE;
+      uiState.setStatusMessage(CHAT_STATUS.SUCCESS) : uiState.setStatusMessage(CHAT_STATUS.NO_QUIZ_AVAILABLE);
     } 
     else{
       await conversationManager.value?.processTextInteraction(userText)? 
-      uiState.statusMessage = CHAT_STATUS.SUCCESS : uiState.statusMessage = CHAT_STATUS.IDLE;
+      uiState.setStatusMessage(CHAT_STATUS.SUCCESS) : uiState.setStatusMessage(CHAT_STATUS.IDLE);
     }
   } catch (error: any) {
-    uiState.statusMessage = "Errore: " + error.message;
+    uiState.setStatusMessage(("Errore: " + error.message) as any);
   } finally {
     await conversationManager.value?.resetTranscript();
-    uiState.isProcessing = false;
-    uiState.quizStatus = false;
+    uiState.setProcessing(false);
+    uiState.setQuizStatus(false);
   }
 };
 
 
 const toggleMicrophone = () => {
 
-  if (uiState.isProcessing) return;
+  if (uiState.getProcessing()) return;
 
-  if (uiState.isRecording) {
+  if (uiState.getRecording()) {
     handleStop();
   } else {
     handleStart();
@@ -236,51 +239,51 @@ const toggleMicrophone = () => {
 
 const handleTextSubmit = async (selectedAnswer?: string | Event) => {
   const clickedAnswer = typeof selectedAnswer === 'string' ? selectedAnswer : "";
-  const text = clickedAnswer || uiState.inputText.trim();
+  const text = clickedAnswer || uiState.getInputText().trim();
   await conversationManager.value?.stopSpeaking();
-  if (!text  || uiState.isProcessing) return;
-  uiState.inputText = "";
-  uiState.isProcessing = true;
-  uiState.statusMessage = CHAT_STATUS.THINKING;
+  if (!text  || uiState.getProcessing()) return;
+  uiState.setInputText("");
+  uiState.setProcessing(true);
+  uiState.setStatusMessage(CHAT_STATUS.THINKING);
   try {
-    if(uiState.quizStatus){ 
+    if(uiState.getQuizStatus()){ 
       await conversationManager.value?.validateQuiz(text);
     }else {
       await conversationManager.value?.processTextInteraction(text);
     }
-     uiState.statusMessage = CHAT_STATUS.SUCCESS;  
+     uiState.setStatusMessage(CHAT_STATUS.SUCCESS);  
   } catch (error: any) {
-    uiState.statusMessage = "Errore: " + error.message;
+    uiState.setStatusMessage(("Errore: " + error.message) as any);
   }
    finally {
-    uiState.isProcessing = false;
-    uiState.quizStatus = false;
+    uiState.setProcessing(false);
+    uiState.setQuizStatus(false);
   }
   
 };
 
 const handleQuizRequest = async (difficulty: DifficultyLevel) => {
-  uiState.showQuizOptions = false;
-  uiState.isProcessing = true;
-  uiState.statusMessage = CHAT_STATUS.THINKING;
+  uiState.setShowQuizOptions(false);
+  uiState.setProcessing(true);
+  uiState.setStatusMessage(CHAT_STATUS.THINKING);
   await conversationManager.value?.stopSpeaking();
   try {
-    uiState.quizStatus = conversationManager.value ? await conversationManager.value.requestQuiz(difficulty) : false;
-    uiState.quizStatus ? uiState.statusMessage = CHAT_STATUS.QUIZ_LOADED : uiState.statusMessage = CHAT_STATUS.NO_QUIZ_AVAILABLE;
+    uiState.setQuizStatus(conversationManager.value ? await conversationManager.value.requestQuiz(difficulty) : false);
+    uiState.getQuizStatus() ? uiState.setStatusMessage(CHAT_STATUS.QUIZ_LOADED) : uiState.setStatusMessage(CHAT_STATUS.NO_QUIZ_AVAILABLE);
   } catch (error: any) {
-    uiState.statusMessage = "Errore quiz: " + error.message;
+    uiState.setStatusMessage(("Errore quiz: " + error.message) as any);
   } finally {
-    uiState.isProcessing = false;
+    uiState.setProcessing(false);
   }
 };
 
 
 onIonViewDidLeave(async () => {
-  if(uiState.isRecording) {
+  if(uiState.getRecording()) {
     await conversationManager.value?.stopListening();
     await conversationManager.value?.resetTranscript();
-    uiState.isRecording = false;
-    uiState.statusMessage = CHAT_STATUS.IDLE;
+    uiState.setRecording(false);
+    uiState.setStatusMessage(CHAT_STATUS.IDLE);
   } 
   await conversationManager.value?.stopSpeaking();
 });
@@ -294,7 +297,7 @@ const showSettingsAlert = async () => {
         text: 'Annulla',
         role: 'cancel',
         handler: () => {
-          uiState.statusMessage = CHAT_STATUS.DENIED_SOFT;
+          uiState.setStatusMessage(CHAT_STATUS.DENIED_SOFT);
         }
       },
       {
@@ -317,7 +320,7 @@ const openSettings = async () => {
       optionIOS: IOSSettings.App
     });
   } catch (e) {
-    uiState.statusMessage = CHAT_STATUS.SETTINGS_ERROR;
+    uiState.setStatusMessage(CHAT_STATUS.SETTINGS_ERROR);
   }
 };
 

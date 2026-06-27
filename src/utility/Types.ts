@@ -1,15 +1,5 @@
 import type { CHAT_STATUS } from "./constants";
 
-export interface ChatUIState {
-  isRecording: boolean;
-  isMicReady: boolean;
-  isProcessing: boolean;
-  inputText: string;
-  statusMessage?: string;
-  quizStatus: boolean;
-  showQuizOptions: boolean;
-}
-
 export type ChatStatus = typeof CHAT_STATUS[keyof typeof CHAT_STATUS] | `Errore: ${string}`;
 
 export type RecognitionStatus = "LOW_CONFIDENCE" | "AMBIGUOUS" | "MATCHED_LOW_CERTAINTY" | `MATCHED`;

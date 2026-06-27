@@ -16,7 +16,8 @@ const emit = defineEmits([
   'update:modelValue', // Aggiorna il testo mentre l'utente digita
   'send',             // Quando l'utente preme la freccia o il tasto Invio
   'toggle-microphone',  // Quando l'utente preme il microfono
-  'focus'              // Quando l'utente tocca la barra per scrivere
+  'focus',              // Quando l'utente tocca la barra per scrivere
+  'blur'
 ])
 
 function onInput(event) {
@@ -43,6 +44,7 @@ function onInput(event) {
       @input="onInput"
       @keyup.enter="$emit('send')"
       @focus="$emit('focus')"
+      @blur="$emit('blur')"
       placeholder="Chiedi all'IA..." 
     >
     
