@@ -6,7 +6,7 @@ defineProps({
     type: String,
     default: ''
   },
-  isAscoltando: {
+   isListening: {
     type: Boolean,
     default: false
   }
@@ -17,7 +17,7 @@ const emit = defineEmits([
   'send',             // Quando l'utente preme la freccia o il tasto Invio
   'toggle-microphone',  // Quando l'utente preme il microfono
   'focus',              // Quando l'utente tocca la barra per scrivere
-  'blur'
+  'blur'       
 ])
 
 function onInput(event) {
@@ -27,15 +27,6 @@ function onInput(event) {
 
 <template>
   <div class="global-input-bar">
-    
-    <!-- Tasto Microfono -->
-    <BaseButton 
-      :icona="isAscoltando ? '🔴' : '🎤'" 
-      variante="grigio" 
-      rotondo 
-      :attivo="isAscoltando"
-      @click="$emit('toggle-microphone')"
-    />
     
     <!-- Campo di testo -->
     <input 
@@ -48,12 +39,22 @@ function onInput(event) {
       placeholder="Chiedi all'IA..." 
     >
     
+    <!-- Tasto Microfono -->
+    <BaseButton 
+      :icona=" isListening ? '🔴' : '🎤'" 
+      variante="grigio" 
+      rotondo 
+      :attivo=" isListening"
+      @click="$emit('toggle-microphone')"
+    />
+
     <!-- Tasto Invia -->
     <BaseButton 
       icona="⬆️" 
       variante="grigio" 
       rotondo 
-      @click="$emit('send')"
+      @mousedown.prevent="$emit('send')"
+      @touchstart.prevent="$emit('send')"
     />
 
   </div>

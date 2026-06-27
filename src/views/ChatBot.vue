@@ -126,9 +126,9 @@
     <ion-footer>
       <InputBar 
         v-model="inputTextModel"
-        :isAscoltando="uiState.getRecording()"
+        :isListening="uiState.getRecording()"
         @toggle-microphone="toggleMicrophone"
-        @send="handleTextSubmit"
+        @send="uiState.getRecording() ? handleStop() : handleTextSubmit()"
         @focus="uiState.setUsingKeyboard(true)"
         @blur="uiState.setUsingKeyboard(false)"
       />
@@ -209,12 +209,12 @@ const handleStop = async () => {
     await conversationManager.value?.stopListening();
     const userText = conversationManager.value ? await conversationManager.value?.getCurrentTranscript() : "";
     if(uiState.getQuizStatus()){
-      await conversationManager.value?.validateQuiz(userText)? 
-      uiState.setStatusMessage(CHAT_STATUS.SUCCESS) : uiState.setStatusMessage(CHAT_STATUS.NO_QUIZ_AVAILABLE);
+      await conversationManager.value?.validateQuiz(userText);
+      uiState.setStatusMessage(CHAT_STATUS.SUCCESS);
     } 
     else{
-      await conversationManager.value?.processTextInteraction(userText)? 
-      uiState.setStatusMessage(CHAT_STATUS.SUCCESS) : uiState.setStatusMessage(CHAT_STATUS.IDLE);
+      await conversationManager.value?.processTextInteraction(userText);
+      uiState.setStatusMessage(CHAT_STATUS.SUCCESS);
     }
   } catch (error: any) {
     uiState.setStatusMessage(("Errore: " + error.message) as any);
@@ -226,12 +226,15 @@ const handleStop = async () => {
 };
 
 
-const toggleMicrophone = () => {
+const toggleMicrophone = async () => {
 
   if (uiState.getProcessing()) return;
 
   if (uiState.getRecording()) {
-    handleStop();
+    await conversationManager.value?.stopListening();
+    await conversationManager.value?.resetTranscript();
+    uiState.setRecording(false);
+    uiState.setStatusMessage(CHAT_STATUS.IDLE);
   } else {
     handleStart();
   }
