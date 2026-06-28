@@ -27,6 +27,7 @@
     "@ionic/pwa-elements": "^3.4.0",
     "@ionic/vue": "^8.0.0",
     "@ionic/vue-router": "^8.0.0",
+    "@types/three": "^0.185.0",
     "capacitor-native-settings": "^8.1.0",
     "dotenv": "^17.4.2",
     "ionicons": "^7.0.0",

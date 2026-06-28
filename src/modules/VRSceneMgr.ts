@@ -1,8 +1,10 @@
 import * as THREE from 'three';
-import { VREntityManager } from "@/modules/vr-entities/VREntityMgr";
-import type { AnimalType } from "@/utility/AnimalType";
+import { AnimalType } from "@/utility/AnimalType";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { AnimalEntity } from './vr-entities/AnimalEntity';
+import { FoodEntity } from './vr-entities/FoodEntity';
+import { Entity } from './vr-entities/Entity';
+import { assert } from '@/utility/assert';
 
 /**
  * Manages the VR Scene.
@@ -11,12 +13,17 @@ export class VRSceneManager {
     private readonly renderer: THREE.WebGLRenderer;
     private readonly scene: THREE.Scene;
     private readonly camera: THREE.PerspectiveCamera;
-    private readonly entityManager: VREntityManager;
 
     private readonly GLTFLoader: GLTFLoader;
     private readonly texLoader: THREE.TextureLoader;
 
     private readonly bgSphereMat: THREE.MeshBasicMaterial;
+
+    /* Entity management */
+    private readonly entities: Set<Entity>;
+    private readonly clock: THREE.Clock;
+    private frame: number = 0;
+
 
     constructor() {
         this.renderer = new THREE.WebGLRenderer({antialias: true});
@@ -41,53 +48,157 @@ export class VRSceneManager {
         this.camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 100);
         this.scene.add(this.camera);
 
-        this.entityManager = new VREntityManager();
-        
         this.GLTFLoader = new GLTFLoader();
         this.texLoader = new THREE.TextureLoader;
-    }
 
-    getRendererDOM() : HTMLCanvasElement {
-        return this.renderer.domElement
+        this.entities = new Set();
+        this.clock = new THREE.Clock();
     }
 
     /**
-     * Loads the scene with the animal's vr assets
-     * @param animal The animal to render.
+     * Loads the main scene of the VR: background and animal
      */
-    loadAnimalScene(animal: AnimalType) {
+    loadMainScene() {
+        // TODO: take animal from pinia
+        const animal = AnimalType.UNKNOWN;
+
+        // Load background
         this.texLoader.load(`/vr-assets/backgrounds/${animal.backgroundIMG}`, (tex: THREE.Texture) => {
             this.bgSphereMat.map = tex;
             this.bgSphereMat.needsUpdate = true;
         })
 
+        // Load animal
         this.GLTFLoader.load(`/vr-assets/models/${animal.model}`, (gltf) => {
-            this.entityManager.addEntity(new AnimalEntity("animal", this.scene, new THREE.Vector3(0, 0, -2), gltf));
+            const new_animal = new AnimalEntity("animal", this, new THREE.Vector3(0, 0, -10), gltf);
+            this.addEntityToScene(new_animal);
         });
-
-        this.renderer.setAnimationLoop(() => {
-            this.entityManager.update();
-            this.camera.updateMatrix();
-            //TODO: add controls
-            this.renderer.render(this.scene, this.camera);
-        })
+        
     }
 
-    onResize() {
+    /**
+     * Main engine loop for the VR. It will be called every frame.
+     */
+    engineLoop() {
+
+        /* LOGIC */
+
+        // Spawn food every second
+        if (this.frame % 60 == 0)
+            this.loadFood();
+
+
+        /* UPDATES */
+
+        // Update Entities
+        const delta = this.clock.getDelta();
+        for (const entity of this.entities)
+            entity.update(delta);
+
+        // Update Camera and renderer
+        this.camera.updateMatrix();
+        this.renderer.render(this.scene, this.camera);
+
+
+        // Update Frame Count
+        this.frame += 1;
+    }
+
+    /**
+     * Loads food into the scene
+     */
+    loadFood() {
+        // Load Food
+        this.GLTFLoader.load(`/vr-assets/models/food_test.glb`, (gltf) => {
+            // TODO: now the spawn is random, it can be changed later
+            const new_food = new FoodEntity("meat", this, new THREE.Vector3(Math.random() * 20 - 10, 10, -10), gltf);
+            this.addEntityToScene(new_food);
+        });
+    
+    }
+
+    /**
+     * Adds an entity to the scene
+     * @param entity Entity to add
+     * @throws Error if the entity (or its model) is invalid or corrupted
+     */
+    addEntityToScene(entity: Entity) {
+        assert(entity != null && entity.model != null, "Error in adding entity to scene");
+        this.entities.add(entity)
+        this.scene.add(entity.model)
+    }
+
+    /**
+     * Deletes an entity from the scene
+     * @param entity entity to be deleted
+     * @throws Error if the entity is not in the scene
+     */
+    deleteEntityFromScene(entity: Entity) {
+        assert(this.entities.has(entity), "Error in deleting entity: trying to delete nonexistent entity")
+        this.entities.delete(entity)
+        this.scene.remove(entity.model);
+    }
+
+    /**
+     * Returns an entity give a name
+     * @param name Name of the desired entity
+     * @returns the entity; null if there is no entity with the given name
+     */
+    findEntityByName(name: string): Entity | null {
+        for (const entity of this.entities)
+            if (entity.name === name)
+                return entity
+        return null
+    }
+
+    /**
+     * Returns the entities of a desired type
+     * @param type String of the name of the Class of entity desired (case sensitive)
+     */
+    getEntityByType(type: string) {
+        const res: Set<Entity> = new Set();
+        for (const entity of this.entities)
+            if (entity.constructor.name === type)
+                res.add(entity)
+        return res;
+    }
+
+    /**
+     * Activates the VR: this function loads the VR scene and starts the Engine Loop of the VR
+     */
+    activate() {
+        // Load assets
+        this.loadMainScene();
+
+        // Start Engine
+        this.renderer.setAnimationLoop(() => this.engineLoop())
+    }
+
+    /**
+     * Deactivates the VR
+     */
+    deactivate() {
+        this.renderer.setAnimationLoop(null);
+        this.entities.forEach((ent: Entity) => {
+            this.scene.remove(ent.model)
+        });
+        this.entities.clear()
+    }
+
+    /**
+     * Helper function for resizing
+     */
+    onResize(): void {
         this.camera.aspect = window.innerWidth / window.innerHeight;
         this.camera.updateProjectionMatrix();
         this.renderer.setSize(window.innerWidth, window.innerHeight);
     }
 
-    deactivate() {
-        this.renderer.setAnimationLoop(null);
-        this.clearScene();
-    }
-
-    clearScene() {
-        this.entityManager.getAllEntities().forEach(ent => {
-            this.entityManager.removeEntity(ent);
-            this.scene.remove(ent.model);
-        });
+    /**
+     * Returns the DOM
+     * @returns The DOM
+     */
+    getRendererDOM() : HTMLCanvasElement {
+        return this.renderer.domElement;
     }
 }

@@ -5,7 +5,6 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue';
 import { VRSceneManager } from '@/modules/VRSceneMgr';
-import { AnimalType } from '@/utility/AnimalType';
 
 const sceneContainer = ref(null);
 
@@ -14,7 +13,7 @@ const sceneManager = new VRSceneManager();
 onMounted(() => {
     // Initialize
     sceneContainer.value.appendChild(sceneManager.getRendererDOM());
-    sceneManager.loadAnimalScene(AnimalType.UNKNOWN); //get animal type from recog
+    sceneManager.activate();
     window.addEventListener('resize', onWindowResize);
 });
 

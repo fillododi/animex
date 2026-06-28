@@ -10,7 +10,7 @@ export class AnimalType {
     static readonly NEWT = new AnimalType("pond.jpg", "newt.glb", true, false);
     static readonly DOG = new AnimalType("city.jpg", "dog.glb", true, true);
     static readonly CAT = new AnimalType("city.jpg", "cat.glb", true, false);
-    static readonly UNKNOWN = new AnimalType("test.jpg", "test.glb", false, false);
+    static readonly UNKNOWN = new AnimalType("test.jpg", "animal_test.glb", false, false);
 
     /** Path to the image file for VR background. */
     readonly backgroundIMG: string;
