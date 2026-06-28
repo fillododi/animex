@@ -5,6 +5,7 @@ import { AnimalEntity } from './vr-entities/AnimalEntity';
 import { FoodEntity } from './vr-entities/FoodEntity';
 import { Entity } from './vr-entities/Entity';
 import { assert } from '@/utility/assert';
+import { Vector3 } from 'three';
 
 /**
  * Manages the VR Scene.
@@ -60,7 +61,7 @@ export class VRSceneManager {
      */
     loadMainScene() {
         // TODO: take animal from pinia
-        const animal = AnimalType.UNKNOWN;
+        const animal = AnimalType.DOG;
 
         // Load background
         this.texLoader.load(`/vr-assets/backgrounds/${animal.backgroundIMG}`, (tex: THREE.Texture) => {
@@ -70,7 +71,7 @@ export class VRSceneManager {
 
         // Load animal
         this.GLTFLoader.load(`/vr-assets/models/${animal.model}`, (gltf) => {
-            const new_animal = new AnimalEntity("animal", this, new THREE.Vector3(0, 0, -10), gltf);
+            const new_animal = new AnimalEntity("animal", this, new THREE.Vector3(0, 0, -20), gltf);
             this.addEntityToScene(new_animal);
         });
         
@@ -85,7 +86,7 @@ export class VRSceneManager {
 
         // Spawn food every second
         if (this.frame % 60 == 0)
-            this.loadFood();
+            this.loadFood(new THREE.Vector3(Math.random() * 20 - 10, 20, Math.random() * 20 -40));
 
 
         /* UPDATES */
@@ -106,12 +107,12 @@ export class VRSceneManager {
 
     /**
      * Loads food into the scene
+     * @param position Where to spawn the food in the space
      */
-    loadFood() {
+    loadFood(position: Vector3) {
         // Load Food
         this.GLTFLoader.load(`/vr-assets/models/food_test.glb`, (gltf) => {
-            // TODO: now the spawn is random, it can be changed later
-            const new_food = new FoodEntity("meat", this, new THREE.Vector3(Math.random() * 20 - 10, 10, -10), gltf, FoodType.NONE);
+            const new_food = new FoodEntity("meat", this, position, gltf, FoodType.NONE);
             this.addEntityToScene(new_food);
         });
     

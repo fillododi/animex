@@ -1,4 +1,4 @@
-import type { Group, Object3DEventMap, Vector3 } from "three";
+import { Vector3, type Group, type Object3DEventMap } from "three";
 import type { GLTF } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { VRSceneManager } from "../VRSceneMgr";
 
