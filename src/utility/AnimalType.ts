@@ -2,15 +2,15 @@
 //"italian-stream-frog" | "japanese-fire-bellied-newt"| "unknown"
 
 export class AnimalType {
-    static readonly LION = new AnimalType("savannah.jpg", "lion.glb", true, false);
-    static readonly ZEBRA = new AnimalType("savannah.jpg", "zebra.glb", false, true);
-    static readonly HIPPOPOTAMUS = new AnimalType("water-hole.jpg", "hippo.glb", true, true);
-    static readonly TIGER = new AnimalType("jungle.jpg", "tiger.glb", true, false);
-    static readonly FROG = new AnimalType("pond.jpg", "frog.glb", true, false);
-    static readonly NEWT = new AnimalType("pond.jpg", "newt.glb", true, false);
-    static readonly DOG = new AnimalType("city.jpg", "dog.glb", true, true);
-    static readonly CAT = new AnimalType("city.jpg", "cat.glb", true, false);
-    static readonly UNKNOWN = new AnimalType("test.jpg", "animal_test.glb", false, false);
+    static readonly LION = new AnimalType("savannah.png", "lion.glb", true, false);
+    static readonly ZEBRA = new AnimalType("savannah.png", "zebra.glb", false, true);
+    static readonly HIPPOPOTAMUS = new AnimalType("watering-hole.png", "hippopotamus.glb", true, true);
+    static readonly TIGER = new AnimalType("jungle.png", "tiger.glb", true, false);
+    static readonly FROG = new AnimalType("pond.png", "frog.glb", true, false);
+    static readonly NEWT = new AnimalType("pond.png", "newt.glb", true, false);
+    static readonly DOG = new AnimalType("room.png", "dog.glb", true, true);
+    static readonly CAT = new AnimalType("room.png", "cat.glb", true, false);
+    static readonly UNKNOWN = new AnimalType("test.jpg", "test.glb", false, false);
 
     /** Path to the image file for VR background. */
     readonly backgroundIMG: string;
