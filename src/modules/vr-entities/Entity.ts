@@ -6,12 +6,12 @@ export abstract class Entity {
     readonly id: number;
     readonly name:string;
     readonly model: Group<Object3DEventMap>;
-    readonly scene: VRSceneManager;
+    readonly sceneMgr: VRSceneManager;
 
-	constructor(name: string, scene: VRSceneManager, initialPosition: Vector3, gltf: GLTF)  {
+	constructor(name: string, sceneMgr: VRSceneManager, initialPosition: Vector3, gltf: GLTF)  {
 		this.name = name;
 		this.id = Math.round(Math.random() * 100) + 1;
-        this.scene = scene;
+        this.sceneMgr = sceneMgr;
 
         this.model = gltf.scene;
         this.model.position.copy(initialPosition);
@@ -27,6 +27,6 @@ export abstract class Entity {
      * Deletes this object from the parent scene and frees it.
      */
     free() {
-        this.scene.deleteEntityFromScene(this);
+        this.sceneMgr.deleteEntityFromScene(this);
     }
 }

@@ -10,7 +10,7 @@ export class AnimalEntity extends Entity {
         // Temp behavior for animal to see if it works
 
         // Move towards closest valid food
-        const food = this.scene.getEntityByType("FoodEntity");
+        const food = this.sceneMgr.getEntityByType("FoodEntity");
         if (food.size == 0)
             return;
         let closest_food = null;

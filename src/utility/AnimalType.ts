@@ -1,31 +1,35 @@
 //export type AnimalType = "lion" | "tiger"  | "hippopotamus" | 
 //"italian-stream-frog" | "japanese-fire-bellied-newt"| "unknown"
 
+export enum FoodType {
+    NONE = 0,
+    MEAT = 1,
+    PLANT = 2,
+    ALL = FoodType.NONE | FoodType.MEAT | FoodType.PLANT
+}
+
 export class AnimalType {
-    static readonly LION = new AnimalType("savannah.png", "lion.glb", true, false);
-    static readonly ZEBRA = new AnimalType("savannah.png", "zebra.glb", false, true);
-    static readonly HIPPOPOTAMUS = new AnimalType("watering-hole.png", "hippopotamus.glb", true, true);
-    static readonly TIGER = new AnimalType("jungle.png", "tiger.glb", true, false);
-    static readonly FROG = new AnimalType("pond.png", "frog.glb", true, false);
-    static readonly NEWT = new AnimalType("pond.png", "newt.glb", true, false);
-    static readonly DOG = new AnimalType("room.png", "dog.glb", true, true);
-    static readonly CAT = new AnimalType("room.png", "cat.glb", true, false);
-    static readonly UNKNOWN = new AnimalType("test.jpg", "test.glb", false, false);
+    static readonly LION = new AnimalType("savannah.png", "lion.glb", FoodType.MEAT);
+    static readonly ZEBRA = new AnimalType("savannah.png", "zebra.glb", FoodType.PLANT);
+    static readonly HIPPOPOTAMUS = new AnimalType("watering-hole.png", "hippopotamus.glb", FoodType.ALL);
+    static readonly TIGER = new AnimalType("jungle.png", "tiger.glb", FoodType.MEAT);
+    static readonly FROG = new AnimalType("pond.png", "frog.glb", FoodType.MEAT);
+    static readonly NEWT = new AnimalType("pond.png", "newt.glb", FoodType.MEAT);
+    static readonly DOG = new AnimalType("room.png", "dog.glb", FoodType.ALL);
+    static readonly CAT = new AnimalType("room.png", "cat.glb", FoodType.MEAT);
+    static readonly UNKNOWN = new AnimalType("test.jpg", "test.glb", FoodType.NONE);
 
     /** Path to the image file for VR background. */
     readonly backgroundIMG: string;
     /** Path to the 3D model file for VR. */
     readonly model: string;
-    /** True if the animal is carnivorous. */
-    readonly eatsMeat: boolean;
-    /** True if the animal is herbivorous. */
-    readonly eatsVeg: boolean;
+    /** What the animal eats, used as a bitmask */
+    readonly diet: FoodType;
 
-    constructor(bg: string, model: string, carn: boolean, herb: boolean) {
+    constructor(bg: string, model: string, diet: FoodType) {
         this.backgroundIMG = bg;
         this.model = model;
-        this.eatsMeat = carn;
-        this.eatsVeg = herb;
+        this.diet = diet;
     }
 
     static fromString(str: string): AnimalType {

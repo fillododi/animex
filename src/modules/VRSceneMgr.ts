@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { AnimalType } from "@/utility/AnimalType";
+import { AnimalType, FoodType } from "@/utility/AnimalType";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { AnimalEntity } from './vr-entities/AnimalEntity';
 import { FoodEntity } from './vr-entities/FoodEntity';
@@ -111,7 +111,7 @@ export class VRSceneManager {
         // Load Food
         this.GLTFLoader.load(`/vr-assets/models/food_test.glb`, (gltf) => {
             // TODO: now the spawn is random, it can be changed later
-            const new_food = new FoodEntity("meat", this, new THREE.Vector3(Math.random() * 20 - 10, 10, -10), gltf);
+            const new_food = new FoodEntity("meat", this, new THREE.Vector3(Math.random() * 20 - 10, 10, -10), gltf, FoodType.NONE);
             this.addEntityToScene(new_food);
         });
     
