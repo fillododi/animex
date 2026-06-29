@@ -23,6 +23,7 @@ export class VRSceneManager {
     /* Entity management */
     private readonly entities: Set<Entity>;
     private readonly clock: THREE.Clock;
+    private cameraRotation: Vector3 = new Vector3(0, 0, 0);
     private frame: number = 0;
 
 
@@ -97,12 +98,21 @@ export class VRSceneManager {
             entity.update(delta);
 
         // Update Camera and renderer
+        this.camera.setRotationFromEuler(new THREE.Euler().setFromVector3(this.cameraRotation));
         this.camera.updateMatrix();
-        this.renderer.render(this.scene, this.camera);
 
+        this.renderer.render(this.scene, this.camera);
 
         // Update Frame Count
         this.frame += 1;
+    }
+
+    /**
+     * Rotates the camera to the given rotation
+     * @param rotation Rotation to which rotate the camera
+     */
+    updateCameraRotation(rotation: Vector3) {
+        this.cameraRotation = rotation;
     }
 
     /**
