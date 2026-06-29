@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { AnimalType, FoodType } from "@/utility/AnimalType";
+import { DragControls } from 'three/addons/controls/DragControls.js';
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { AnimalEntity } from './vr-entities/AnimalEntity';
 import { FoodEntity } from './vr-entities/FoodEntity';
@@ -14,7 +15,7 @@ export class VRSceneManager {
     private readonly renderer: THREE.WebGLRenderer;
     private readonly scene: THREE.Scene;
     private readonly camera: THREE.PerspectiveCamera;
-
+    
     private readonly GLTFLoader: GLTFLoader;
     private readonly texLoader: THREE.TextureLoader;
 
@@ -26,6 +27,9 @@ export class VRSceneManager {
     private cameraRotation: Vector3 = new Vector3(0, 0, 0);
     private frame: number = 0;
 
+    private readonly foodModels: Map<FoodType, string[]>;
+    
+    private readonly dragCont: DragControls
 
     constructor() {
         this.renderer = new THREE.WebGLRenderer({antialias: true});
@@ -42,19 +46,27 @@ export class VRSceneManager {
         directionalLight.position.set(0, 4, 2);
         this.scene.add(directionalLight);
 
-        const sphereGeometry = new THREE.SphereGeometry(50, 64, 64);
+        const sphereGeometry = new THREE.SphereGeometry(100, 64, 64);
         this.bgSphereMat = new THREE.MeshBasicMaterial({ side: THREE.BackSide });
         const bgSphere = new THREE.Mesh(sphereGeometry, this.bgSphereMat);
         this.scene.add(bgSphere);
 
         this.camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 100);
+        this.camera.position.set(0, 10, 0);
         this.scene.add(this.camera);
+
+        this.dragCont = new DragControls([], this.camera, this.renderer.domElement);
+        this.dragCont.transformGroup = true;
 
         this.GLTFLoader = new GLTFLoader();
         this.texLoader = new THREE.TextureLoader;
 
         this.entities = new Set();
         this.clock = new THREE.Clock();
+
+        this.foodModels = new Map<FoodType, string[]>()
+        this.foodModels.set(FoodType.MEAT, ['steak.glb', 'turkey.glb']);
+        this.foodModels.set(FoodType.PLANT, ['plant.glb', 'salad-bowl.glb']);
     }
 
     /**
@@ -62,7 +74,7 @@ export class VRSceneManager {
      */
     loadMainScene() {
         // TODO: take animal from pinia
-        const animal = AnimalType.DOG;
+        const animal = AnimalType.TIGER;
 
         // Load background
         this.texLoader.load(`/vr-assets/backgrounds/${animal.backgroundIMG}`, (tex: THREE.Texture) => {
@@ -72,10 +84,17 @@ export class VRSceneManager {
 
         // Load animal
         this.GLTFLoader.load(`/vr-assets/models/${animal.model}`, (gltf) => {
-            const new_animal = new AnimalEntity("animal", this, new THREE.Vector3(0, 0, -20), gltf);
+            const new_animal = new AnimalEntity("animal", this, new THREE.Vector3(0, 0, -30), gltf, animal.diet);
             this.addEntityToScene(new_animal);
         });
-        
+
+        const geometry = new THREE.SphereGeometry(4);
+        const wireframe = new THREE.WireframeGeometry( geometry );
+        const line = new THREE.LineSegments( wireframe )
+        line.position.set(0, 0, -30)
+        this.scene.add( line );
+
+        this.clock.start();
     }
 
     /**
@@ -86,8 +105,8 @@ export class VRSceneManager {
         /* LOGIC */
 
         // Spawn food every second
-        if (this.frame % 60 == 0)
-            this.loadFood(new THREE.Vector3(Math.random() * 20 - 10, 20, Math.random() * 20 -40));
+        //if (this.frame % 60 == 0)
+            //this.loadFood();
 
 
         /* UPDATES */
@@ -97,6 +116,7 @@ export class VRSceneManager {
         for (const entity of this.entities)
             entity.update(delta);
 
+        this.dragCont.update(delta);
         // Update Camera and renderer
         this.camera.setRotationFromEuler(new THREE.Euler().setFromVector3(this.cameraRotation));
         this.camera.updateMatrix();
@@ -126,6 +146,23 @@ export class VRSceneManager {
             this.addEntityToScene(new_food);
         });
     
+    }
+
+    /**
+     * Loads food of a specified type into the scene.
+     * @param type The type of food to spawn.
+     */
+    spawnFoodOfType(type: FoodType) {
+        const models = this.foodModels.get(type);
+        if (!models) return;
+
+        const model = models.at(Math.floor(Math.random() * models.length));
+        if (!model) return;
+
+        this.GLTFLoader.load(`/vr-assets/models/${model}`, (gltf) => {
+            const new_food = new FoodEntity("meat", this, new THREE.Vector3(0, 0, 0), gltf, type);
+            this.addEntityToScene(new_food);
+        });
     }
 
     /**
@@ -166,7 +203,7 @@ export class VRSceneManager {
      * Returns the entities of a desired type
      * @param type String of the name of the Class of entity desired (case sensitive)
      */
-    getEntityByType(type: string) {
+    getEntityByType(type: string): Set<Entity> {
         const res: Set<Entity> = new Set();
         for (const entity of this.entities)
             if (entity.constructor.name === type)
@@ -190,8 +227,10 @@ export class VRSceneManager {
      */
     deactivate() {
         this.renderer.setAnimationLoop(null);
-        this.entities.forEach((ent: Entity) => {
-            this.scene.remove(ent.model)
+
+        const temp = new Set(this.entities);
+        temp.forEach((ent: Entity) => {
+            this.deleteEntityFromScene(ent);
         });
         this.entities.clear()
     }
@@ -211,5 +250,37 @@ export class VRSceneManager {
      */
     getRendererDOM() : HTMLCanvasElement {
         return this.renderer.domElement;
+    }
+
+    /**
+     * Returns the direction the camera is facing along the XZ plane.
+     */
+    getCameraFacing(): THREE.Vector3 {
+        const res = new THREE.Vector3();
+        this.camera.getWorldDirection(res);
+        res.y = 0;
+        return res.normalize();
+    }
+
+    /**
+     * Adds an object to the drag controls.
+     * @param obj The object to add.
+     * @throws Error if the object is already in the drag controls.
+     */
+    addToDragControls(obj: THREE.Object3D) {
+        assert(!this.dragCont.objects.includes(obj), "Object already under drag controls!");
+
+        this.dragCont.objects.push(obj);
+    }
+
+    /**
+     * Removes an object from the drag controls.
+     * @param obj The obj to remove.
+     * @throws Error if the object isn't in the drag controls.
+     */
+    removeFromDragControls(obj: THREE.Object3D) {
+        assert(this.dragCont.objects.includes(obj), "Object not under drag controls!");
+
+        this.dragCont.objects.splice(this.dragCont.objects.indexOf(obj), 1);
     }
 }

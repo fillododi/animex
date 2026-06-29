@@ -1,12 +1,22 @@
 <template>
-    <div ref="sceneContainer" class="scene-container"></div>
+    <IonPage>
+        <IonContent>
+            <div style="margin-top: 15px; display: flex; gap: 10px; align-items: center;">
+                <ion-button @click="sceneManager.spawnFoodOfType(FoodType.PLANT)">+ Plant</ion-button>
+                <ion-button @click="sceneManager.spawnFoodOfType(FoodType.MEAT)">+ Meat</ion-button>
+            </div>
+            <div ref="sceneContainer" class="scene-container"></div>
+        </IonContent>
+    </IonPage>
 </template>
 
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue';
+import { IonButton, IonContent, IonPage } from '@ionic/vue';
 import { VRSceneManager } from '@/modules/VRSceneMgr';
 import { Motion } from '@capacitor/motion';
 import { Vector3 } from 'three';
+import { FoodType } from '@/utility/AnimalType';
 
 const sceneContainer = ref(null);
 
