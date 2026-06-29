@@ -5,7 +5,7 @@
 
       <div class="recognized-animal-banner" 
       v-if="sessionStore.recognizedAnimal">
-        {{ sessionStore.recognizedAnimal.animalType }}
+        {{ sessionStore.recognizedAnimal.displayName }}
       </div>
 
       <div class="status-banner" :class="{ active: uiState.getRecording() }">
@@ -127,9 +127,12 @@
       <InputBar 
         v-model="inputTextModel"
         :isListening="uiState.getRecording()"
+        :isSpeaking="uiState.getSpeaking()"
         @toggle-microphone="toggleMicrophone"
+        @cancel-recording="handleCancel"
+        @stop-audio="handleStopAudio"
         @send="uiState.getRecording() ? handleStop() : handleTextSubmit()"
-        @focus="uiState.setUsingKeyboard(true)"
+        @focus="handleInputFocus"
         @blur="uiState.setUsingKeyboard(false)"
       />
     </ion-footer>
@@ -137,7 +140,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, shallowRef, onMounted } from 'vue';
+import { computed, shallowRef, onMounted, ref, watch } from 'vue';
 import { IonPage, IonContent, IonButton, IonFooter, onIonViewDidLeave, alertController } from '@ionic/vue';
 import ChatBubble from '@/components/ChatBubble.vue';
 import InputBar from '@/components/InputBar.vue';
@@ -166,6 +169,33 @@ const conversationManager = shallowRef<ConversationManager | null>(null);
 onMounted(() => {
   conversationManager.value = new ConversationManager();
 });
+
+// --- WATCHERS TO SYNC AUDIO AND UI ---
+
+watch(
+  () => chatStore.messages.length,
+  (newLength, oldLength) => {
+    if (newLength > oldLength) {
+      const lastMsg = chatStore.messages[newLength - 1];
+      if (lastMsg &&lastMsg.role === 'model') {
+        uiState.setProcessing(false);
+        uiState.setStatusMessage(CHAT_STATUS.SUCCESS);
+        uiState.setSpeaking(true);
+      }
+    }
+  }
+);
+
+watch(
+  () => chatStore.activeQuestion,
+  (newQuestion) => {
+    if (newQuestion) {
+      uiState.setProcessing(false);
+      uiState.setStatusMessage(CHAT_STATUS.SUCCESS);
+      uiState.setSpeaking(true);
+    }
+  }
+);
 // --- EVENT HANDLERS ---
 
 const handleStart = async () => {
@@ -200,7 +230,7 @@ const handleStart = async () => {
 };
 
 const handleStop = async () => {
-  await conversationManager.value?.stopSpeaking();
+  //await conversationManager.value?.stopSpeaking();
   uiState.setRecording(false);
   uiState.setProcessing(true);
   uiState.setStatusMessage(CHAT_STATUS.THINKING);
@@ -222,21 +252,37 @@ const handleStop = async () => {
     await conversationManager.value?.resetTranscript();
     uiState.setProcessing(false);
     uiState.setQuizStatus(false);
+    uiState.setSpeaking(false);
   }
 };
 
 
 const toggleMicrophone = async () => {
-
   if (uiState.getProcessing()) return;
+  if (uiState.getSpeaking()) {
+    await handleStopAudio();
+  }
+  handleStart();
+};
 
+const handleCancel = async () => {
   if (uiState.getRecording()) {
     await conversationManager.value?.stopListening();
-    await conversationManager.value?.resetTranscript();
+    await conversationManager.value?.resetTranscript(); 
     uiState.setRecording(false);
     uiState.setStatusMessage(CHAT_STATUS.IDLE);
-  } else {
-    handleStart();
+  }
+};
+
+const handleStopAudio = async () => {
+  await conversationManager.value?.stopSpeaking();
+  uiState.setSpeaking(false);
+};
+
+const handleInputFocus = async () => {
+  uiState.setUsingKeyboard(true);
+  if (uiState.getSpeaking()) {
+    await handleStopAudio();
   }
 };
 
@@ -261,6 +307,7 @@ const handleTextSubmit = async (selectedAnswer?: string | Event) => {
    finally {
     uiState.setProcessing(false);
     uiState.setQuizStatus(false);
+    uiState.setSpeaking(false);
   }
   
 };
@@ -277,6 +324,7 @@ const handleQuizRequest = async (difficulty: DifficultyLevel) => {
     uiState.setStatusMessage(("Errore quiz: " + error.message) as any);
   } finally {
     uiState.setProcessing(false);
+    uiState.setSpeaking(false);
   }
 };
 

@@ -50,12 +50,12 @@ export class ConversationManager {
             if(!text) {
                 if(this.counter === 0){
                     chatStore.addEmptyResponse();
-                    this.speak(EMPTY_INPUT_ANIMAL_TEXT);
+                    await this.speak(EMPTY_INPUT_ANIMAL_TEXT);
                     this.counter++;
                     return false;
                 } else {
                     chatStore.addFallbackResponse();
-                    this.speak(EMPTY_INPUT_ANIMAL_TEXT + " " + TRY_TO_WRITE_TEXT);
+                    await this.speak(EMPTY_INPUT_ANIMAL_TEXT + " " + TRY_TO_WRITE_TEXT);
                     return false;
                 }
             }else { 
@@ -64,17 +64,17 @@ export class ConversationManager {
                 const response = await connectionService?.sendChatRequest(sessionId, text);
                 this.counter = 0;
                 if(!response || response.answer.trim() === ""){
-                    this.speakErrorResponse();
+                    await this.speakErrorResponse();
                     return false;
                 } 
                 else{
                     chatStore.addBotMessage(response.answer);
-                    this.speak(response.answer);
+                    await this.speak(response.answer);
                 }
             }
             
         } catch (error) {
-            this.speakErrorResponse()
+            await this.speakErrorResponse();
             return false;
         }
         return true;
@@ -88,7 +88,7 @@ export class ConversationManager {
                 const stateStore = useSessionStore();
                 const currentAnimalId = stateStore.recognizedAnimal?.animalType;
                 if (!currentAnimalId || !connectionService) {
-                    this.speakErrorResponse();
+                    await this.speakErrorResponse();
                     return false; 
                 }
                 const question = await connectionService.sendQuizNextRequest(
@@ -101,25 +101,25 @@ export class ConversationManager {
 
                 if (question) {
                     chatStore.setActiveQuestion(question);
-                    this.speak(question.prompt);
+                    await this.speak(question.prompt);
                     if(question.type === "yes_no"){
-                        this.speak("Vero o Falso");
+                        await this.speak("Vero o Falso");
                     }
                     else if(question.type === "multiple_choice" && question.choices){
                         for (const choice of question.choices?? []) {
-                            this.speak(choice);
+                            await this.speak(choice);
                         }
                     }
                 } 
                 else {
                     chatStore.clearQuiz();
-                    this.speakErrorResponse();
+                    await this.speakErrorResponse();
                     return false;
                 }
 
             } catch (error) {
                 chatStore.clearQuiz();
-                this.speakErrorResponse();
+                await this.speakErrorResponse();
                 return false;
             }
             return true;
@@ -134,14 +134,15 @@ export class ConversationManager {
                 const result = await this.evaluateQuizAnswer(answer);
                 if (result && result.feedback) {
                     chatStore.addBotMessage(result.feedback);
-                    this.speak(result.feedback);
+                    await this.speak(result.feedback);
                     chatStore.clearQuiz();
                 } else {
-                    this.speakErrorResponse();
+                    await this.speakErrorResponse();
+                    chatStore.clearQuiz();
                 }
                 
             } catch{
-                this.speakErrorResponse();
+                await this.speakErrorResponse();
             }
         }
 

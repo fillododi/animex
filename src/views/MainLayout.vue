@@ -39,21 +39,27 @@
       </div>
     </div>
 
-    <BottomNav v-model="paginaAttiva" />
+    <ion-footer class="ion-no-border">
+      <BottomNav v-model="paginaAttiva" />
+    </ion-footer>
     
   </ion-page>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { onMounted, ref } from 'vue';
 import { IonPage, IonHeader, IonToolbar, IonTitle } from '@ionic/vue';
-
+import setupSystemBars from '@/App.vue';
 import BottomNav from '@/components/BottomNav.vue';
 
 import ChatView from '@/views/ChatBot.vue';
 import ScannerView from '@/views/RecognitionPage.vue';
 // import ARView from '@/views/ARView.vue'; // Scommenta quando hai la pagina AR
 
+//Questa funzione deve essere spostata da App.vue e inserita da qualche altra parte come best practice.
+onMounted(() => {
+  new setupSystemBars();
+});
 // Imposta la pagina di partenza (1 = Scanner al centro)
 const paginaAttiva = ref(1);
 </script>
@@ -103,6 +109,7 @@ const paginaAttiva = ref(1);
   --background: var(--dark, #0a0a0a);
   --border-width: 0;
   border-bottom: 1px solid #222;
+  padding-top: var(--ion-safe-area-top, 0px);
 }
 
 .logo-title {

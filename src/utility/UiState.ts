@@ -12,7 +12,7 @@ export class UiState {
     private quizStatus: boolean = false;
     private showQuizOptions: boolean = false;
     private usingKeyboard: boolean = false;
-
+    private isSpeaking: boolean = false;
     constructor() {}
 
     public setRecording(isRecording: boolean): void {
@@ -62,6 +62,12 @@ export class UiState {
     }
     public getUsingKeyboard(): boolean {
         return this.usingKeyboard;
+    }
+    public getSpeaking(): boolean {
+    return this.isSpeaking;
+    }
+    public setSpeaking(value: boolean): void {
+        this.isSpeaking = value;
     }
 }
 export const globalUiState = reactive(new UiState());

@@ -2,7 +2,7 @@
   <ion-page>
     <ion-content :class="uiState.isRecording ? 'camera-on' : 'camera-off'">
       <div class="result-banner" v-if="sessionStore.recognizedAnimal">
-        Rilevato: <strong>{{ sessionStore.recognizedAnimal }}</strong>
+        Rilevato: <strong>{{ sessionStore.recognizedAnimal.displayName }}</strong>
       </div>
 
       <div class="floating-controls">
@@ -28,9 +28,6 @@
         />
       </div>
       <video ref="videoElement" class="camera-video" autoplay playsinline muted></video>
-      <div>
-        Recog received: {{ sessionStore.recognizedAnimal }}
-      </div>
 
     </ion-content>
   </ion-page>
@@ -95,9 +92,11 @@ const handleStop = async () => {
 
 onIonViewDidLeave(async () => {
   if(uiState.isRecording) {
-    uiState.isRecording = false;
-    document.documentElement.style.setProperty('--nav-display', 'flex');
+    handleStop();
   } 
+  document.documentElement.style.setProperty('--nav-display', 'flex');
+
+  serviceStore.resetCameraService();
 });
 
 const showSettingsAlert = async () => {

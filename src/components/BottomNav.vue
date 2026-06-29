@@ -66,7 +66,7 @@ function changePage(indice) {
   display: flex;
   justify-content: space-around;
   background: var(--dark, #000);
-  padding: 15px 10px;
+  padding: 15px 10px calc(15px + var(--ion-safe-area-bottom, 0px)) 10px;;
   border-top: 1px solid #222;
   flex-shrink: 0;
   z-index: 10;

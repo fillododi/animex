@@ -15,10 +15,15 @@ export const useServiceStore = defineStore('service', () => {
     
     function setCameraService(videoElement: HTMLVideoElement | null) {
         if(!videoElement) {
-            cameraService.value = null
+            resetCameraService()
             return
         }
         cameraService.value = new DeviceCameraService(videoElement);
+        cameraService.value.start()
+    }
+    function resetCameraService() {
+        cameraService.value?.stop()
+        cameraService.value = null
     }
 
     function setConnectionService(){
@@ -35,6 +40,7 @@ export const useServiceStore = defineStore('service', () => {
 
   return {
     cameraService,
+    resetCameraService,
     connectionService,
     ttsService,
     sttService,

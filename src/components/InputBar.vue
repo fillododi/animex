@@ -6,17 +6,23 @@ defineProps({
     type: String,
     default: ''
   },
-   isListening: {
+  isListening: {
+    type: Boolean,
+    default: false
+  },
+  isSpeaking: {       // <-- NUOVA PROP
     type: Boolean,
     default: false
   }
 })
 
 const emit = defineEmits([
-  'update:modelValue', // Aggiorna il testo mentre l'utente digita
-  'send',             // Quando l'utente preme la freccia o il tasto Invio
-  'toggle-microphone',  // Quando l'utente preme il microfono
-  'focus',              // Quando l'utente tocca la barra per scrivere
+  'update:modelValue', 
+  'send',             
+  'toggle-microphone',
+  'cancel-recording', 
+  'stop-audio',       // <-- NUOVO EVENTO
+  'focus',              
   'blur'       
 ])
 
@@ -28,39 +34,70 @@ function onInput(event) {
 <template>
   <div class="global-input-bar">
     
-    <!-- Campo di testo -->
-    <input 
-      type="text" 
-      :value="modelValue" 
-      @input="onInput"
-      @keyup.enter="$emit('send')"
-      @focus="$emit('focus')"
-      @blur="$emit('blur')"
-      placeholder="Chiedi all'IA..." 
-    >
-    
-    <!-- Tasto Microfono -->
-    <BaseButton 
-      :icona=" isListening ? '🔴' : '🎤'" 
-      variante="grigio" 
-      rotondo 
-      :attivo=" isListening"
-      @click="$emit('toggle-microphone')"
-    />
+    <template v-if="!isListening">
+      <input 
+        type="text" 
+        :value="modelValue" 
+        @input="onInput"
+        @keyup.enter="$emit('send')"
+        @focus="$emit('focus')"
+        @blur="$emit('blur')"
+        placeholder="Chiedi all'IA..." 
+      >
 
-    <!-- Tasto Invia -->
-    <BaseButton 
-      icona="⬆️" 
-      variante="grigio" 
-      rotondo 
-      @mousedown.prevent="$emit('send')"
-      @touchstart.prevent="$emit('send')"
-    />
+      <BaseButton 
+        v-if="isSpeaking"
+        icona="⏹️" 
+        variante="pericolo" 
+        rotondo 
+        @click="$emit('stop-audio')"
+      />
+      
+      <BaseButton 
+        v-else-if="modelValue.trim().length === 0"
+        icona="🎤" 
+        variante="grigio" 
+        rotondo 
+        @click="$emit('toggle-microphone')"
+      />
+
+      <BaseButton 
+        v-else
+        icona="⬆️" 
+        variante="grigio" 
+        rotondo 
+        @mousedown.prevent="$emit('send')"
+        @touchstart.prevent="$emit('send')"
+      />
+    </template>
+
+    <template v-else>
+      <div class="recording-indicator">
+        <span class="recording-dot">🔴</span>
+        <span class="recording-text">Registrazione in corso...</span>
+      </div>
+
+      <BaseButton 
+        icona="🗑️" 
+        variante="pericolo" 
+        rotondo 
+        @click="$emit('cancel-recording')"
+      />
+
+      <BaseButton 
+        icona="⬆️" 
+        variante="grigio" 
+        rotondo 
+        @mousedown.prevent="$emit('send')"
+        @touchstart.prevent="$emit('send')"
+      />
+    </template>
 
   </div>
 </template>
 
 <style scoped>
+/* Il CSS rimane esattamente identico a prima! */
 .global-input-bar {
   padding: 10px 15px;
   display: flex;
@@ -70,7 +107,7 @@ function onInput(event) {
   border-top: 1px solid #eee;
   flex-shrink: 0;
   z-index: 15;
-  color: var(--dark)
+  color: var(--dark);
 }
 
 .global-input-bar input {
@@ -86,5 +123,30 @@ function onInput(event) {
 
 .global-input-bar input:focus {
   border-color: var(--lime, #deff9a);
+}
+
+.recording-indicator {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 5px;
+}
+
+.recording-text {
+  font-family: var(--font-main, 'Urbanist', sans-serif);
+  font-size: 15px;
+  font-weight: 600;
+  color: #666;
+}
+
+.recording-dot {
+  animation: pulse-dot 1s infinite alternate;
+  font-size: 14px;
+}
+
+@keyframes pulse-dot {
+  from { opacity: 0.3; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1.1); }
 }
 </style>
