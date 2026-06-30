@@ -36,25 +36,50 @@
       </div>
       <video ref="videoElement" class="camera-video" autoplay playsinline muted></video>
 
+      <ChatBar 
+        v-if="uiState.isRecording && sessionStore.recognizedAnimal"
+        :isListening="globalUiState.getRecording()"
+        :isSpeaking="globalUiState.getSpeaking()"
+        @toggle-microphone="toggleGlobalMic"
+        @cancel-recording="eraseGlobalAudio"
+        @stop-audio="stopGlobalAudio"
+        @send-audio="sendGlobalAudio"
+        @open-quiz-menu="isQuizModalOpen = true"
+      />
     </ion-content>
+    <QuizMenu 
+      :isOpen="isQuizModalOpen" 
+      @close="isQuizModalOpen = false" 
+      @select-quiz="selectQuiz" 
+    />
   </ion-page>
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue';
-import { IonPage, IonContent, onIonViewDidLeave, alertController, IonHeader, IonToolbar, IonTitle, onIonViewDidEnter } from '@ionic/vue';
+import { onMounted, reactive, ref, watch } from 'vue';
+import { IonPage, IonContent, onIonViewDidLeave, alertController, IonHeader, IonToolbar, IonTitle, onIonViewDidEnter, IonModal, IonIcon } from '@ionic/vue';
 import { NativeSettings, AndroidSettings, IOSSettings } from 'capacitor-native-settings';
 import { RecognitionManager } from '@/modules/RecognitionMgr';
 import { useServiceStore } from '@/stores/serviceStore';
 import { useSessionStore } from '@/stores/sessionStore';
 import BaseButton from '@/components/BaseButton.vue';
 import { camera, close } from 'ionicons/icons';
+import { globalUiState } from '@/utility/UiState';
+import type { DifficultyLevel } from '@/utility/Types';
+import { CHAT_STATUS } from '@/utility/constants';
+import ChatBar from '@/components/ChatBar.vue';
+import { useChatStore } from '@/stores/chatStore';
+import QuizMenu from '@/components/QuizMenu.vue';
+import { useManagerStore } from '@/stores/managerStore';
 
 // --- INITIALIZATION ---
+const chatStore = useChatStore();
 const serviceStore = useServiceStore();
+const managerStore = useManagerStore();
 const recog = new RecognitionManager();
 const sessionStore = useSessionStore();
 const videoElement = ref<HTMLVideoElement | null>(null);
+const isQuizModalOpen = ref(false);
 
 onMounted(() => {
   if(!videoElement.value) {
@@ -62,6 +87,7 @@ onMounted(() => {
     return;
   }
   serviceStore.setCameraService(videoElement.value);
+  managerStore.initConversationManager();
 })
 
 // --- UI STATE VARIABLES ---
@@ -69,7 +95,31 @@ const uiState = reactive({
   isRecording: false,
   statusMessage: ""
 });
+// --- WHATCHERS ---
+watch(
+  () => chatStore.messages.length,
+  (newLength, oldLength) => {
+    if (newLength > oldLength) {
+      const lastMsg = chatStore.messages[newLength - 1];
+      if (lastMsg && lastMsg.role === 'model') {
+        globalUiState.setProcessing(false);
+        globalUiState.setStatusMessage(CHAT_STATUS.SUCCESS);
+        globalUiState.setSpeaking(true); 
+      }
+    }
+  }
+);
 
+watch(
+  () => chatStore.activeQuestion,
+  (newQuestion) => {
+    if (newQuestion) {
+      globalUiState.setProcessing(false);
+      globalUiState.setStatusMessage(CHAT_STATUS.SUCCESS);
+      globalUiState.setSpeaking(true); // <-- QUESTO FA COMPARIRE IL TASTO MUTO
+    }
+  }
+);
 // --- EVENT HANDLERS ---
 const handleStart = async () => {
     try {
@@ -104,6 +154,13 @@ onIonViewDidLeave(async () => {
     handleStop();
   }
   serviceStore.resetCameraService();
+  if (globalUiState.getRecording()) {
+    await managerStore.conversationManager?.stopListening();
+    await managerStore.conversationManager?.resetTranscript();
+    globalUiState.setRecording(false);
+  }
+  globalUiState.setStatusMessage(CHAT_STATUS.IDLE);
+  await managerStore.conversationManager?.stopSpeaking();
 });
 
 const showSettingsAlert = async () => {
@@ -146,7 +203,96 @@ const openSettings = async () => {
     await alert.present();
   }
 };
+const selectQuiz = async (difficulty: DifficultyLevel) => {
+  isQuizModalOpen.value = false;
+  
+  globalUiState.setProcessing(true);
+  globalUiState.setStatusMessage(CHAT_STATUS.THINKING);
+  await managerStore.conversationManager?.stopSpeaking();
+  
+  try {
+    const manager = managerStore.conversationManager;
+    const isQuizLoaded = manager ? await manager.requestQuiz(difficulty) : false;
+    globalUiState.setQuizStatus(isQuizLoaded);
+    globalUiState.setStatusMessage(isQuizLoaded ? CHAT_STATUS.QUIZ_LOADED : CHAT_STATUS.NO_QUIZ_AVAILABLE);
+  } catch (error: any) {
+    globalUiState.setStatusMessage(("Errore quiz: " + error.message) as any);
+  } finally {
+    globalUiState.setProcessing(false);
+    globalUiState.setSpeaking(false);
+  }
+};
 
+const toggleGlobalMic = async () => {
+  if (globalUiState.getProcessing() || globalUiState.getRecording()) return;
+  
+  if (globalUiState.getSpeaking()) {
+    await managerStore.conversationManager?.stopSpeaking();
+    globalUiState.setSpeaking(false);
+  }
+  try {
+       await managerStore.conversationManager?.stopListening();
+     } catch(e) {}
+  
+  try {
+     globalUiState.setStatusMessage(CHAT_STATUS.INITIALIZING);
+     globalUiState.setRecording(true);
+     globalUiState.setMicReady(false);
+
+    await managerStore.conversationManager?.startInteraction(() => {
+      globalUiState.setMicReady(true);
+      globalUiState.setStatusMessage(CHAT_STATUS.RECORDING);
+    }, (errorMessage) => {
+      globalUiState.setStatusMessage(("Errore: " + errorMessage) as any);
+      globalUiState.setRecording(false);
+      globalUiState.setMicReady(false);
+    });
+  } catch (error: any) {
+    globalUiState.setStatusMessage(("Errore: " + error.message) as any);
+    globalUiState.setRecording(false);
+  }
+};
+
+const eraseGlobalAudio = async () => {
+  if (globalUiState.getRecording()) {
+    await managerStore.conversationManager?.stopListening();
+    await managerStore.conversationManager?.resetTranscript(); 
+    globalUiState.setRecording(false);
+    globalUiState.setStatusMessage(CHAT_STATUS.IDLE);
+  }
+};
+
+const stopGlobalAudio = async () => {
+  await managerStore.conversationManager?.stopSpeaking();
+  globalUiState.setSpeaking(false);
+};
+
+const sendGlobalAudio = async () => {
+  globalUiState.setRecording(false);
+  globalUiState.setProcessing(true);
+  globalUiState.setStatusMessage(CHAT_STATUS.THINKING);
+
+  try {
+    await managerStore.conversationManager?.stopListening();
+    const userText = managerStore.conversationManager ? await managerStore.conversationManager.getCurrentTranscript() : "";
+    
+    if (globalUiState.getQuizStatus()) {
+      await managerStore.conversationManager?.validateQuiz(userText);
+      globalUiState.setStatusMessage(CHAT_STATUS.SUCCESS);
+    } else {
+      await managerStore.conversationManager?.processTextInteraction(userText);
+      globalUiState.setStatusMessage(CHAT_STATUS.SUCCESS);
+    }
+  } catch (error: any) {
+    globalUiState.setStatusMessage(("Errore: " + error.message) as any);
+  } finally {
+    await managerStore.conversationManager?.resetTranscript();
+    globalUiState.setProcessing(false);
+    globalUiState.setQuizStatus(false);
+    
+    globalUiState.setSpeaking(false) 
+  }
+};
 </script>
 
 <style scoped>

@@ -112,53 +112,34 @@
         @open-quiz-menu="openMenuQuiz()"
       />
     </ion-footer>
-    <ion-modal 
-      :is-open="isQuizModalOpen" 
-      @didDismiss="isQuizModalOpen = false" 
-      :initial-breakpoint="0.30" 
-      :breakpoints="[0, 0.30]"
-    >
-      <ion-content class="whatsapp-modal-content">
-        <div class="whatsapp-menu">
-          
-          <div class="menu-item" @click="selectQuiz('easy')">
-            <div class="icon-circle easy-color">
-              <ion-icon :icon="happy"></ion-icon>
-            </div>
-            <span>Quiz facile</span>
-          </div>
-
-          <div class="menu-item" @click="selectQuiz('medium')">
-            <div class="icon-circle medium-color">
-              <ion-icon :icon="extensionPuzzle"></ion-icon>
-            </div>
-            <span>Quiz medio</span>
-          </div>
-
-        </div>
-      </ion-content>
-    </ion-modal>
+    <QuizMenu 
+      :isOpen="isQuizModalOpen" 
+      @close="isQuizModalOpen = false" 
+      @select-quiz="selectQuiz" 
+    />
   </ion-page>
 </template>
 
 <script setup lang="ts">
-import { computed, shallowRef, onMounted, ref, watch, nextTick } from 'vue';
+import { computed, onMounted, ref, watch, nextTick } from 'vue';
 import { IonPage, IonContent, IonButton, IonFooter, onIonViewDidLeave, alertController, IonHeader, IonToolbar, IonTitle, IonIcon, IonModal } from '@ionic/vue';
 import ChatBubble from '@/components/ChatBubble.vue';
 import InputBar from '@/components/InputBar.vue';
-import { ConversationManager } from '@/modules/ConversationMgr';
 import { useChatStore } from '@/stores/chatStore';
 import { CHAT_STATUS } from '@/utility/constants';
 import { type DifficultyLevel} from '@/utility/Types';
 import { NativeSettings, AndroidSettings, IOSSettings } from 'capacitor-native-settings';
 import { useSessionStore } from '@/stores/sessionStore';
 import {globalUiState} from '@/utility/UiState';
-import { addCircleOutline, happy, extensionPuzzle } from 'ionicons/icons';
 import { Keyboard } from '@capacitor/keyboard';
+import QuizMenu from '@/components/QuizMenu.vue';
+import { useManagerStore } from '@/stores/managerStore';
 // --- CHAT INITIALIZATION ---
 
 const chatStore = useChatStore();
 const sessionStore = useSessionStore();
+const managerStore = useManagerStore();
+const conversationManager = computed(() => managerStore.conversationManager);
 const kbHeight = ref(0);
 const contentRef = ref();
 // --- UI STATE VARIABLES ---
@@ -171,7 +152,7 @@ const inputTextModel = computed({
     uiState.setInputText(newValue);
   }
 });
-const conversationManager = shallowRef<ConversationManager | null>(null);
+
 onMounted(() => {
   // Keyboard event listeners to adjust the UI when the keyboard is shown or hidden
   Keyboard.addListener('keyboardWillShow', (info) => {
@@ -182,7 +163,7 @@ onMounted(() => {
     kbHeight.value = 0;
     document.body.classList.remove('keyboard-is-open');
   });
-  conversationManager.value = new ConversationManager();
+  managerStore.initConversationManager();
 });
 
 // --- WATCHERS TO SYNC AUDIO AND UI ---
@@ -216,6 +197,9 @@ watch(
 // --- EVENT HANDLERS ---
 
 const handleStart = async () => {
+  try {
+       await conversationManager.value?.stopListening();
+     } catch(e) {}
   try {
      uiState.setStatusMessage(CHAT_STATUS.INITIALIZING);
      uiState.setRecording(true);
@@ -357,8 +341,8 @@ onIonViewDidLeave(async () => {
     await conversationManager.value?.stopListening();
     await conversationManager.value?.resetTranscript();
     uiState.setRecording(false);
-    uiState.setStatusMessage(CHAT_STATUS.IDLE);
-  } 
+  }
+  uiState.setStatusMessage(CHAT_STATUS.IDLE);
   await conversationManager.value?.stopSpeaking();
   document.body.classList.remove('keyboard-is-open');
 });
@@ -518,7 +502,7 @@ ion-page, ion-content, .chat-background {
   word-wrap: break-word;
 }
 .quiz-bubble {
-  border: 2px solid #3880ff; 
+  border: 2px solid var(--secondary, #fac400); 
   min-width: 250px;
 }
 .inline-quiz-options {
@@ -530,8 +514,8 @@ ion-page, ion-content, .chat-background {
 }
 .quiz-choice-btn {
   --border-radius: 8px;
-  --border-color: var(--accent, #d3ff33);
-  --color: var(--accent, #d3ff33);
+  --border-color: var(--primary, #fb6237);
+  --color: var(--primary, #fb6237);
   margin: 0;
   text-transform: none; 
 }
@@ -545,46 +529,6 @@ ion-page, ion-content, .chat-background {
   animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
 }
 
-/* --- MENU QUIZ WHATSAPP --- */
-.whatsapp-modal-content {
-  --background: var(--background-light, #fff8dc);
-}
-.whatsapp-menu {
-  display: flex;
-  justify-content: center;
-  gap: 40px;
-  padding: 40px 20px;
-}
-.menu-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  cursor: pointer;
-}
-.icon-circle {
-  width: 65px;
-  height: 65px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-size: 30px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-  transition: transform 0.2s;
-}
-.menu-item:active .icon-circle {
-  transform: scale(0.95); 
-}
-.easy-color { background: var(--primary, #fb6237); } 
-.medium-color { background: var(--secondary, #fac400); } 
-.menu-item span {
-  font-family: var(--font-main, 'Urbanist', sans-serif);
-  font-weight: 600;
-  color: var(--background-dark, #2c2a26);
-  font-size: 14px;
-}
 @media (prefers-color-scheme: dark) {
   ion-page, ion-content, .chat-background {
     --background: var(--background-dark,#2c2a26) !important;
@@ -605,12 +549,7 @@ ion-page, ion-content, .chat-background {
     background-color: var(--secondary, #fac400); 
     color: var(--background-light, #fff8dc);
   }
-  .whatsapp-modal-content {
-    --background: var(--background-dark,#2c2a26);
-  }
-  .menu-item span {
-    color: var(--background-light, #fff8dc);
-  }
+  
 }
 @keyframes popIn {
   from { opacity: 0; transform: scale(0.9) translateY(10px); }

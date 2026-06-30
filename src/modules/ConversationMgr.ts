@@ -134,11 +134,11 @@ export class ConversationManager {
                 const result = await this.evaluateQuizAnswer(answer);
                 if (result && result.feedback) {
                     chatStore.addBotMessage(result.feedback);
+                    chatStore.clearQuiz();
                     await this.speak(result.feedback);
-                    chatStore.clearQuiz();
                 } else {
-                    await this.speakErrorResponse();
                     chatStore.clearQuiz();
+                    await this.speakErrorResponse();
                 }
                 
             } catch{

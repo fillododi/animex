@@ -25,7 +25,6 @@ export class RecognitionManager {
             await connectionService?.start()
         }
         const sessionStore = useSessionStore()
-        sessionStore.clearSession()
         this.frameId = 0
 
         clearInterval(this.interval)
