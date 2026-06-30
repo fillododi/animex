@@ -27,7 +27,7 @@ import { globalUiState } from '@/utility/UiState';
 const chatStore = useChatStore();
 const uiState = globalUiState;
 
-// Cerchiamo l'ultimo messaggio inviato dal bot andando a ritroso nell'array
+// Look for the last message sent by the bot by going backwards in the array
 const lastBotMessage = computed(() => {
   for (let i = chatStore.messages.length - 1; i >= 0; i--) {
     const message = chatStore.messages[i];
@@ -38,7 +38,7 @@ const lastBotMessage = computed(() => {
   return null;
 });
 
-// Mostriamo il banner solo se c'è almeno un quiz, o un messaggio o se sta caricando
+// Show the banner only if there's at least a quiz, or a message, or if it's processing
 const shouldShow = computed(() => {
   return uiState.getProcessing() || chatStore.activeQuestion || lastBotMessage.value;
 });
@@ -47,10 +47,8 @@ const shouldShow = computed(() => {
 <style scoped>
 .dynamic-message-container {
   position: absolute;
-  /* Lo posizioniamo sotto il banner dell'animale riconosciuto */
   top: 130px; 
   left: 15px;
-  /* Lasciamo 85px a destra per non coprire la tua ChatBar verticale */
   right: 85px; 
   z-index: 15;
 }
@@ -61,7 +59,7 @@ const shouldShow = computed(() => {
   -webkit-backdrop-filter: blur(15px);
   padding: 16px;
   border-radius: 18px;
-  border-bottom-left-radius: 4px; /* Stile "nuvoletta" in basso a sx */
+  border-bottom-left-radius: 4px; 
   box-shadow: 0 4px 15px rgba(0,0,0,0.2);
   border: 1px solid rgba(255,255,255,0.4);
   animation: slide-up 0.3s ease-out forwards;
