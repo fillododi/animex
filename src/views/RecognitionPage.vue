@@ -36,6 +36,10 @@
       </div>
       <video ref="videoElement" class="camera-video" autoplay playsinline muted></video>
 
+      <DynamicMessage 
+        v-if="uiState.isRecording && sessionStore.recognizedAnimal"
+      />
+      
       <ChatBar 
         v-if="uiState.isRecording && sessionStore.recognizedAnimal"
         :isListening="globalUiState.getRecording()"
@@ -71,6 +75,7 @@ import ChatBar from '@/components/ChatBar.vue';
 import { useChatStore } from '@/stores/chatStore';
 import QuizMenu from '@/components/QuizMenu.vue';
 import { useManagerStore } from '@/stores/managerStore';
+import DynamicMessage from '@/components/DynamicMessage.vue';
 
 // --- INITIALIZATION ---
 const chatStore = useChatStore();
