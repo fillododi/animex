@@ -9,12 +9,7 @@ import MainLayout from '../views/MainLayout.vue';
 const routes: Array<RouteRecordRaw> = [
   {
     path: '/',
-    redirect: '/main'
-  },
-  {
-    path: '/main',
-    name: 'MainLayout',
-    component: MainLayout
+    redirect: '/main/scanner'
   },
   {
     path: '/home',
@@ -22,14 +17,34 @@ const routes: Array<RouteRecordRaw> = [
     component: HomePage
   },
   {
-    path: '/chat',
-    name: 'Chat',
-    component: ChatView
-  },
-  {
-    path: '/cam',
-    name: 'RecognitionPage',
-    component: RecogView
+    path: '/main',
+    name: 'MainLayout',
+    component: MainLayout,
+    
+    children: [
+      {
+        path: '',
+        redirect: '/main/scanner'
+      },
+      {
+        path: 'chat', 
+        name: 'Chat',
+        component: ChatView
+      },
+      {
+        path: 'scanner', 
+        name: 'RecognitionPage',
+        component: RecogView
+      },
+      // IN FUTURE: We can add an AR view route here, but it's currently commented out for now.
+      /*
+      {
+        path: 'ar',
+        name: 'ARView',
+        component: () => import('../views/ARView.vue')
+      }
+      */
+    ]
   }
 ]
 

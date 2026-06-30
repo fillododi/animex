@@ -1,124 +1,99 @@
 <template>
   <ion-page>
     
-    <ion-header class="ion-no-border">
-      <ion-toolbar class="custom-toolbar">
-        <ion-title class="ion-text-center logo-title">
-          <span class="text-white">ANIM</span><span class="text-lime">EX</span>
-        </ion-title>
-      </ion-toolbar>
-    </ion-header>
 
-    <!-- AREA A SCORRIMENTO -->
-    <div class="slider-viewport">
+    <ion-tabs>
       
-      <!-- Bottom nav -->
-      <div 
-        class="slider-track" 
-        :style="{ transform: `translateX(-${paginaAttiva * 33.3333}%)` }"
-      >
+      <ion-router-outlet></ion-router-outlet>
+
+      <ion-tab-bar slot="bottom" class="custom-tab-bar">
         
-        <!-- PAGINA 0: CHAT -->
-        <div class="page-wrapper">
-          <ChatView /> <!-- Qui viene iniettata la tua intera pagina Chat -->
-        </div>
+        <ion-tab-button 
+          tab="chat" 
+          href="/main/chat" 
+          :disabled="sessionStore.recognizedAnimal === null"
+        >
+          <ion-icon :icon="chatbubbles"></ion-icon>
+          <ion-label v-if="sessionStore.recognizedAnimal">Assistente</ion-label>
+        </ion-tab-button>
 
-        <!-- PAGINA 1: SCANNER -->
-        <div class="page-wrapper">
-          <ScannerView /> <!-- Qui viene iniettata la tua intera pagina Fotocamera -->
-        </div>
+        <ion-tab-button tab="scanner" href="/main/scanner">
+          <ion-icon :icon="camera"></ion-icon>
+          <ion-label>Scanner</ion-label>
+        </ion-tab-button>
 
-        <!-- PAGINA 2: VISIONE AR -->
-        <div class="page-wrapper">
-          <div class="placeholder-ar">
-            <h2>Visione AR in arrivo...</h2>
-            <!-- Sostituisci questo div con <ARView /> quando avrai il file -->
-          </div>
-        </div>
+        <ion-tab-button 
+          tab="ar" 
+          href="/main/ar"
+          :disabled="sessionStore.recognizedAnimal === null"
+        >
+          <i class="fa-solid fa-vr-cardboard"></i>
+          <ion-icon :icon="cube"></ion-icon>
+          <ion-label v-if="sessionStore.recognizedAnimal">Visione AR</ion-label>
+        </ion-tab-button>
 
-      </div>
-    </div>
-
-    <ion-footer class="ion-no-border">
-      <BottomNav v-model="paginaAttiva" />
-    </ion-footer>
+      </ion-tab-bar>
+    </ion-tabs>
     
   </ion-page>
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
-import { IonPage, IonHeader, IonToolbar, IonTitle } from '@ionic/vue';
-import setupSystemBars from '@/App.vue';
-import BottomNav from '@/components/BottomNav.vue';
+import { IonPage, IonTabs, IonRouterOutlet, IonTabBar, IonTabButton, IonLabel, IonIcon } from '@ionic/vue';
+import { useSessionStore } from '@/stores/sessionStore';
+import { globalUiState } from '@/utility/UiState';
+import { camera, chatbubbles, cube } from 'ionicons/icons';
 
-import ChatView from '@/views/ChatBot.vue';
-import ScannerView from '@/views/RecognitionPage.vue';
-// import ARView from '@/views/ARView.vue'; // Scommenta quando hai la pagina AR
-
-//Questa funzione deve essere spostata da App.vue e inserita da qualche altra parte come best practice.
-onMounted(() => {
-  new setupSystemBars();
-});
-// Imposta la pagina di partenza (1 = Scanner al centro)
-const paginaAttiva = ref(1);
+const sessionStore = useSessionStore();
+const uiState = globalUiState;
 </script>
 
 <style scoped>
-.slider-viewport {
-  flex: 1;
-  width: 100%;
-  height: 100%;
-  overflow: hidden; 
-  position: relative;
-  background-color: var(--dark, #000);
-}
-
-/* Il binario lungo il triplo dello schermo (100% * 3 pagine) */
-.slider-track {
-  display: flex;
-  width: 300%;
-  height: 100%;
-  transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
-  will-change: transform; /* Ottimizza l'animazione per i telefoni */
-}
-
-.page-wrapper {
-  width: 33.3333%;
-  height: 100%;
-  position: relative;
-  overflow: hidden;
-}
-
-.placeholder-ar {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  color: white;
-  background-image: url('https://images.unsplash.com/photo-1511497584788-8767fe7d98f1?auto=format&fit=crop&w=1280&q=80');
-  background-size: cover;
-}
-.placeholder-ar h2 {
-  background: rgba(0,0,0,0.7);
-  padding: 10px 20px;
-  border-radius: 20px;
-}
-
-.custom-toolbar {
-  --background: var(--dark, #0a0a0a);
-  --border-width: 0;
-  border-bottom: 1px solid #222;
-  padding-top: var(--ion-safe-area-top, 0px);
-}
-
-.logo-title {
-  font-family: var(--font-main, 'Urbanist', sans-serif);
-  font-size: 22px;
-  font-weight: 700;
-  letter-spacing: 2px;
-}
 
 .text-white { color: #ffffff; }
 .text-lime { color: var(--lime, #deff9a); }
+
+body.keyboard-is-open .custom-tab-bar {
+  opacity: 0 !important;
+  pointer-events: none;
+}
+.custom-tab-bar {
+  position: absolute !important;
+  bottom: 0;
+  width: 100%;
+  /*height: calc(60px + var(--ion-safe-area-bottom, 0px));*/
+  z-index: 10;
+  --background: var(--dark, #000);
+  border-top: 1px solid #222;
+  /*padding-bottom: var(--ion-safe-area-bottom, 0px);*/
+}
+
+ion-tab-button {
+  --color: #666;
+  --color-selected: var(--lime, #deff9a);
+  transition: all 0.3s;
+}
+
+ion-tab-button i {
+  font-size: 20px;
+  margin-bottom: 4px;
+}
+
+/* Effetto sollevamento per il tab attivo */
+ion-tab-button.tab-selected i {
+  transform: translateY(-3px);
+}
+
+/*DA QUI*/
+
+ion-tab-button ion-icon {
+  font-size: 24px; /* Un po' più grandi per renderle più leggibili */
+  margin-bottom: 4px;
+  transition: transform 0.3s ease;
+}
+
+/* Effetto sollevamento per il tab attivo */
+ion-tab-button.tab-selected ion-icon {
+  transform: translateY(-4px);
+}
 </style>

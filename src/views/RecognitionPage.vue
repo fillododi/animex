@@ -1,6 +1,13 @@
 <template>
   <ion-page>
-    <ion-content :class="uiState.isRecording ? 'camera-on' : 'camera-off'">
+    <ion-header class="ion-no-border">
+      <ion-toolbar class="custom-toolbar">
+        <ion-title class="ion-text-center logo-title">
+          <span class="text-white">ANIM</span><span class="text-lime">EX</span>
+        </ion-title>
+      </ion-toolbar>
+    </ion-header>
+    <ion-content :scroll-y= "false" :class="uiState.isRecording ? 'camera-on' : 'camera-off'">
       <div class="result-banner" v-if="sessionStore.recognizedAnimal">
         Rilevato: <strong>{{ sessionStore.recognizedAnimal.displayName }}</strong>
       </div>
@@ -11,7 +18,7 @@
         <BaseButton 
           v-if="!uiState.isRecording"
           testo="AVVIA SCANNER" 
-          icona="📷"
+          :icona="camera"
           variante="stile-input"
           @click="handleStart"
           class="btn-action"
@@ -21,7 +28,7 @@
         <BaseButton 
           v-else
           testo="CHIUDI SCANNER" 
-          icona="✖️"
+          :icona="close"
           variante="pericolo" 
           @click="handleStop" 
           class="btn-action"
@@ -35,12 +42,13 @@
 
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue';
-import { IonPage, IonContent, onIonViewDidLeave, alertController } from '@ionic/vue';
+import { IonPage, IonContent, onIonViewDidLeave, alertController, IonHeader, IonToolbar, IonTitle, onIonViewDidEnter } from '@ionic/vue';
 import { NativeSettings, AndroidSettings, IOSSettings } from 'capacitor-native-settings';
 import { RecognitionManager } from '@/modules/RecognitionMgr';
 import { useServiceStore } from '@/stores/serviceStore';
 import { useSessionStore } from '@/stores/sessionStore';
 import BaseButton from '@/components/BaseButton.vue';
+import { camera, close } from 'ionicons/icons';
 
 // --- INITIALIZATION ---
 const serviceStore = useServiceStore();
@@ -65,6 +73,7 @@ const uiState = reactive({
 // --- EVENT HANDLERS ---
 const handleStart = async () => {
     try {
+      serviceStore.setCameraService(videoElement.value);
       await recog.startRecognitionLoop();
       
       uiState.isRecording = true;
@@ -74,7 +83,7 @@ const handleStart = async () => {
       if (error.name === 'NotAllowedError') {
         await showSettingsAlert();
       }
-      else {
+      else if(error.name !== 'AbortError' || !error.message.includes('aborted')){
         const alert = await alertController.create({
           header: 'Fotocamera non disponibile',
           message: 'Temporaneo inutilizzo della fotocamera. Dettagli: ' + error.message,
@@ -93,9 +102,7 @@ const handleStop = async () => {
 onIonViewDidLeave(async () => {
   if(uiState.isRecording) {
     handleStop();
-  } 
-  document.documentElement.style.setProperty('--nav-display', 'flex');
-
+  }
   serviceStore.resetCameraService();
 });
 
@@ -163,7 +170,7 @@ const openSettings = async () => {
 
 .floating-controls {
   position: absolute;
-  bottom: 30px; /* Distanza dal fondo */
+  bottom: calc(75px + var(--ion-safe-area-bottom, 0px));
   left: 50%;
   transform: translateX(-50%);
   z-index: 10;
@@ -193,6 +200,20 @@ const openSettings = async () => {
   border: 1px solid rgba(222, 255, 154, 0.3);
   text-align: center;
 }
+
+.custom-toolbar {
+  --background: var(--dark, #0a0a0a);
+  --border-width: 0;
+  border-bottom: 1px solid #222;
+}
+.logo-title {
+  font-family: var(--font-main, 'Urbanist', sans-serif);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 2px;
+}
+.text-white { color: #ffffff; }
+.text-lime { color: var(--lime, #deff9a); }
 </style>
 
 <style>
@@ -201,5 +222,11 @@ const openSettings = async () => {
   ion-content { --background: transparent; }
   .camera-video {
     z-index: -1; /* Ensure the video is behind other content */
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
   }
 </style>

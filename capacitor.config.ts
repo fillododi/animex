@@ -7,6 +7,12 @@ const config: CapacitorConfig = {
   server: {
     androidScheme: "http",
     iosScheme: "http"
+  },
+  plugins: {
+    Keyboard: {
+      resize: 'none', 
+      resizeOnFullScreen: true,
+    },
   }
 };
 

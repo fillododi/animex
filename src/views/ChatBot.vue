@@ -1,60 +1,28 @@
 <template>
   <ion-page>
+    <ion-header class="ion-no-border">
+      <ion-toolbar class="custom-toolbar">
+        <ion-title class="ion-text-center logo-title">
+          <span class="text-white">ANIM</span><span class="text-lime">EX</span>
+        </ion-title>
+      </ion-toolbar>
+      <ion-toolbar class="banners-toolbar">
+        <div class="fixed-banners">
+          <div class="recognized-animal-banner" v-if="sessionStore.recognizedAnimal">
+            {{ sessionStore.recognizedAnimal.displayName }}
+          </div>
 
-    <ion-content class="ion-padding chat-background">
-
-      <div class="recognized-animal-banner" 
-      v-if="sessionStore.recognizedAnimal">
-        {{ sessionStore.recognizedAnimal.displayName }}
-      </div>
-
-      <div class="status-banner" :class="{ active: uiState.getRecording() }">
-        {{ uiState.getStatusMessage() }}
-      </div>
-
-        <ion-button 
-          v-if="!uiState.getShowQuizOptions()"
-          expand="block" 
-          @click="uiState.setShowQuizOptions(true)" 
-          :disabled="uiState.getRecording() || uiState.getProcessing() || chatStore.activeQuestion != null "
-          color="secondary"
-          style="margin-top: 15px;"
-        >
-          FAMMI UN QUIZ
-        </ion-button>
-
-        <div v-else style="margin-top: 15px; display: flex; gap: 10px; align-items: center;">
-          <ion-button 
-            expand="block" 
-            @click="handleQuizRequest('easy')" 
-            :disabled="uiState.getProcessing()"
-            color="success"
-            style="flex: 1; margin: 0;"
-          >
-            FACILE
-          </ion-button>
-          
-          <ion-button 
-            expand="block" 
-            @click="handleQuizRequest('medium')" 
-            :disabled="uiState.getProcessing()"
-            color="warning"
-            style="flex: 1; margin: 0;"
-          >
-            MEDIO
-          </ion-button>
-
-          <ion-button 
-            fill="clear" 
-            color="medium" 
-            @click="uiState.setShowQuizOptions(false)"
-            style="margin: 0;"
-          >
-            X
-          </ion-button>
+          <div class="status-banner" :class="{ active: uiState.getRecording() }">
+            <div class="status-text">{{ uiState.getStatusMessage() }}</div>
+          </div>
         </div>
-
-      <div class="chat-container">
+      </ion-toolbar>
+    </ion-header>
+    <ion-content class="ion-padding chat-background">
+      <div class="chat-container" :style="{ 
+             paddingBottom: kbHeight > 0 ? `${kbHeight + 20}px` : `calc(130px + var(--ion-safe-area-bottom, 0px))`, 
+             transition: 'padding-bottom 0.25s cubic-bezier(0.32, 0.72, 0, 1)' 
+           }">
         <!-- Ciclo che stampa i messaggi usando il nostro componente -->
         <ChatBubble 
           v-for="(msg, index) in chatStore.messages" 
@@ -123,7 +91,16 @@
 
     </ion-content>
     
-    <ion-footer>
+    <ion-footer
+      class="ion-no-border"
+      :style="{ 
+        position: 'absolute',
+        bottom: 0,
+        width: '100%',
+        transform: kbHeight > 0 ? `translateY(-${kbHeight}px)` : `translateY(calc(-50px - var(--ion-safe-area-bottom, 0px)))`,
+        transition: 'transform 0.25s cubic-bezier(0.32, 0.72, 0, 1)' 
+      }"
+    >
       <InputBar 
         v-model="inputTextModel"
         :isListening="uiState.getRecording()"
@@ -132,16 +109,41 @@
         @cancel-recording="handleCancel"
         @stop-audio="handleStopAudio"
         @send="uiState.getRecording() ? handleStop() : handleTextSubmit()"
-        @focus="handleInputFocus"
-        @blur="uiState.setUsingKeyboard(false)"
+        @open-quiz-menu="openMenuQuiz()"
       />
     </ion-footer>
+    <ion-modal 
+      :is-open="isQuizModalOpen" 
+      @didDismiss="isQuizModalOpen = false" 
+      :initial-breakpoint="0.30" 
+      :breakpoints="[0, 0.30]"
+    >
+      <ion-content class="whatsapp-modal-content">
+        <div class="whatsapp-menu">
+          
+          <div class="menu-item" @click="selectQuiz('easy')">
+            <div class="icon-circle easy-color">
+              <ion-icon :icon="happy"></ion-icon>
+            </div>
+            <span>Quiz facile</span>
+          </div>
+
+          <div class="menu-item" @click="selectQuiz('medium')">
+            <div class="icon-circle medium-color">
+              <ion-icon :icon="extensionPuzzle"></ion-icon>
+            </div>
+            <span>Quiz medio</span>
+          </div>
+
+        </div>
+      </ion-content>
+    </ion-modal>
   </ion-page>
 </template>
 
 <script setup lang="ts">
 import { computed, shallowRef, onMounted, ref, watch } from 'vue';
-import { IonPage, IonContent, IonButton, IonFooter, onIonViewDidLeave, alertController } from '@ionic/vue';
+import { IonPage, IonContent, IonButton, IonFooter, onIonViewDidLeave, alertController, IonHeader, IonToolbar, IonTitle, IonIcon, IonModal } from '@ionic/vue';
 import ChatBubble from '@/components/ChatBubble.vue';
 import InputBar from '@/components/InputBar.vue';
 import { ConversationManager } from '@/modules/ConversationMgr';
@@ -151,10 +153,13 @@ import { type DifficultyLevel} from '@/utility/Types';
 import { NativeSettings, AndroidSettings, IOSSettings } from 'capacitor-native-settings';
 import { useSessionStore } from '@/stores/sessionStore';
 import {globalUiState} from '@/utility/UiState';
+import { addCircleOutline, happy, extensionPuzzle } from 'ionicons/icons';
+import { Keyboard } from '@capacitor/keyboard';
 // --- CHAT INITIALIZATION ---
 
 const chatStore = useChatStore();
 const sessionStore = useSessionStore();
+const kbHeight = ref(0);
 // --- UI STATE VARIABLES ---
 const uiState = globalUiState;
 const inputTextModel = computed({
@@ -167,6 +172,15 @@ const inputTextModel = computed({
 });
 const conversationManager = shallowRef<ConversationManager | null>(null);
 onMounted(() => {
+  // Keyboard event listeners to adjust the UI when the keyboard is shown or hidden
+  Keyboard.addListener('keyboardWillShow', (info) => {
+    kbHeight.value = info.keyboardHeight;
+    document.body.classList.add('keyboard-is-open');
+  });
+  Keyboard.addListener('keyboardWillHide', () => {
+    kbHeight.value = 0;
+    document.body.classList.remove('keyboard-is-open');
+  });
   conversationManager.value = new ConversationManager();
 });
 
@@ -230,7 +244,6 @@ const handleStart = async () => {
 };
 
 const handleStop = async () => {
-  //await conversationManager.value?.stopSpeaking();
   uiState.setRecording(false);
   uiState.setProcessing(true);
   uiState.setStatusMessage(CHAT_STATUS.THINKING);
@@ -258,11 +271,18 @@ const handleStop = async () => {
 
 
 const toggleMicrophone = async () => {
-  if (uiState.getProcessing()) return;
+  if (uiState.getProcessing() || uiState.getRecording()) return;
   if (uiState.getSpeaking()) {
     await handleStopAudio();
   }
-  handleStart();
+  if (uiState.getRecording()) {
+    await conversationManager.value?.stopListening();
+    await conversationManager.value?.resetTranscript();
+    uiState.setRecording(false);
+    uiState.setStatusMessage(CHAT_STATUS.IDLE);
+  } else {
+    handleStart();
+  }
 };
 
 const handleCancel = async () => {
@@ -337,6 +357,7 @@ onIonViewDidLeave(async () => {
     uiState.setStatusMessage(CHAT_STATUS.IDLE);
   } 
   await conversationManager.value?.stopSpeaking();
+  document.body.classList.remove('keyboard-is-open');
 });
 
 const showSettingsAlert = async () => {
@@ -375,12 +396,49 @@ const openSettings = async () => {
   }
 };
 
+
+const isQuizModalOpen = ref(false);
+
+const selectQuiz = (difficulty: DifficultyLevel) => {
+  isQuizModalOpen.value = false; 
+  handleQuizRequest(difficulty); 
+};
+
+const openMenuQuiz = () => {
+  if (uiState.getRecording() || uiState.getProcessing() || chatStore.activeQuestion != null) return;
+  isQuizModalOpen.value = true;
+};
 </script>
-
 <style scoped>
-
 .chat-background {
   --background: #f0f2f5; 
+}
+
+/* --- TOOLBAR E BANNER FISSI --- */
+.custom-toolbar {
+  --background: var(--dark, #f0f2f5);
+  --border-width: 0;
+  border-bottom: 1px solid #222;
+}
+.banners-toolbar {
+  --background: var(--ion-color-light, #f0f2f5);
+  --min-height: auto;
+  --border-width: 0;
+  --padding-top: 0;
+  --padding-bottom: 0;
+}
+.logo-title {
+  font-family: var(--font-main, 'Urbanist', sans-serif);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 2px;
+}
+.text-white { color: #ffffff; }
+.text-lime { color: var(--lime, #deff9a); }
+
+.fixed-banners {
+  background: var(--ion-color-light, #f0f2f5);
+  padding: 15px 15px 5px 15px;
 }
 .recognized-animal-banner {
   background-color: #4caf50;
@@ -396,7 +454,10 @@ const openSettings = async () => {
   background-color: #ffffff;
   color: #2f3542;
   text-align: center;
-  padding: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between; 
+  padding: 10px 15px;
   border-radius: 8px;
   margin-bottom: 20px;
   font-weight: bold;
@@ -407,28 +468,25 @@ const openSettings = async () => {
   background-color: #ff4757;
   color: white;
 }
-.controls-container {
-  margin-bottom: 30px;
+.status-text {
+  flex: 1;
+  text-align: center;
 }
 
+/* --- CHAT CONTAINER & BUBBLES --- */
 .chat-container {
   display: flex;
   flex-direction: column;
   padding-bottom: 20px;
 }
-
 .message-wrapper {
   display: flex;
   margin-bottom: 12px;
   width: 100%;
 }
-.wrapper-right {
-  justify-content: flex-end;
-}
 .wrapper-left {
   justify-content: flex-start;
 }
-
 .message-bubble {
   max-width: 80%;
   padding: 10px 14px;
@@ -438,38 +496,21 @@ const openSettings = async () => {
   flex-direction: column;
   box-shadow: 0 1px 2px rgba(0,0,0,0.15);
 }
-
-.user-bubble {
-  background-color: #dcf8c6; 
-  color: #000000;
-  border-bottom-right-radius: 4px; 
-}
-
 .animal-bubble {
   background-color: #ffffff;
   color: #000000;
   border-bottom-left-radius: 4px;
 }
-
 .message-bubble p {
   margin: 0;
   font-size: 16px;
   line-height: 1.4;
   word-wrap: break-word;
 }
-
-.time-stamp {
-  font-size: 11px;
-  color: #888;
-  align-self: flex-end;
-  margin-top: 4px;
-  margin-left: 15px;
-}
 .quiz-bubble {
-  border: 2px solid #3880ff; /* Dà un bordo colorato per far capire che è un quiz */
+  border: 2px solid #3880ff; 
   min-width: 250px;
 }
-
 .inline-quiz-options {
   display: flex;
   flex-direction: column;
@@ -477,24 +518,62 @@ const openSettings = async () => {
   margin-top: 12px;
   margin-bottom: 6px;
 }
-
 .quiz-choice-btn {
   --border-radius: 8px;
   --border-color: #3880ff;
   --color: #3880ff;
   margin: 0;
-  text-transform: none; /* Evita tutto maiuscolo per le risposte lunghe */
+  text-transform: none; 
 }
-
 .info-text {
   font-size: 13px;
   color: #666;
   font-style: italic;
   margin-top: 10px;
 }
-
 .animate-pop {
   animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+/* --- MENU QUIZ WHATSAPP --- */
+.whatsapp-modal-content {
+  --background: #f0f2f5;
+}
+.whatsapp-menu {
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+  padding: 40px 20px;
+}
+.menu-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+}
+.icon-circle {
+  width: 65px;
+  height: 65px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 30px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  transition: transform 0.2s;
+}
+.menu-item:active .icon-circle {
+  transform: scale(0.95); 
+}
+.easy-color { background: #4caf50; } 
+.medium-color { background: #ff9800; } 
+.menu-item span {
+  font-family: var(--font-main, 'Urbanist', sans-serif);
+  font-weight: 600;
+  color: #444;
+  font-size: 14px;
 }
 
 @keyframes popIn {
