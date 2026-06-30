@@ -50,8 +50,8 @@ const uiState = globalUiState;
 
 <style scoped>
 
-.text-white { color: #ffffff; }
-.text-lime { color: var(--lime, #deff9a); }
+.text-white { color: var(--background-light, #fff8dc); }
+.text-lime { color: var(--primary, #fb6237); }
 
 body.keyboard-is-open .custom-tab-bar {
   opacity: 0 !important;
@@ -63,14 +63,16 @@ body.keyboard-is-open .custom-tab-bar {
   width: 100%;
   /*height: calc(60px + var(--ion-safe-area-bottom, 0px));*/
   z-index: 10;
-  --background: var(--dark, #000);
-  border-top: 1px solid #222;
+  --background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
   /*padding-bottom: var(--ion-safe-area-bottom, 0px);*/
 }
 
 ion-tab-button {
-  --color: #666;
-  --color-selected: var(--lime, #deff9a);
+  --color: #888888;
+  --color-selected: var(--primary, #fb6237);
   transition: all 0.3s;
 }
 
@@ -95,5 +97,15 @@ ion-tab-button ion-icon {
 /* Effetto sollevamento per il tab attivo */
 ion-tab-button.tab-selected ion-icon {
   transform: translateY(-4px);
+}
+
+@media (prefers-color-scheme: dark) {
+  .custom-tab-bar {
+    --background: rgba(0, 0, 0, 0.85);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  ion-tab-button {
+    --color: var(--tab-button-color, #aaaaaa);
+  }
 }
 </style>

@@ -18,7 +18,7 @@
         </div>
       </ion-toolbar>
     </ion-header>
-    <ion-content class="ion-padding chat-background">
+    <ion-content ref="contentRef" class="ion-padding chat-background" :scroll-events="true" @ionScrollStart="hideKeyboard">
       <div class="chat-container" :style="{ 
              paddingBottom: kbHeight > 0 ? `${kbHeight + 20}px` : `calc(130px + var(--ion-safe-area-bottom, 0px))`, 
              transition: 'padding-bottom 0.25s cubic-bezier(0.32, 0.72, 0, 1)' 
@@ -142,7 +142,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, shallowRef, onMounted, ref, watch } from 'vue';
+import { computed, shallowRef, onMounted, ref, watch, nextTick } from 'vue';
 import { IonPage, IonContent, IonButton, IonFooter, onIonViewDidLeave, alertController, IonHeader, IonToolbar, IonTitle, IonIcon, IonModal } from '@ionic/vue';
 import ChatBubble from '@/components/ChatBubble.vue';
 import InputBar from '@/components/InputBar.vue';
@@ -160,6 +160,7 @@ import { Keyboard } from '@capacitor/keyboard';
 const chatStore = useChatStore();
 const sessionStore = useSessionStore();
 const kbHeight = ref(0);
+const contentRef = ref();
 // --- UI STATE VARIABLES ---
 const uiState = globalUiState;
 const inputTextModel = computed({
@@ -197,6 +198,7 @@ watch(
         uiState.setSpeaking(true);
       }
     }
+    scrollDown();
   }
 );
 
@@ -207,6 +209,7 @@ watch(
       uiState.setProcessing(false);
       uiState.setStatusMessage(CHAT_STATUS.SUCCESS);
       uiState.setSpeaking(true);
+      scrollDown();
     }
   }
 );
@@ -408,24 +411,35 @@ const openMenuQuiz = () => {
   if (uiState.getRecording() || uiState.getProcessing() || chatStore.activeQuestion != null) return;
   isQuizModalOpen.value = true;
 };
+
+// --- GESTURE KEYBOARD ---
+const hideKeyboard = async () => {
+  if (kbHeight.value > 0) {
+    await Keyboard.hide();
+  }
+};
+
+const scrollDown = async () => {
+  await nextTick();
+  setTimeout(() => {
+    contentRef.value?.$el.scrollToBottom(300); 
+  }, 100);
+};
 </script>
 <style scoped>
-.chat-background {
-  --background: #f0f2f5; 
+ion-page, ion-content, .chat-background {
+  --background: #ffffff !important;
+  background: #ffffff !important;
 }
 
 /* --- TOOLBAR E BANNER FISSI --- */
 .custom-toolbar {
-  --background: var(--dark, #f0f2f5);
+  --background: var(--white, #ffffff);
   --border-width: 0;
-  border-bottom: 1px solid #222;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
 }
-.banners-toolbar {
-  --background: var(--ion-color-light, #f0f2f5);
-  --min-height: auto;
-  --border-width: 0;
-  --padding-top: 0;
-  --padding-bottom: 0;
+.banners-toolbar, .fixed-banners, ion-footer {
+  --background: var(--white, #ffffff);
 }
 .logo-title {
   font-family: var(--font-main, 'Urbanist', sans-serif);
@@ -433,15 +447,11 @@ const openMenuQuiz = () => {
   font-weight: 700;
   letter-spacing: 2px;
 }
-.text-white { color: #ffffff; }
-.text-lime { color: var(--lime, #deff9a); }
+.text-white { color: var(--background-dark, #2c2a26);}
+.text-lime { color: var(--primary, #fb6237); }
 
-.fixed-banners {
-  background: var(--ion-color-light, #f0f2f5);
-  padding: 15px 15px 5px 15px;
-}
 .recognized-animal-banner {
-  background-color: #4caf50;
+  background-color: var(--primary, #fb6237);
   color: white;
   text-align: center;
   padding: 12px;
@@ -451,8 +461,8 @@ const openMenuQuiz = () => {
   box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 .status-banner {
-  background-color: #ffffff;
-  color: #2f3542;
+  background-color: var(--secondary, #fac400); 
+  color: var(--background-dark, #2c2a26);
   text-align: center;
   display: flex;
   align-items: center;
@@ -465,7 +475,7 @@ const openMenuQuiz = () => {
   transition: all 0.3s ease;
 }
 .status-banner.active {
-  background-color: #ff4757;
+  background-color: var(--danger, #ff4757);
   color: white;
 }
 .status-text {
@@ -520,14 +530,14 @@ const openMenuQuiz = () => {
 }
 .quiz-choice-btn {
   --border-radius: 8px;
-  --border-color: #3880ff;
-  --color: #3880ff;
+  --border-color: var(--accent, #d3ff33);
+  --color: var(--accent, #d3ff33);
   margin: 0;
   text-transform: none; 
 }
 .info-text {
   font-size: 13px;
-  color: #666;
+  color: var(--background-dark, #2c2a26);
   font-style: italic;
   margin-top: 10px;
 }
@@ -537,7 +547,7 @@ const openMenuQuiz = () => {
 
 /* --- MENU QUIZ WHATSAPP --- */
 .whatsapp-modal-content {
-  --background: #f0f2f5;
+  --background: var(--background-light, #fff8dc);
 }
 .whatsapp-menu {
   display: flex;
@@ -567,15 +577,41 @@ const openMenuQuiz = () => {
 .menu-item:active .icon-circle {
   transform: scale(0.95); 
 }
-.easy-color { background: #4caf50; } 
-.medium-color { background: #ff9800; } 
+.easy-color { background: var(--primary, #fb6237); } 
+.medium-color { background: var(--secondary, #fac400); } 
 .menu-item span {
   font-family: var(--font-main, 'Urbanist', sans-serif);
   font-weight: 600;
-  color: #444;
+  color: var(--background-dark, #2c2a26);
   font-size: 14px;
 }
-
+@media (prefers-color-scheme: dark) {
+  ion-page, ion-content, .chat-background {
+    --background: var(--background-dark,#2c2a26) !important;
+  }
+  .custom-toolbar {
+    --background: var(--background-dark,#2c2a26);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  }
+  .banners-toolbar, .fixed-banners, ion-footer {
+    --background: var(--background-dark,#2c2a26);
+  }
+  .text-white { 
+    color: var(--background-light, #fff8dc); /* Scritta 'ANIM' bianca di notte */
+  }
+  
+  /* Risolve il problema della scritta che non si vede! */
+  .status-banner {
+    background-color: var(--secondary, #fac400); 
+    color: var(--background-light, #fff8dc);
+  }
+  .whatsapp-modal-content {
+    --background: var(--background-dark,#2c2a26);
+  }
+  .menu-item span {
+    color: var(--background-light, #fff8dc);
+  }
+}
 @keyframes popIn {
   from { opacity: 0; transform: scale(0.9) translateY(10px); }
   to { opacity: 1; transform: scale(1) translateY(0); }

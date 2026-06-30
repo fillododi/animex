@@ -71,14 +71,14 @@ defineProps({
 }
 .primario {
   background: transparent;
-  color: var(--lime, #deff9a);
-  border-color: var(--lime, #deff9a);
+  color: var(--primary, #fb6237);
+  border-color: var(--primary, #fb6237);
 }
 .primario:hover { background: rgba(222, 255, 154, 0.1); }
 .secondario {
   background: rgba(0, 0, 0, 0.7);
-  color: var(--lime, #deff9a);
-  border-color: var(--lime, #deff9a);
+  color: var(--primary, #fb6237);
+  border-color: var(--primary, #fb6237);
 }
 .secondario:hover { background: rgba(0, 0, 0, 0.9); }
 .pericolo {
@@ -93,7 +93,7 @@ defineProps({
   color: #000;
   border-color: #f5f5f5;
 }
-.grigio:hover { background: #e0e0e0; }
+.grigio:hover { background: var(--background-light, #fff8dc); }
 .btn-rotondo {
   padding: 0;
   width: 42px;
@@ -108,13 +108,13 @@ defineProps({
   animation: pulse-mic 1.5s infinite;
 }
 .stile-input {
-  background: #ffffff;
-  color: var(--dark, #0a0a0a);
+  background: var(--background-light, #fff8dc);
+  color: var(--background-dark, #2c2a26);
   border-color: #ddd;
 }
 .stile-input:hover {
-  border-color: var(--lime, #deff9a); 
-  background: #fafafa;
+  border-color: var(--primary, #fb6237); 
+  background: var(--background-light, #fff8dc);
 }
 @keyframes pulse-mic {
   0% { transform: scale(1); }

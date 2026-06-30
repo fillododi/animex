@@ -72,21 +72,24 @@ function onInput(event) {
 </template>
 
 <style scoped>
-
+/* LIGHT MODE (DEFAULT) */
 .global-input-bar {
   padding: 10px 15px;
   display: flex;
   gap: 10px;
-  background: var(--white, #ffffff);
   align-items: center;
-  border-top: 1px solid #eee;
   flex-shrink: 0;
   z-index: 15;
-  color: var(--dark, #000);
+  transition: none !important;
+  will-change: transform;
+
+  background: var(--background-light, #fff8dc);
+  color: #000000;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
 }
 .global-input-bar input {
   flex: 1;
-  border: 1px solid #ddd;
+  border: 1px solid transparent;
   padding: 10px 15px;
   border-radius: 20px;
   font-family: var(--font-main, 'Urbanist', sans-serif);
@@ -94,8 +97,28 @@ function onInput(event) {
   outline: none;
   transition: none !important;
   will-change: transform;
+  
+  background: rgba(0, 0, 0, 0.05);
+  color: #000000;
 }
 .global-input-bar input:focus {
-  border-color: var(--lime, #deff9a);
+  border-color: var(--primary, #fb6237);
+  background: rgba(0, 0, 0, 0.08);
+}
+
+/* DARK MODE  */
+@media (prefers-color-scheme: dark) {
+  .global-input-bar {
+    background: var(--background-dark,#2c2a26);
+    color: var(--background-light, #fff8dc);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  .global-input-bar input {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--background-light, #fff8dc);
+  }
+  .global-input-bar input:focus {
+    background: rgba(255, 255, 255, 0.15);
+  }
 }
 </style>

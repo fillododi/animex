@@ -151,7 +151,7 @@ const openSettings = async () => {
 
 <style scoped>
 .camera-off {
-  --background: #ffffff;
+  --background: var(--background-light, #fff8dc);;
   transition: --background 0.3s ease;
 }
 
@@ -192,7 +192,7 @@ const openSettings = async () => {
   transform: translateX(-50%);
   background: rgba(0, 0, 0, 0.7);
   backdrop-filter: blur(10px);
-  color: var(--lime, #deff9a);
+  color: var(--primary, #fb6237);
   padding: 12px 25px;
   border-radius: 30px;
   font-weight: bold;
@@ -202,9 +202,9 @@ const openSettings = async () => {
 }
 
 .custom-toolbar {
-  --background: var(--dark, #0a0a0a);
+  --background: var(--background-light, #fff8dc);
   --border-width: 0;
-  border-bottom: 1px solid #222;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
 }
 .logo-title {
   font-family: var(--font-main, 'Urbanist', sans-serif);
@@ -212,8 +212,18 @@ const openSettings = async () => {
   font-weight: 700;
   letter-spacing: 2px;
 }
-.text-white { color: #ffffff; }
-.text-lime { color: var(--lime, #deff9a); }
+.text-white { color: #000000; }
+.text-lime { color: var(--primary, #fb6237); }
+@media (prefers-color-scheme: dark) {
+  .camera-off {
+    --background: var(--background-dark, #2c2a26);
+  }
+  .custom-toolbar {
+    --background: var(--background-dark, #2c2a26);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  }
+  .text-white { color: var(--background-light, #fff8dc); }
+}
 </style>
 
 <style>
