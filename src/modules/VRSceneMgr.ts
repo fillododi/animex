@@ -95,12 +95,6 @@ export class VRSceneManager {
             this.addEntityToScene(new_animal);
         });
 
-        const geometry = new THREE.SphereGeometry(4);
-        const wireframe = new THREE.WireframeGeometry( geometry );
-        const line = new THREE.LineSegments( wireframe )
-        line.position.set(0, 0, -30)
-        this.scene.add( line );
-
         this.clock.start();
     }
 
@@ -217,6 +211,8 @@ export class VRSceneManager {
             this.deleteEntityFromScene(ent);
         });
         this.entities.clear()
+
+        this.clock.stop();
     }
 
     /**
@@ -275,9 +271,9 @@ export class VRSceneManager {
     playSound(soundFile: string) {
         const sound = new THREE.Audio(this.audioListener);
         this.audioLoader.load( `/vr-assets/sounds/${soundFile}`, (buffer) => {
-	        sound.setBuffer(buffer);
-	        sound.setVolume(1);
-	        sound.play();
+            sound.setBuffer(buffer);
+            sound.setVolume(1);
+            sound.play();
         });
     }
 }

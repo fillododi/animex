@@ -11,7 +11,7 @@ enum State {
 
 export class FoodEntity extends Entity {
 
-    private readonly ANGLE_DELTA_RAD = 5 / (2 * Math.PI);
+    private readonly ANGLE_DELTA_RAD = 20 * Math.PI / 180;
     private readonly FLIGHT_APEX = 8;
     private readonly FLIGHT_DURATION = 1;
     private readonly FLIGHT_LENGTH = 35;

@@ -3,7 +3,7 @@ import { useServiceStore } from '@/stores/serviceStore';
 import { useSessionStore } from '@/stores/sessionStore';
 import { useChatStore } from '@/stores/chatStore';
 import type { DifficultyLevel, QuizValidationResultDTO } from '@/utility/Types';
-import { AnimalType } from '@/utility/AnimalType';
+
 export class ConversationManager {
     
     private isListening = false;

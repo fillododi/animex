@@ -18,10 +18,16 @@ export class AnimalEntity extends Entity {
     private readonly IDLE_DUR_MIN = 2;
     private readonly IDLE_DUR_DELTA = 1.5;
     private readonly MOVEMENT_SPEED = 3;
+    private readonly MIN_CAM_DIST = 30;
+    private readonly MAX_CAM_DIST = 35;
+    private readonly ROT_DEAD_SPACE = 1/3;
+
     private readonly REACTION_DURATION = 2;
     private readonly HAPPY_JUMP_NUM = 3;
     private readonly HAPPY_JUMP_HEIGHT = 6;
-
+    private readonly ANGRY_TURN_NUM = 3;
+    private readonly ANGRY_TURN_AMP = 20 * Math.PI / 180;
+    private readonly ROT_SPEED = this.ANGRY_TURN_AMP * this.ANGRY_TURN_NUM * 2 / this.REACTION_DURATION;
     private readonly EAT_THRESHOLD = 6; // how close to eat the food
 
     private readonly diet: FoodType;
@@ -29,6 +35,9 @@ export class AnimalEntity extends Entity {
     private state: State = State.IDLE;   
     private elapsed: number = 0; //Time passed since last state change
     private idleDur: number = 0;
+    private initialYRot: number = 0; //Y rotation when the animal begins REACTION_BAD
+    private angryRotDir: number = 1;
+    private rotCushion: number = 0;
 
     constructor(name: string, scene: VRSceneManager, initialPosition: Vector3, gltf: GLTF, diet: FoodType) {            
         super(name, scene, initialPosition, gltf);
@@ -40,11 +49,39 @@ export class AnimalEntity extends Entity {
 
         this.elapsed += delta;
 
-        if (this.state == State.IDLE) {
-            
+        if (this.state & State.IDLE) {
+            if (this.elapsed > this.idleDur)
+            {
+                const deg = (this.ROT_DEAD_SPACE + Math.random() * (2 - 2 * this.ROT_DEAD_SPACE)) * Math.PI;
+                this.model.rotateY(deg);
+                this.setState(State.MOVING)
+            }
         }
+        else if (this.state & State.MOVING) {
+            this.model.translateOnAxis(new Vector3(0, 0, 1), this.MOVEMENT_SPEED * delta);
 
-        if (this.state == (State.REACTION_GOOD | State.REACTION_BAD)) {
+            const dist = this.model.position.distanceTo(new Vector3(0, 0, 0));
+            if (dist < this.MIN_CAM_DIST || dist > this.MAX_CAM_DIST || this.elapsed > 3) {
+                this.model.translateOnAxis(new Vector3(0, 0, 1), -2 * this.MOVEMENT_SPEED * delta); //Move back a bit
+                this.setState(State.IDLE);
+            }
+                
+        }
+        else if (this.state & (State.REACTION_GOOD | State.REACTION_BAD)) {
+            //Do reaction animation
+            if (this.state & State.REACTION_GOOD) {
+                this.model.position.y = this.HAPPY_JUMP_HEIGHT * Math.abs(Math.sin((Math.PI * this.elapsed * this.HAPPY_JUMP_NUM / this.REACTION_DURATION)))
+            }
+            else if (this.state & State.REACTION_BAD) {
+                this.model.rotateY(delta * this.ROT_SPEED * this.angryRotDir);
+                
+                this.rotCushion -= delta;
+                if (this.rotCushion < 0 && Math.abs(this.model.rotation.y - this.initialYRot) > this.ANGRY_TURN_AMP)
+                {
+                    this.angryRotDir *= -1; //Invert direction
+                    this.rotCushion = 0.25; //Stop inversions for some time 
+                }
+            }
             
             if (this.elapsed > this.REACTION_DURATION)
                 this.setState(State.IDLE);
@@ -55,11 +92,11 @@ export class AnimalEntity extends Entity {
             const food = this.sceneMgr.getEntityByType("FoodEntity");
             if (food.size == 0)
                 return;
-
             
             food.forEach((f) => {
-                if (this.model.position.distanceTo(f.model.position) < this.EAT_THRESHOLD) {
+                if (this.model.position.distanceToSquared(f.model.position) < this.EAT_THRESHOLD ** 2) {
                     //Eat the food
+                    this.model.lookAt(new Vector3(0, 0, 0)); //Look towards camera
                     this.sceneMgr.playSound('munch.m4a');
                     if ((f as FoodEntity).type & this.diet) {
                         this.sceneMgr.playSound('yummy.mp3');
@@ -67,6 +104,7 @@ export class AnimalEntity extends Entity {
                     }
                     else {
                         this.sceneMgr.playSound('belch.wav');
+                        this.initialYRot = this.model.rotation.y;
                         this.setState(State.REACTION_BAD);
                     }
 

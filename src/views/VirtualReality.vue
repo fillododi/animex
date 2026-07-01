@@ -12,7 +12,7 @@
 
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue';
-import { IonButton, IonContent, IonPage } from '@ionic/vue';
+import { IonButton, IonContent, IonPage, onIonViewDidLeave, onIonViewDidEnter } from '@ionic/vue';
 import { VRSceneManager } from '@/modules/VRSceneMgr';
 import { Motion } from '@capacitor/motion';
 import { Vector3 } from 'three';
