@@ -9,16 +9,18 @@ export enum FoodType {
 }
 
 export class AnimalType {
-    static readonly LION = new AnimalType("savannah.png", "lion.glb", FoodType.MEAT);
-    static readonly ZEBRA = new AnimalType("savannah.png", "zebra.glb", FoodType.PLANT);
-    static readonly HIPPOPOTAMUS = new AnimalType("watering-hole.png", "hippopotamus.glb", FoodType.ALL);
-    static readonly TIGER = new AnimalType("jungle.png", "tiger.glb", FoodType.MEAT);
-    static readonly FROG = new AnimalType("pond.png", "frog.glb", FoodType.MEAT);
-    static readonly NEWT = new AnimalType("pond.png", "newt.glb", FoodType.MEAT);
-    static readonly DOG = new AnimalType("room.png", "dog.glb", FoodType.ALL);
-    static readonly CAT = new AnimalType("room.png", "cat.glb", FoodType.MEAT);
-    static readonly UNKNOWN = new AnimalType("test.jpg", "animal_test.glb", FoodType.NONE);
+    static readonly LION = new AnimalType("lion", "savannah.png", "lion.glb", FoodType.MEAT);
+    static readonly ZEBRA = new AnimalType("zebra", "savannah.png", "zebra.glb", FoodType.PLANT);
+    static readonly HIPPOPOTAMUS = new AnimalType("hippopotamus", "watering-hole.png", "hippopotamus.glb", FoodType.ALL);
+    static readonly TIGER = new AnimalType("tiger", "jungle.png", "tiger.glb", FoodType.MEAT);
+    static readonly FROG = new AnimalType("italian-stream-frog", "pond.png", "frog.glb", FoodType.MEAT);
+    static readonly NEWT = new AnimalType("japanese-fire-bellied-newt", "pond.png", "newt.glb", FoodType.MEAT);
+    static readonly DOG = new AnimalType("dog", "room.png", "dog.glb", FoodType.ALL);
+    static readonly CAT = new AnimalType("cat", "room.png", "cat.glb", FoodType.MEAT);
+    static readonly UNKNOWN = new AnimalType("unknown", "test.jpg", "animal_test.glb", FoodType.NONE);
 
+    /** Name of the animal */
+    readonly name: string;
     /** Path to the image file for VR background. */
     readonly backgroundIMG: string;
     /** Path to the 3D model file for VR. */
@@ -26,7 +28,8 @@ export class AnimalType {
     /** What the animal eats, used as a bitmask */
     readonly diet: FoodType;
 
-    constructor(bg: string, model: string, diet: FoodType) {
+    constructor(name: string, bg: string, model: string, diet: FoodType) {
+        this.name = name;
         this.backgroundIMG = bg;
         this.model = model;
         this.diet = diet;
@@ -34,19 +37,22 @@ export class AnimalType {
 
     static fromString(str: string): AnimalType {
         switch(str) {
-            case "lion":
+            case AnimalType.LION.name:
                 return AnimalType.LION;
-            case "zebra":
+            case AnimalType.ZEBRA.name:
                 return AnimalType.ZEBRA
-            case "hippopotamus":
+            case AnimalType.HIPPOPOTAMUS.name:
                 return AnimalType.HIPPOPOTAMUS;
-            case "tiger":
+            case AnimalType.TIGER.name:
                 return AnimalType.TIGER;
-            case "italian-stream-frog":
+            case AnimalType.FROG.name:
                 return AnimalType.FROG;
-            case "japanese-fire-bellied-newt":
+            case AnimalType.NEWT.name:
                 return AnimalType.NEWT;
-            //TODO: Add dog and cat
+            case AnimalType.DOG.name:
+                return AnimalType.DOG;
+            case AnimalType.CAT.name:
+                return AnimalType.CAT;
             default:
                 return AnimalType.UNKNOWN;
         }

@@ -19,6 +19,9 @@ export class VRSceneManager {
     private readonly GLTFLoader: GLTFLoader;
     private readonly texLoader: THREE.TextureLoader;
 
+    private readonly audioLoader: THREE.AudioLoader;
+    private readonly audioListener: THREE.AudioListener;
+
     private readonly bgSphereMat: THREE.MeshBasicMaterial;
 
     /* Entity management */
@@ -61,6 +64,10 @@ export class VRSceneManager {
         this.GLTFLoader = new GLTFLoader();
         this.texLoader = new THREE.TextureLoader;
 
+        this.audioLoader = new THREE.AudioLoader();
+        this.audioListener = new THREE.AudioListener();
+        this.camera.add(this.audioListener);
+
         this.entities = new Set();
         this.clock = new THREE.Clock();
 
@@ -101,16 +108,6 @@ export class VRSceneManager {
      * Main engine loop for the VR. It will be called every frame.
      */
     engineLoop() {
-
-        /* LOGIC */
-
-        // Spawn food every second
-        //if (this.frame % 60 == 0)
-            //this.loadFood();
-
-
-        /* UPDATES */
-
         // Update Entities
         const delta = this.clock.getDelta();
         for (const entity of this.entities)
@@ -133,19 +130,6 @@ export class VRSceneManager {
      */
     updateCameraRotation(rotation: Vector3) {
         this.cameraRotation = rotation;
-    }
-
-    /**
-     * Loads food into the scene
-     * @param position Where to spawn the food in the space
-     */
-    loadFood(position: Vector3) {
-        // Load Food
-        this.GLTFLoader.load(`/vr-assets/models/food_test.glb`, (gltf) => {
-            const new_food = new FoodEntity("meat", this, position, gltf, FoodType.NONE);
-            this.addEntityToScene(new_food);
-        });
-    
     }
 
     /**
@@ -282,5 +266,18 @@ export class VRSceneManager {
         assert(this.dragCont.objects.includes(obj), "Object not under drag controls!");
 
         this.dragCont.objects.splice(this.dragCont.objects.indexOf(obj), 1);
+    }
+
+    /**
+     * Plays a sound.
+     * @param soundFile The filename of the sound to play.
+     */
+    playSound(soundFile: string) {
+        const sound = new THREE.Audio(this.audioListener);
+        this.audioLoader.load( `/vr-assets/sounds/${soundFile}`, (buffer) => {
+	        sound.setBuffer(buffer);
+	        sound.setVolume(1);
+	        sound.play();
+        });
     }
 }

@@ -115,3 +115,6 @@ The assets used for the VR mode were sourced as follows:
 - Steak by Jarlan Perez [CC-BY] via Poly Pizza
 - Salad Bowl by Jarlan Perez [CC-BY] via Poly Pizza
 - Plant by Zsky [CC-BY] via Poly Pizza
+- Dog Munching Bell Pepper by qubodup -- https://freesound.org/s/829502/ -- License: Creative Commons 0
+- Gớm by SieuAmThanh -- https://freesound.org/s/534536/ -- License: Creative Commons 0
+- yummy.mp3 by dorr1 -- https://freesound.org/s/338959/ -- License: Creative Commons 0

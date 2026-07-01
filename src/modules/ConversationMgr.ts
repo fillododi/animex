@@ -3,6 +3,7 @@ import { useServiceStore } from '@/stores/serviceStore';
 import { useSessionStore } from '@/stores/sessionStore';
 import { useChatStore } from '@/stores/chatStore';
 import type { DifficultyLevel, QuizValidationResultDTO } from '@/utility/Types';
+import { AnimalType } from '@/utility/AnimalType';
 export class ConversationManager {
     
     private isListening = false;
@@ -93,7 +94,7 @@ export class ConversationManager {
                 }
                 const question = await connectionService.sendQuizNextRequest(
                     stateStore.sessionId, 
-                    currentAnimalId,  
+                    currentAnimalId.name,  
                     difficulty,
                     chatStore.getOldQuestions().length > 0 ? chatStore.getOldQuestions() : [],
                     ["yes_no", "multiple_choice"]
@@ -162,7 +163,7 @@ export class ConversationManager {
                 const connectionService = useServiceStore().connectionService;
                 const result = await connectionService?.sendQuizValidateRequest(
                     stateStore.sessionId,
-                    currentAnimalId,
+                    currentAnimalId.name,
                     questionId,
                     answer,
                     prompt,
