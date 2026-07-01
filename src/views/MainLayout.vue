@@ -71,8 +71,8 @@ body.keyboard-is-open .custom-tab-bar {
 }
 
 ion-tab-button {
-  --color: #888888;
-  --color-selected: var(--primary, #fb6237);
+  --color: var(background-dark, #2c2a26);
+  --color-selected: var(--secondary, #fac400);
   transition: all 0.3s;
 }
 
@@ -81,20 +81,19 @@ ion-tab-button i {
   margin-bottom: 4px;
 }
 
-/* Effetto sollevamento per il tab attivo */
+
 ion-tab-button.tab-selected i {
   transform: translateY(-3px);
 }
 
-/*DA QUI*/
 
 ion-tab-button ion-icon {
-  font-size: 24px; /* Un po' più grandi per renderle più leggibili */
+  font-size: 24px; 
   margin-bottom: 4px;
   transition: transform 0.3s ease;
 }
 
-/* Effetto sollevamento per il tab attivo */
+
 ion-tab-button.tab-selected ion-icon {
   transform: translateY(-4px);
 }
@@ -105,7 +104,8 @@ ion-tab-button.tab-selected ion-icon {
     border-top: 1px solid rgba(255, 255, 255, 0.1);
   }
   ion-tab-button {
-    --color: var(--tab-button-color, #aaaaaa);
+    --color: var(--background-light, #fff8dc);
+    --color-selected: var(--primary, #fb6237);
   }
 }
 </style>

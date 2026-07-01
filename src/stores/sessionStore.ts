@@ -2,7 +2,6 @@ import type { AnimalData } from '@/utility/AnimalData';
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { useChatStore } from './chatStore';
-import type { RecognitionDTO } from '@/utility/Types';
 
 export const useSessionStore = defineStore('session', () => {
   

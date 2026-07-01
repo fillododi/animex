@@ -14,21 +14,21 @@
 
       <div class="floating-controls">
         <div class="multiple-animals-card" v-if="sessionStore.multipleAnimals">
-        <p class="question-text">Con quale animale vuoi parlare?</p>
-        <div class="animal-buttons">
-          <ion-button 
-            v-for="(animal, index) in sessionStore.multipleAnimals" 
-            :key="index"
-            expand="block"
-            shape="round"
-            class="animal-choice-btn"
-            @click="chooseAnimal(animal)"
-          >
-            {{ animal.displayName }}
-          </ion-button>
+          <p class="question-text">Con quale animale vuoi parlare?</p>
+          <div class="animal-buttons">
+            <ion-button 
+              v-for="(animal, index) in sessionStore.multipleAnimals" 
+              :key="index"
+              expand="block"
+              shape="round"
+              class="animal-choice-btn"
+              @click="chooseAnimal(animal)"
+            >
+              {{ animal.displayName }}
+            </ion-button>
+          </div>
         </div>
-      </div>
-        <!-- Camera Spenta -->
+
         <BaseButton 
           v-if="!uiState.isRecording"
           testo="AVVIA SCANNER" 
@@ -38,15 +38,44 @@
           class="btn-action"
         />
 
-        <!-- Camera Accesa-->
-        <BaseButton 
-          v-else
-          testo="CHIUDI SCANNER" 
-          :icona="close"
-          variante="pericolo" 
-          @click="handleStop" 
-          class="btn-action"
-        />
+        <template v-else>
+          
+          <BaseButton 
+            v-if="sessionStore.multipleAnimals"
+            testo="CERCA ALTRO" 
+            :icona="camera"
+            variante="stile-input"
+            @click="resumeScan"
+            class="btn-action"
+          />
+
+          <div class="dual-buttons" v-else-if="sessionStore.recognizedAnimal">
+            <BaseButton 
+              testo="CERCA ALTRO" 
+              :icona="camera"
+              variante="stile-input"
+              @click="resumeScan"
+              class="btn-action half-width"
+            />
+            <BaseButton 
+              testo="CHIUDI" 
+              :icona="close"
+              variante="pericolo" 
+              @click="handleStop" 
+              class="btn-action half-width"
+            />
+          </div>
+
+          <BaseButton 
+            v-else
+            testo="CHIUDI SCANNER" 
+            :icona="close"
+            variante="pericolo" 
+            @click="handleStop" 
+            class="btn-action"
+          />
+          
+        </template>
       </div>
       <video ref="videoElement" class="camera-video" autoplay playsinline muted></video>
 
@@ -136,7 +165,7 @@ watch(
     if (newQuestion) {
       globalUiState.setProcessing(false);
       globalUiState.setStatusMessage(CHAT_STATUS.SUCCESS);
-      globalUiState.setSpeaking(true); // <-- QUESTO FA COMPARIRE IL TASTO MUTO
+      globalUiState.setSpeaking(true); 
     }
   }
 );
@@ -162,6 +191,12 @@ const handleStart = async () => {
         await alert.present();
       }
     }
+};
+
+const resumeScan = async () => {
+  sessionStore.multipleAnimals = null;
+  sessionStore.recognizedAnimal = null; 
+  await recog.startRecognitionLoop();
 };
 
 const handleStop = async () => {
@@ -345,14 +380,53 @@ const chooseAnimal = (animal: AnimalData) => {
   transform: translateX(-50%);
   z-index: 10;
   display: flex;
-  justify-content: center;
+  flex-direction: column; 
+  align-items: center;    
+  gap: 15px;
   width: 90%;
+}
+
+.stile-input {
+  background: var(--background-light, #fff8dc);
+  color: var(--background-dark, #2c2a26);
+  border-color: var(--secondary, #fac400); 
+}
+
+.stile-input:hover {
+  border-color: var(--secondary, #fac400); 
+  background: var(--background-light, #fff8dc);
+}
+
+.multiple-animals-card {
+  background: var(--background-light, #fff8dc);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  padding: 20px;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+  width: 100%; 
+  border: 1px solid var(--secondary, #fac400);
+  animation: slideUpCard 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+.dual-buttons {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  max-width: 300px;
+  justify-content: center;
+}
+
+.half-width {
+  flex: 1;
+  margin: 0;
+  max-width: none;
 }
 
 .btn-action {
   width: 100%;
   max-width: 300px;
-  box-shadow: 0 10px 20px rgba(0,0,0,0.5); /* Effetto ombra per farlo staccare dal video */
+  box-shadow: 0 10px 20px rgba(0,0,0,0.5); 
 }
 
 .result-banner {
@@ -384,6 +458,28 @@ const chooseAnimal = (animal: AnimalData) => {
 }
 .text-white { color: #000000; }
 .text-lime { color: var(--primary, #fb6237); }
+.question-text {
+  font-family: var(--font-main, 'Urbanist', sans-serif);
+  font-weight: 700;
+  font-size: 18px;
+  color: var(--background-dark, #2c2a26); 
+  margin-top: 0;
+  margin-bottom: 15px;
+  text-align: center;
+}
+.animal-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.animal-choice-btn {
+  --background: var(--secondary, #fac400); 
+  --color: var(--background-dark, #2c2a26); 
+  margin: 0;
+  font-weight: 600;
+  letter-spacing: 1px;
+}
 @media (prefers-color-scheme: dark) {
   .camera-off {
     --background: var(--background-dark, #2c2a26);
@@ -393,15 +489,49 @@ const chooseAnimal = (animal: AnimalData) => {
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   }
   .text-white { color: var(--background-light, #fff8dc); }
+  .multiple-animals-card {
+    background: var(--background-dark, #2c2a26);
+    border: 1px solid var(--primary, #fb6237);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
+  }
+  
+  .question-text {
+    color: var(--background-light, #fff8dc); 
+  }
+  .animal-choice-btn {
+    --background: var(--primary, #fb6237); 
+    --color: var(--background-light, #fff8dc); 
+  }
+  .stile-input {
+    background: var(--background-dark, #2c2a26);
+    color: var(--background-light, #fff8dc);
+    border-color: var(--primary, #fb6237); 
+  }
+
+  .stile-input:hover {
+    border-color: var(--primary, #fb6237); 
+    background: var(--background-dark, #2c2a26);
+  }
+}
+
+@keyframes slideUpCard {
+  from { 
+    opacity: 0; 
+    transform: translateY(60px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0); 
+  }
 }
 </style>
 
 <style>
-/* --- MAKES CAMERA VISIBLE --- */
+
   body { background: transparent; }
   ion-content { --background: transparent; }
   .camera-video {
-    z-index: -1; /* Ensure the video is behind other content */
+    z-index: -1; 
     position: absolute;
     top: 0;
     left: 0;

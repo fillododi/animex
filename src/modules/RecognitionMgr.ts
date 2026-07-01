@@ -58,6 +58,44 @@ export class RecognitionManager {
         }
         const frame = await cameraService.getCameraFrame()
         this.frameId++
+
+
+
+        // -------------------------------------------------------------
+        // 🧪 INIZIO DATI FINTI PER TEST DELLA UI (MOCKING)
+        // -------------------------------------------------------------
+        
+        // Creiamo manualmente l'array con due animali
+        const mockAnimals: AnimalData[] = [
+            {
+                id: crypto.randomUUID(),
+                animalType: "lion" as any, // Mettiamo 'any' per evitare problemi con l'enum durante il test
+                displayName: "Leone ",
+                pos: { x: 0.5, y: 0.5 }
+            },
+            {
+                id: crypto.randomUUID(),
+                animalType: "hippopotamus" as any,
+                displayName: "Ippopotamo",
+                pos: { x: 0.6, y: 0.4 }
+            }
+        ];
+
+        // Salviamo gli animali nello store (farà apparire la bolla)
+        sessionStore.multipleAnimalsDetected(mockAnimals);
+        
+        // Fermiamo il loop per simulare che l'IA abbia finito
+        this.stopRecognitionLoop();
+        
+        // Interrompiamo la funzione qui per ignorare il vero server
+        return;
+
+        // -------------------------------------------------------------
+        // 🧪 FINE DATI FINTI - Tutto ciò che c'è sotto non verrà eseguito
+        // -------------------------------------------------------------
+        
+        // Quando la backend è pronta decommenta il blocco sotto
+        /*
         const response =  await connectionService.sendRecognitionRequest(sessionStore.sessionId, this.frameId, frame.value)
         if (!response || !response.selectedAnimals) return;
         const validAnimals: AnimalData[] = [];
@@ -79,9 +117,13 @@ export class RecognitionManager {
         }
         if (validAnimals.length === 1 && validAnimals[0]) {
             sessionStore.updateRecognizedAnimal(validAnimals[0]);
+            this.stopRecognitionLoop()
+            return;
         } else if (validAnimals.length > 1) {
             sessionStore.multipleAnimalsDetected(validAnimals);
-        }
+            this.stopRecognitionLoop()
+            return;
+        }*/
         
 
         /*if(!response?.selectedAnimals[0]?.id || response.selectedAnimals[0]?.id === "unknown") return
