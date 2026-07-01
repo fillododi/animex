@@ -66,7 +66,7 @@ export class RecognitionManager {
         // -------------------------------------------------------------
         
         // Creiamo manualmente l'array con due animali
-        const mockAnimals: AnimalData[] = [
+        /*const mockAnimals: AnimalData[] = [
             {
                 id: crypto.randomUUID(),
                 animalType: "lion" as any, // Mettiamo 'any' per evitare problemi con l'enum durante il test
@@ -88,19 +88,21 @@ export class RecognitionManager {
         this.stopRecognitionLoop();
         
         // Interrompiamo la funzione qui per ignorare il vero server
-        return;
+        return;*/
 
         // -------------------------------------------------------------
         // 🧪 FINE DATI FINTI - Tutto ciò che c'è sotto non verrà eseguito
         // -------------------------------------------------------------
         
         // Quando la backend è pronta decommenta il blocco sotto
-        /*
+        
         const response =  await connectionService.sendRecognitionRequest(sessionStore.sessionId, this.frameId, frame.value)
-        if (!response || !response.selectedAnimals) return;
+        if (!response) return;
+        const rawAnimals = response.selectedAnimals ?? (response.selectedAnimal ? [response.selectedAnimal] : []);
+        if (rawAnimals.length === 0) return;
         const validAnimals: AnimalData[] = [];
-        for (const animal of response.selectedAnimals) {
-            if (animal.id === "unknown" || !animal.id) return;
+        for (const animal of rawAnimals) {
+            if (animal.id === "unknown" || !animal.id) continue;
             const sumX = animal.boundingPoly?.normalizedVertices?.reduce((sum, vert) => sum + vert.x, 0) ?? 0
             const sumY = animal.boundingPoly?.normalizedVertices?.reduce((sum, vert) => sum + vert.y, 0) ?? 0
             const numVerts = animal.boundingPoly?.normalizedVertices?.length ?? 1
@@ -115,15 +117,19 @@ export class RecognitionManager {
             }
             validAnimals.push(animalData);
         }
-        if (validAnimals.length === 1 && validAnimals[0]) {
-            sessionStore.updateRecognizedAnimal(validAnimals[0]);
+        if (validAnimals.length === 0) return;
+        const uniqueAnimals = validAnimals.filter((animal, index, self) =>
+                index === self.findIndex((t) => t.animalType === animal.animalType)
+        );
+        if (uniqueAnimals.length === 1 && uniqueAnimals[0]) {
+            sessionStore.updateRecognizedAnimal(uniqueAnimals[0]);
             this.stopRecognitionLoop()
             return;
-        } else if (validAnimals.length > 1) {
-            sessionStore.multipleAnimalsDetected(validAnimals);
+        } else if (uniqueAnimals.length > 1) {
+            sessionStore.multipleAnimalsDetected(uniqueAnimals);
             this.stopRecognitionLoop()
             return;
-        }*/
+        }
         
 
         /*if(!response?.selectedAnimals[0]?.id || response.selectedAnimals[0]?.id === "unknown") return
@@ -139,7 +145,8 @@ export class RecognitionManager {
                 y: sumY / numVerts
             }
         }
-        sessionStore.updateRecognizedAnimal(animalData)*/
+        sessionStore.updateRecognizedAnimal(animalData)*//*
         
+    }*/
     }
 }

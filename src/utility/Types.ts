@@ -10,12 +10,20 @@ export type BoundingPoly = {
 }
 // sarà una lista di selectedAnimal quindi lo status va messo dentro
 export type RecognitionDTO = {
-  selectedAnimals: {
+  selectedAnimals?: {
     id: string;
     displayName: string;
     boundingPoly: BoundingPoly | undefined;
     status: RecognitionStatus;
-  }[]
+  }[];
+  // Backend will return always an array of selectedAnimals in future, 
+  // even if i contains only one animal, but for now we need to support both cases
+  selectedAnimal?: {
+    id: string;
+    displayName: string;
+    boundingPoly: BoundingPoly | undefined;
+    status: RecognitionStatus;
+  };
 }
 export type MessageRole = "user" | "model";
 
