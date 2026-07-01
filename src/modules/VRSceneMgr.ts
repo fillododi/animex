@@ -32,7 +32,10 @@ export class VRSceneManager {
 
     private readonly foodModels: Map<FoodType, string[]>;
     
-    private readonly dragCont: DragControls
+    private readonly dragCont: DragControls;
+
+    /* Temp variable to rotate more efficiently */
+    private euler: THREE.Euler = new THREE.Euler();
 
     constructor() {
         this.renderer = new THREE.WebGLRenderer({antialias: true});
@@ -109,7 +112,8 @@ export class VRSceneManager {
 
         this.dragCont.update(delta);
         // Update Camera and renderer
-        this.camera.setRotationFromEuler(new THREE.Euler().setFromVector3(this.cameraRotation));
+        this.euler.setFromVector3(this.cameraRotation, 'YXZ');
+        this.camera.quaternion.setFromEuler(this.euler);
         this.camera.updateMatrix();
 
         this.renderer.render(this.scene, this.camera);

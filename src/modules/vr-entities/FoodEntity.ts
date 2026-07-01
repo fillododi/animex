@@ -53,6 +53,10 @@ export class FoodEntity extends Entity {
             this.model.position.y = Math.sin(this.elapsed * this.BOBBING_SPEED) * this.BOBBING_AMP;
             this.model.rotateY(delta * this.ROTATION_SPEED);
         }
+
+        // Delete food after a few seconds
+        if (this.elapsed > 10)
+            this.free();
     }
 
     free() {

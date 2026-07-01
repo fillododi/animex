@@ -37,10 +37,13 @@ const onWindowResize = () => {
 };
 
 const startGyro = async () => {
-    // I have not been able to test if this works yet because of other compilation errors.
     gyroListener = await Motion.addListener('orientation', (event) => {
         if (event) {
-            sceneManager.updateCameraRotation(new Vector3(event.alpha ?? 0, event.beta ?? 0, event.gamma ?? 0));
+            sceneManager.updateCameraRotation(new Vector3(
+                (event.beta ?? 0) * Math.PI / 180 - Math.PI / 2,
+                (event.gamma ?? 0) * Math.PI / 180,
+                (event.alpha ?? 0) * Math.PI / 180
+            ))
         }
     })
 };
