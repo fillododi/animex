@@ -40,9 +40,9 @@ const startGyro = async () => {
     gyroListener = await Motion.addListener('orientation', (event) => {
         if (event) {
             sceneManager.updateCameraRotation(new Vector3(
-                (event.beta ?? 0) * Math.PI / 180 - Math.PI / 2,
-                (event.gamma ?? 0) * Math.PI / 180,
-                (event.alpha ?? 0) * Math.PI / 180
+                (((event.beta ?? 0) + 360) % 360) * Math.PI / 180,
+                (((event.gamma ?? 0) + 360) % 360) * Math.PI / 180,
+                (((event.alpha ?? 0) + 360) % 360) * Math.PI / 180
             ))
         }
     })

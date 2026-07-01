@@ -111,6 +111,7 @@ export class VRSceneManager {
             entity.update(delta);
 
         this.dragCont.update(delta);
+
         // Update Camera and renderer
         this.euler.setFromVector3(this.cameraRotation, 'YXZ');
         this.camera.quaternion.setFromEuler(this.euler);
