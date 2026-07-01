@@ -8,14 +8,14 @@ export type BoundingPoly = {
   vertices?: { x: number; y: number }[];
   normalizedVertices?: { x: number; y: number }[];
 }
-
+// sarà una lista di selectedAnimal quindi lo status va messo dentro
 export type RecognitionDTO = {
-  status: RecognitionStatus;
-  selectedAnimal: {
+  selectedAnimals: {
     id: string;
     displayName: string;
     boundingPoly: BoundingPoly | undefined;
-  }
+    status: RecognitionStatus;
+  }[]
 }
 export type MessageRole = "user" | "model";
 

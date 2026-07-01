@@ -59,20 +59,45 @@ export class RecognitionManager {
         const frame = await cameraService.getCameraFrame()
         this.frameId++
         const response =  await connectionService.sendRecognitionRequest(sessionStore.sessionId, this.frameId, frame.value)
-        if(!response?.selectedAnimal.id || response.selectedAnimal.id === "unknown") return
-        const sumX = response?.selectedAnimal.boundingPoly?.normalizedVertices?.reduce((sum, vert) => sum + vert.x, 0) ?? 0
-        const sumY = response?.selectedAnimal.boundingPoly?.normalizedVertices?.reduce((sum, vert) => sum + vert.y, 0) ?? 0
-        const numVerts = response?.selectedAnimal.boundingPoly?.normalizedVertices?.length ?? 1
+        if (!response || !response.selectedAnimals) return;
+        const validAnimals: AnimalData[] = [];
+        for (const animal of response.selectedAnimals) {
+            if (animal.id === "unknown" || !animal.id) return;
+            const sumX = animal.boundingPoly?.normalizedVertices?.reduce((sum, vert) => sum + vert.x, 0) ?? 0
+            const sumY = animal.boundingPoly?.normalizedVertices?.reduce((sum, vert) => sum + vert.y, 0) ?? 0
+            const numVerts = animal.boundingPoly?.normalizedVertices?.length ?? 1
+            const animalData : AnimalData = {
+                id: crypto.randomUUID(),
+                animalType: animal.id as AnimalType,
+                displayName: animal.displayName ?? "Sconosciuto",
+                pos: {
+                    x: sumX / numVerts,
+                    y: sumY / numVerts
+                }
+            }
+            validAnimals.push(animalData);
+        }
+        if (validAnimals.length === 1 && validAnimals[0]) {
+            sessionStore.updateRecognizedAnimal(validAnimals[0]);
+        } else if (validAnimals.length > 1) {
+            sessionStore.multipleAnimalsDetected(validAnimals);
+        }
+        
+
+        /*if(!response?.selectedAnimals[0]?.id || response.selectedAnimals[0]?.id === "unknown") return
+        const sumX = response?.selectedAnimals[0]?.boundingPoly?.normalizedVertices?.reduce((sum, vert) => sum + vert.x, 0) ?? 0
+        const sumY = response?.selectedAnimals[0]?.boundingPoly?.normalizedVertices?.reduce((sum, vert) => sum + vert.y, 0) ?? 0
+        const numVerts = response?.selectedAnimals[0]?.boundingPoly?.normalizedVertices?.length ?? 1
         const animalData : AnimalData = {
             id: crypto.randomUUID(),
-            animalType: (response?.selectedAnimal.id ?? "unknown") as AnimalType,
-            displayName: response?.selectedAnimal.displayName ?? "Sconosciuto",
+            animalType: (response?.selectedAnimals[0]?.id ?? "unknown") as AnimalType,
+            displayName: response?.selectedAnimals[0]?.displayName ?? "Sconosciuto",
             pos: {
                 x: sumX / numVerts,
                 y: sumY / numVerts
             }
         }
-        sessionStore.updateRecognizedAnimal(animalData)
+        sessionStore.updateRecognizedAnimal(animalData)*/
         
     }
 }

@@ -8,12 +8,26 @@
       </ion-toolbar>
     </ion-header>
     <ion-content :scroll-y= "false" :class="uiState.isRecording ? 'camera-on' : 'camera-off'">
-      <div class="result-banner" v-if="sessionStore.recognizedAnimal">
+      <div class="result-banner" v-if="sessionStore.multipleAnimals === null && sessionStore.recognizedAnimal">
         Rilevato: <strong>{{ sessionStore.recognizedAnimal.displayName }}</strong>
       </div>
 
       <div class="floating-controls">
-        
+        <div class="multiple-animals-card" v-if="sessionStore.multipleAnimals">
+        <p class="question-text">Con quale animale vuoi parlare?</p>
+        <div class="animal-buttons">
+          <ion-button 
+            v-for="(animal, index) in sessionStore.multipleAnimals" 
+            :key="index"
+            expand="block"
+            shape="round"
+            class="animal-choice-btn"
+            @click="chooseAnimal(animal)"
+          >
+            {{ animal.displayName }}
+          </ion-button>
+        </div>
+      </div>
         <!-- Camera Spenta -->
         <BaseButton 
           v-if="!uiState.isRecording"
@@ -61,7 +75,7 @@
 
 <script setup lang="ts">
 import { onMounted, reactive, ref, watch } from 'vue';
-import { IonPage, IonContent, onIonViewDidLeave, alertController, IonHeader, IonToolbar, IonTitle, onIonViewDidEnter, IonModal, IonIcon } from '@ionic/vue';
+import { IonPage, IonContent, onIonViewDidLeave, alertController, IonHeader, IonToolbar, IonTitle, IonButton } from '@ionic/vue';
 import { NativeSettings, AndroidSettings, IOSSettings } from 'capacitor-native-settings';
 import { RecognitionManager } from '@/modules/RecognitionMgr';
 import { useServiceStore } from '@/stores/serviceStore';
@@ -76,6 +90,7 @@ import { useChatStore } from '@/stores/chatStore';
 import QuizMenu from '@/components/QuizMenu.vue';
 import { useManagerStore } from '@/stores/managerStore';
 import DynamicMessage from '@/components/DynamicMessage.vue';
+import type { AnimalData } from '@/utility/AnimalData';
 
 // --- INITIALIZATION ---
 const chatStore = useChatStore();
@@ -298,6 +313,10 @@ const sendGlobalAudio = async () => {
     globalUiState.setSpeaking(false) 
   }
 };
+
+const chooseAnimal = (animal: AnimalData) => {
+    sessionStore.updateRecognizedAnimal(animal);
+  };
 </script>
 
 <style scoped>
