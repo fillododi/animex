@@ -202,7 +202,7 @@ export class ConversationManager {
         await this.speak(SOMETHING_BAD_IN_BACKEND);
     }
 
-    private async speak(text: string): Promise<void> {
+    public async speak(text: string): Promise<void> {
         const ttsService = useServiceStore().ttsService
         await ttsService?.speak(text);
     }

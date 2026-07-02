@@ -1,6 +1,6 @@
 <script setup>
 import BaseButton from './BaseButton.vue'
-import { mic, send, trash, volumeHigh, add, close } from 'ionicons/icons';
+import { mic, send, trash, volumeHigh, gameController, close } from 'ionicons/icons';
 
 defineProps({
   modelValue: { type: String, default: '' },
@@ -45,7 +45,7 @@ function onInput(event) {
 
     <BaseButton 
       v-else
-      :icona="add" 
+      :icona="gameController" 
       variante="grigio" 
       rotondo 
       @click="$emit('open-quiz-menu')"

@@ -31,7 +31,7 @@
     <!-- Tasto "+" Quiz (Appare quando non si parla e non si ascolta) -->
     <BaseButton 
       v-else
-      :icona="add" 
+      :icona="gameController" 
       variante="grigio" 
       rotondo 
       @click="$emit('open-quiz-menu')"
@@ -62,7 +62,7 @@
 
 <script setup>
 import BaseButton from './BaseButton.vue'
-import { mic, trash, volumeHigh, add, send, close } from 'ionicons/icons'; // <-- Aggiunto 'send'
+import { mic, trash, volumeHigh, send, close, gameController } from 'ionicons/icons'; // <-- Aggiunto 'send'
 
 defineProps({
   isListening: { type: Boolean, default: false },
@@ -81,11 +81,11 @@ defineEmits(['toggle-microphone', 'stop-audio', 'cancel-recording', 'open-quiz-m
   align-items: center;
   gap: 12px;
   padding: 12px 8px;
-  background: rgba(0, 0, 0, 0.4);
+  background: var(--background-light, #fff8dc);
   backdrop-filter: blur(15px);
   -webkit-backdrop-filter: blur(15px);
   border-radius: 40px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid var(--secondary, #fac400);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   position: absolute;
   right: 15px;
@@ -99,4 +99,10 @@ defineEmits(['toggle-microphone', 'stop-audio', 'cancel-recording', 'open-quiz-m
   background-color: rgba(255, 255, 255, 0.2);
   margin: 2px 0;
 }
+@media (prefers-color-scheme: dark) {
+  .vertical-chat-bar {
+    background: var(--background-dark, #2c2a26);
+    border-color: var(--primary, #fb6237);
+  }
+  }
 </style>

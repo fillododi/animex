@@ -11,10 +11,10 @@
           <div class="recognized-animal-banner" v-if="sessionStore.recognizedAnimal">
             {{ sessionStore.recognizedAnimal.displayName }}
           </div>
-
+<!--
           <div class="status-banner" :class="{ active: uiState.getRecording() }">
             <div class="status-text">{{ uiState.getStatusMessage() }}</div>
-          </div>
+          </div> -->
         </div>
       </ion-toolbar>
     </ion-header>
@@ -23,7 +23,7 @@
              paddingBottom: kbHeight > 0 ? `${kbHeight + 20}px` : `calc(130px + var(--ion-safe-area-bottom, 0px))`, 
              transition: 'padding-bottom 0.25s cubic-bezier(0.32, 0.72, 0, 1)' 
            }">
-        <!-- Ciclo che stampa i messaggi usando il nostro componente -->
+        
         <ChatBubble 
           v-for="(msg, index) in chatStore.messages" 
           :key="index" 
@@ -425,7 +425,6 @@ ion-page, ion-content, .chat-background {
 .custom-toolbar {
   --background: var(--white, #ffffff);
   --border-width: 0;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
 }
 .banners-toolbar, .fixed-banners, ion-footer {
   --background: var(--white, #ffffff);
@@ -437,11 +436,11 @@ ion-page, ion-content, .chat-background {
   letter-spacing: 2px;
 }
 .text-white { color: var(--background-dark, #2c2a26);}
-.text-lime { color: var(--primary, #fb6237); }
+.text-lime { color: var(--secondary, #fac400); }
 
 .recognized-animal-banner {
-  background-color: var(--primary, #fb6237);
-  color: white;
+  background-color: var(--secondary, #fac400);
+  color: var(--background-light, #fff8dc);
   text-align: center;
   padding: 12px;
   border-radius: 8px;
@@ -548,7 +547,13 @@ ion-page, ion-content, .chat-background {
   .text-white { 
     color: var(--background-light, #fff8dc); /* Scritta 'ANIM' bianca di notte */
   }
-  
+  .text-lime { 
+    color: var(--primary, #fb6237); 
+  }
+  .recognized-animal-banner{
+    background-color: var(--primary, #fb6237);
+    color: var(--background-dark, #2c2a26); 
+  }
   /* Risolve il problema della scritta che non si vede! */
   .status-banner {
     background-color: var(--secondary, #fac400); 

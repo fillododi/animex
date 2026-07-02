@@ -31,7 +31,6 @@
 
         <BaseButton 
           v-if="!uiState.isRecording"
-          testo="AVVIA SCANNER" 
           :icona="camera"
           variante="stile-input"
           @click="handleStart"
@@ -40,16 +39,8 @@
 
         <template v-else>
           
-          <BaseButton 
-            v-if="sessionStore.multipleAnimals"
-            testo="CERCA ALTRO" 
-            :icona="camera"
-            variante="stile-input"
-            @click="resumeScan"
-            class="btn-action"
-          />
-
-          <div class="dual-buttons" v-else-if="sessionStore.recognizedAnimal">
+          <!-- Se ci sono animali multipli -->
+          <div class="dual-buttons" v-if="sessionStore.multipleAnimals">
             <BaseButton 
               testo="CERCA ALTRO" 
               :icona="camera"
@@ -64,11 +55,32 @@
               @click="handleStop" 
               class="btn-action half-width"
             />
+            
           </div>
 
+          <!-- Se c'è un singolo animale riconosciuto -->
+          <div class="dual-buttons" v-else-if="sessionStore.recognizedAnimal">
+            <BaseButton 
+              testo="CERCA ALTRO" 
+              :icona="camera"
+              variante="stile-input"
+              @click="resumeScan"
+              class="btn-action half-width"
+            />
+            
+            <BaseButton 
+              testo="CHIUDI" 
+              :icona="close"
+              variante="pericolo" 
+              @click="handleStop" 
+              class="btn-action half-width"
+            />
+          </div>
+
+          <!-- Nessun animale rilevato -->
           <BaseButton 
             v-else
-            testo="CHIUDI SCANNER" 
+            testo="CHIUDI" 
             :icona="close"
             variante="pericolo" 
             @click="handleStop" 
@@ -82,7 +94,14 @@
       <DynamicMessage 
         v-if="uiState.isRecording && sessionStore.recognizedAnimal"
       />
-      
+      <div class="vertical-right-bar" v-if="isGreetingSpeaking">
+        <BaseButton 
+          :icona="volumeHigh"
+          class="dynamic-btn"
+          rotondo
+          @click="stopGreetingAudio"
+        />
+      </div>
       <ChatBar 
         v-if="uiState.isRecording && sessionStore.recognizedAnimal"
         :isListening="globalUiState.getRecording()"
@@ -112,7 +131,7 @@ import { RecognitionManager } from '@/modules/RecognitionMgr';
 import { useServiceStore } from '@/stores/serviceStore';
 import { useSessionStore } from '@/stores/sessionStore';
 import BaseButton from '@/components/BaseButton.vue';
-import { camera, close } from 'ionicons/icons';
+import { camera, close, volumeHigh } from 'ionicons/icons';
 import { globalUiState } from '@/utility/UiState';
 import type { DifficultyLevel } from '@/utility/Types';
 import { CHAT_STATUS } from '@/utility/constants';
@@ -131,6 +150,7 @@ const recog = new RecognitionManager();
 const sessionStore = useSessionStore();
 const videoElement = ref<HTMLVideoElement | null>(null);
 const isQuizModalOpen = ref(false);
+const isGreetingSpeaking = ref(false);
 
 onMounted(() => {
   if(!videoElement.value) {
@@ -171,12 +191,36 @@ watch(
     }
   }
 );
+watch(
+  () => sessionStore.recognizedAnimal,
+  async (newAnimal, oldAnimal) => {
+    if (newAnimal && newAnimal.id !== oldAnimal?.id) {
+      
+        await managerStore.conversationManager?.stopSpeaking(); 
+        //isGreetingSpeaking.value = true;
+        await managerStore.conversationManager?.speak(`${newAnimal.displayName}`);
+        //isGreetingSpeaking.value = false; 
+         
+    }
+  }
+);
+
+watch(
+  () => sessionStore.multipleAnimals,
+  async (newAnimals) => {
+    if (newAnimals && newAnimals.length > 1) {
+      await managerStore.conversationManager?.stopSpeaking();
+      isGreetingSpeaking.value = true; 
+      await managerStore.conversationManager?.speak("Con quale animale vuoi parlare?" + newAnimals.map(animal => animal.displayName));
+      isGreetingSpeaking.value = false;
+    }
+  }
+);
 // --- EVENT HANDLERS ---
 const handleStart = async () => {
     try {
       serviceStore.setCameraService(videoElement.value);
       await recog.startRecognitionLoop();
-      
       uiState.isRecording = true;
       document.documentElement.style.setProperty('--nav-display', 'none');
       
@@ -198,10 +242,13 @@ const handleStart = async () => {
 const resumeScan = async () => {
   sessionStore.multipleAnimals = null;
   sessionStore.recognizedAnimal = null; 
+  isGreetingSpeaking.value = false;
   await recog.startRecognitionLoop();
 };
 
 const handleStop = async () => {
+  await managerStore.conversationManager?.stopSpeaking();
+  isGreetingSpeaking.value = false;
   await recog.stopRecognitionLoop();
   uiState.isRecording = false;
 };
@@ -218,6 +265,7 @@ onIonViewDidLeave(async () => {
   }
   globalUiState.setStatusMessage(CHAT_STATUS.IDLE);
   await managerStore.conversationManager?.stopSpeaking();
+  isGreetingSpeaking.value = false;
 });
 
 const showSettingsAlert = async () => {
@@ -360,6 +408,11 @@ const cancelActiveQuiz = () => {
   globalUiState.setQuizStatus(false);
   globalUiState.setStatusMessage(CHAT_STATUS.IDLE);
 };
+
+const stopGreetingAudio = async () => {
+  await managerStore.conversationManager?.stopSpeaking();
+  isGreetingSpeaking.value = false;
+};
 </script>
 
 <style scoped>
@@ -444,7 +497,7 @@ const cancelActiveQuiz = () => {
   transform: translateX(-50%);
   background: rgba(0, 0, 0, 0.7);
   backdrop-filter: blur(10px);
-  color: var(--primary, #fb6237);
+  color: var(--secondary, #fac400);
   padding: 12px 25px;
   border-radius: 30px;
   font-weight: bold;
@@ -465,7 +518,7 @@ const cancelActiveQuiz = () => {
   letter-spacing: 2px;
 }
 .text-white { color: #000000; }
-.text-lime { color: var(--primary, #fb6237); }
+.text-lime { color: var(--secondary, #fac400); }
 .question-text {
   font-family: var(--font-main, 'Urbanist', sans-serif);
   font-weight: 700;
@@ -488,9 +541,29 @@ const cancelActiveQuiz = () => {
   font-weight: 600;
   letter-spacing: 1px;
 }
+
+.vertical-right-bar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px 8px;
+  background: var(--background-light, #fff8dc);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  border-radius: 40px;
+  border-color: var(--secondary, #fac400);
+  position: absolute;
+  right: 15px; 
+  top: 130px;
+  transform: translateY(-50%);
+  z-index: 20;
+}
 @media (prefers-color-scheme: dark) {
   .camera-off {
     --background: var(--background-dark, #2c2a26);
+  }
+  .result-banner{
+    color: var(--primary, #fb6237);
   }
   .custom-toolbar {
     --background: var(--background-dark, #2c2a26);
@@ -519,6 +592,11 @@ const cancelActiveQuiz = () => {
   .stile-input:hover {
     border-color: var(--primary, #fb6237); 
     background: var(--background-dark, #2c2a26);
+  }
+  .text-lime { color: var(--primary, #fb6237); }
+  .vertical-right-bar {
+    background: var(--background-dark, #2c2a26);
+    border-color: var(--primary, #fb6237);
   }
 }
 
