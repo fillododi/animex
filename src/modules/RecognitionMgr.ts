@@ -6,6 +6,7 @@ import type { AnimalType } from "@/utility/AnimalType"
 export class RecognitionManager {
     private frameId: number
     private interval: NodeJS.Timeout | undefined
+    private isRunning: boolean = false
 
     constructor() {
         this.frameId = 0
@@ -24,9 +25,8 @@ export class RecognitionManager {
         if (!(connectionService && connectionService.isActive())) {
             await connectionService?.start()
         }
-        const sessionStore = useSessionStore()
         this.frameId = 0
-
+        this.isRunning = true
         clearInterval(this.interval)
         const mgr = this
         this.interval = setInterval(function() {mgr.snapshotLoop()}, import.meta.env.VITE_RECOGNITION_TIMER_MS)
@@ -42,7 +42,7 @@ export class RecognitionManager {
         if (cameraService && cameraService.isActive()) {
             await cameraService.stop()
         }*/
-
+        this.isRunning = false
         clearInterval(this.interval)
     }
 
@@ -58,46 +58,8 @@ export class RecognitionManager {
         }
         const frame = await cameraService.getCameraFrame()
         this.frameId++
-
-
-
-        // -------------------------------------------------------------
-        // 🧪 INIZIO DATI FINTI PER TEST DELLA UI (MOCKING)
-        // -------------------------------------------------------------
-        
-        // Creiamo manualmente l'array con due animali
-        /*const mockAnimals: AnimalData[] = [
-            {
-                id: crypto.randomUUID(),
-                animalType: "lion" as any, // Mettiamo 'any' per evitare problemi con l'enum durante il test
-                displayName: "Leone ",
-                pos: { x: 0.5, y: 0.5 }
-            },
-            {
-                id: crypto.randomUUID(),
-                animalType: "hippopotamus" as any,
-                displayName: "Ippopotamo",
-                pos: { x: 0.6, y: 0.4 }
-            }
-        ];
-
-        // Salviamo gli animali nello store (farà apparire la bolla)
-        sessionStore.multipleAnimalsDetected(mockAnimals);
-        
-        // Fermiamo il loop per simulare che l'IA abbia finito
-        this.stopRecognitionLoop();
-        
-        // Interrompiamo la funzione qui per ignorare il vero server
-        return;*/
-
-        // -------------------------------------------------------------
-        // 🧪 FINE DATI FINTI - Tutto ciò che c'è sotto non verrà eseguito
-        // -------------------------------------------------------------
-        
-        // Quando la backend è pronta decommenta il blocco sotto
-        
         const response =  await connectionService.sendRecognitionRequest(sessionStore.sessionId, this.frameId, frame.value)
-        if (!response) return;
+        if (!response || !this.isRunning) return;
         const rawAnimals = response.selectedAnimals ?? (response.selectedAnimal ? [response.selectedAnimal] : []);
         if (rawAnimals.length === 0) return;
         const validAnimals: AnimalData[] = [];
@@ -130,23 +92,5 @@ export class RecognitionManager {
             this.stopRecognitionLoop()
             return;
         }
-        
-
-        /*if(!response?.selectedAnimals[0]?.id || response.selectedAnimals[0]?.id === "unknown") return
-        const sumX = response?.selectedAnimals[0]?.boundingPoly?.normalizedVertices?.reduce((sum, vert) => sum + vert.x, 0) ?? 0
-        const sumY = response?.selectedAnimals[0]?.boundingPoly?.normalizedVertices?.reduce((sum, vert) => sum + vert.y, 0) ?? 0
-        const numVerts = response?.selectedAnimals[0]?.boundingPoly?.normalizedVertices?.length ?? 1
-        const animalData : AnimalData = {
-            id: crypto.randomUUID(),
-            animalType: (response?.selectedAnimals[0]?.id ?? "unknown") as AnimalType,
-            displayName: response?.selectedAnimals[0]?.displayName ?? "Sconosciuto",
-            pos: {
-                x: sumX / numVerts,
-                y: sumY / numVerts
-            }
-        }
-        sessionStore.updateRecognizedAnimal(animalData)*//*
-        
-    }*/
     }
 }
