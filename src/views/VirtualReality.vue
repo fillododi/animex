@@ -12,7 +12,7 @@
 
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue';
-import { IonButton, IonContent, IonPage, onIonViewDidLeave, onIonViewDidEnter } from '@ionic/vue';
+import { IonButton, IonContent, IonPage, onIonViewDidLeave, onIonViewWillEnter } from '@ionic/vue';
 import { VRSceneManager } from '@/modules/VRSceneMgr';
 import { Motion } from '@capacitor/motion';
 import { Vector3 } from 'three';
@@ -26,10 +26,18 @@ let gyroListener = null;
 onMounted(() => {
     // Initialize
     sceneContainer.value.appendChild(sceneManager.getRendererDOM());
-    sceneManager.activate();
+    sceneManager.activate(); //Remove once you have new component
     startGyro();
     window.addEventListener('resize', onWindowResize);
 });
+
+onIonViewWillEnter(() => {
+    sceneManager.activate();
+})
+
+onIonViewDidLeave(() => {
+    sceneManager.deactivate();
+})
 
 // Resizer
 const onWindowResize = () => {
@@ -47,6 +55,7 @@ const startGyro = async () => {
         }
     });
 };
+
 // Cleanup when unmounting
 onBeforeUnmount(() => {
     window.removeEventListener('resize', onWindowResize);

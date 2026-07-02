@@ -18,6 +18,7 @@ export class FoodEntity extends Entity {
     private readonly ROTATION_SPEED = 2;
     private readonly BOBBING_SPEED = 5;
     private readonly BOBBING_AMP = 0.5;
+    private readonly EXPIRATION = 15;
 
     private readonly flightDir: Vector3;
 
@@ -55,7 +56,7 @@ export class FoodEntity extends Entity {
         }
 
         // Delete food after a few seconds
-        if (this.elapsed > 10)
+        if (this.elapsed > this.EXPIRATION)
             this.free();
     }
 

@@ -185,14 +185,14 @@ export class VRSceneManager {
     }
 
     /**
-     * Returns the entities of a desired type
-     * @param type String of the name of the Class of entity desired (case sensitive)
+     * @returns All the FoodEntities currently in the scene.
      */
-    getEntityByType(type: string): Set<Entity> {
-        const res: Set<Entity> = new Set();
-        for (const entity of this.entities)
-            if (entity.constructor.name === type)
-                res.add(entity)
+    getFoodEntities(): Set<FoodEntity> {
+        const res: Set<FoodEntity> = new Set();
+        this.entities.forEach((ent) => {
+            if (ent instanceof FoodEntity)
+                res.add(ent as FoodEntity);
+        })
         return res;
     }
 

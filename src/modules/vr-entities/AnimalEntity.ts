@@ -28,7 +28,7 @@ export class AnimalEntity extends Entity {
     private readonly ANGRY_TURN_NUM = 3;
     private readonly ANGRY_TURN_AMP = 20 * Math.PI / 180;
     private readonly ROT_SPEED = this.ANGRY_TURN_AMP * this.ANGRY_TURN_NUM * 2 / this.REACTION_DURATION;
-    private readonly EAT_THRESHOLD = 6; // how close to eat the food
+    private readonly EAT_THRESHOLD = 10; // how close to eat the food
 
     private readonly diet: FoodType;
 
@@ -89,12 +89,17 @@ export class AnimalEntity extends Entity {
 
         if (this.state & (State.IDLE | State.MOVING)) {
             //Check for food
-            const food = this.sceneMgr.getEntityByType("FoodEntity");
+            const food = this.sceneMgr.getFoodEntities();
             if (food.size == 0)
                 return;
             
+            const pos = new Vector3();
+            const fPos = new Vector3();
+            this.model.getWorldPosition(pos);
+
             food.forEach((f) => {
-                if (this.model.position.distanceToSquared(f.model.position) < this.EAT_THRESHOLD ** 2) {
+                f.model.getWorldPosition(fPos);
+                if (pos.distanceToSquared(fPos) < this.EAT_THRESHOLD ** 2) {
                     //Eat the food
                     this.model.lookAt(new Vector3(0, 0, 0)); //Look towards camera
                     this.sceneMgr.playSound('munch.m4a');
