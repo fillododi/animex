@@ -34,8 +34,9 @@ export class VRSceneManager {
     
     private readonly dragCont: DragControls;
 
-    /* Temp variable to rotate more efficiently */
+    /* Temp variables to rotate more efficiently */
     private euler: THREE.Euler = new THREE.Euler();
+    private readonly quat: THREE.Quaternion = new THREE.Quaternion(-Math.sqrt(0.5), 0, 0, Math.sqrt(0.5));
 
     constructor() {
         this.renderer = new THREE.WebGLRenderer({antialias: true});
@@ -57,7 +58,7 @@ export class VRSceneManager {
         const bgSphere = new THREE.Mesh(sphereGeometry, this.bgSphereMat);
         this.scene.add(bgSphere);
 
-        this.camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 100);
+        this.camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 150);
         this.camera.position.set(0, 10, 0);
         this.scene.add(this.camera);
 
@@ -113,8 +114,9 @@ export class VRSceneManager {
         this.dragCont.update(delta);
 
         // Update Camera and renderer
-        this.euler.setFromVector3(this.cameraRotation, 'YXZ');
+        this.euler.set(this.cameraRotation.x, this.cameraRotation.y, this.cameraRotation.z, 'YXZ');
         this.camera.quaternion.setFromEuler(this.euler);
+        this.camera.quaternion.multiply(this.quat);
         this.camera.updateMatrix();
 
         this.renderer.render(this.scene, this.camera);
