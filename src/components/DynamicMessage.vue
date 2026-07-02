@@ -6,13 +6,13 @@
     </div>
     
     <div v-else-if="chatStore.activeQuestion" class="message-card quiz">
-      <span class="role-badge">🧩 QUIZ</span>
+      <span class="role-badge">ESPERTO</span>
       <p>{{ chatStore.activeQuestion.prompt }}</p>
       <div class="hint">Usa il microfono per rispondere!</div>
     </div>
 
     <div v-else-if="lastBotMessage" class="message-card text-msg">
-      <span class="role-badge">IA EXPERT</span>
+      <span class="role-badge">ESPERTO</span>
       <p>{{ lastBotMessage.content }}</p>
     </div>
 
@@ -20,14 +20,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref, watch, onUnmounted } from 'vue';
 import { useChatStore } from '@/stores/chatStore';
 import { globalUiState } from '@/utility/UiState';
 
 const chatStore = useChatStore();
 const uiState = globalUiState;
 
-// Look for the last message sent by the bot by going backwards in the array
 const lastBotMessage = computed(() => {
   for (let i = chatStore.messages.length - 1; i >= 0; i--) {
     const message = chatStore.messages[i];
@@ -38,9 +37,38 @@ const lastBotMessage = computed(() => {
   return null;
 });
 
-// Show the banner only if there's at least a quiz, or a message, or if it's processing
+const isVisible = ref(false); 
+let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+watch(
+  () => [
+    uiState.getProcessing(),
+    uiState.getSpeaking(),
+    chatStore.activeQuestion,
+    chatStore.messages.length 
+  ],
+  ([isProcessing, isSpeaking]) => {
+    isVisible.value = true; 
+    
+    if (timeoutId) clearTimeout(timeoutId);
+    
+    if (isProcessing || isSpeaking) {
+      return;
+    }
+
+    timeoutId = setTimeout(() => {
+      isVisible.value = false;
+    }, 10000);
+  },
+  { deep: true } 
+);
+
+onUnmounted(() => {
+  if (timeoutId) clearTimeout(timeoutId);
+});
+
 const shouldShow = computed(() => {
-  return uiState.getProcessing() || chatStore.activeQuestion || lastBotMessage.value;
+  return isVisible.value && (uiState.getProcessing() || chatStore.activeQuestion || lastBotMessage.value);
 });
 </script>
 

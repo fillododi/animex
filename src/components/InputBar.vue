@@ -1,14 +1,15 @@
 <script setup>
 import BaseButton from './BaseButton.vue'
-import { mic, send, volumeMute, trash, volumeHigh, add } from 'ionicons/icons';
+import { mic, send, trash, volumeHigh, add, close } from 'ionicons/icons';
 
 defineProps({
   modelValue: { type: String, default: '' },
   isListening: { type: Boolean, default: false },
-  isSpeaking: { type: Boolean, default: false } 
+  isSpeaking: { type: Boolean, default: false },
+  isQuizActive: { type: Boolean, default: false } 
 })
 
-const emit = defineEmits(['update:modelValue', 'send', 'toggle-microphone', 'focus', 'blur', 'stop-audio', 'cancel-recording', 'open-quiz-menu'])
+const emit = defineEmits(['update:modelValue', 'send', 'toggle-microphone', 'focus', 'blur', 'stop-audio', 'cancel-recording', 'open-quiz-menu', 'cancel-quiz'])
 
 function onInput(event) {
   emit('update:modelValue', event.target.value)
@@ -32,6 +33,14 @@ function onInput(event) {
       variante="grigio" 
       rotondo 
       @click="$emit('cancel-recording')"
+    />
+
+    <BaseButton 
+      v-else-if="isQuizActive"
+      :icona="close" 
+      variante="pericolo" 
+      rotondo 
+      @click="$emit('cancel-quiz')"
     />
 
     <BaseButton 

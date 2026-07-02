@@ -82,9 +82,7 @@
               <p class="info-text">Rispondi scrivendo o parlando...</p>
             </div>
       
-            <ion-button size="small" fill="clear" color="medium" @click="chatStore.clearQuiz()">
-              Annulla
-            </ion-button>
+            
           </div>
         </div>
       </div>
@@ -105,11 +103,13 @@
         v-model="inputTextModel"
         :isListening="uiState.getRecording()"
         :isSpeaking="uiState.getSpeaking()"
+        :isQuizActive="!!chatStore.activeQuestion"
         @toggle-microphone="toggleMicrophone"
         @cancel-recording="handleCancel"
         @stop-audio="handleStopAudio"
         @send="uiState.getRecording() ? handleStop() : handleTextSubmit()"
         @open-quiz-menu="openMenuQuiz()"
+        @cancel-quiz="cancelActiveQuiz"
       />
     </ion-footer>
     <QuizMenu 
@@ -408,6 +408,11 @@ const scrollDown = async () => {
   setTimeout(() => {
     contentRef.value?.$el.scrollToBottom(300); 
   }, 100);
+};
+const cancelActiveQuiz = () => {
+  chatStore.clearQuiz();
+  globalUiState.setQuizStatus(false);
+  globalUiState.setStatusMessage(CHAT_STATUS.IDLE);
 };
 </script>
 <style scoped>

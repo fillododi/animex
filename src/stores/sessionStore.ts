@@ -7,16 +7,18 @@ export const useSessionStore = defineStore('session', () => {
   
   const recognizedAnimal = ref<AnimalData | null>(null);
   const multipleAnimals = ref<AnimalData[] | null>(null);
+  const lastAnimalType = ref<AnimalData | null>(null);
   const sessionId = ref(crypto.randomUUID());
 
   function updateRecognizedAnimal(newAnimal: AnimalData) {
-    if (recognizedAnimal.value?.animalType !== newAnimal.animalType){
-      recognizedAnimal.value = newAnimal;
+    if (lastAnimalType.value?.animalType !== newAnimal.animalType){
       sessionId.value = crypto.randomUUID();
       const chatStore = useChatStore();
       chatStore.clearMessages();
       chatStore.clearQuiz();
     }
+    recognizedAnimal.value = newAnimal;
+    lastAnimalType.value = newAnimal;
     if(multipleAnimals.value) {
       multipleAnimals.value = null;
     }

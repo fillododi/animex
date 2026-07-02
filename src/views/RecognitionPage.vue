@@ -9,7 +9,7 @@
     </ion-header>
     <ion-content :scroll-y= "false" :class="uiState.isRecording ? 'camera-on' : 'camera-off'">
       <div class="result-banner" v-if="sessionStore.multipleAnimals === null && sessionStore.recognizedAnimal">
-        Rilevato: <strong>{{ sessionStore.recognizedAnimal.displayName }}</strong>
+         <strong>{{ sessionStore.recognizedAnimal.displayName }}</strong>
       </div>
 
       <div class="floating-controls">
@@ -87,11 +87,13 @@
         v-if="uiState.isRecording && sessionStore.recognizedAnimal"
         :isListening="globalUiState.getRecording()"
         :isSpeaking="globalUiState.getSpeaking()"
+        :isQuizActive="!!chatStore.activeQuestion"
         @toggle-microphone="toggleGlobalMic"
         @cancel-recording="eraseGlobalAudio"
         @stop-audio="stopGlobalAudio"
         @send-audio="sendGlobalAudio"
         @open-quiz-menu="isQuizModalOpen = true"
+        @cancel-quiz="cancelActiveQuiz"
       />
     </ion-content>
     <QuizMenu 
@@ -352,6 +354,12 @@ const sendGlobalAudio = async () => {
 const chooseAnimal = (animal: AnimalData) => {
     sessionStore.updateRecognizedAnimal(animal);
   };
+
+const cancelActiveQuiz = () => {
+  chatStore.clearQuiz();
+  globalUiState.setQuizStatus(false);
+  globalUiState.setStatusMessage(CHAT_STATUS.IDLE);
+};
 </script>
 
 <style scoped>

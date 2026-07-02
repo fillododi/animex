@@ -19,6 +19,15 @@
       @click="$emit('cancel-recording')"
     />
 
+    <!-- Tasto Chiudi Quiz (Appare solo se il quiz è attivo) -->
+    <BaseButton 
+      v-else-if="isQuizActive"
+      :icona="close" 
+      variante="pericolo" 
+      rotondo 
+      @click="$emit('cancel-quiz')"
+    />
+
     <!-- Tasto "+" Quiz (Appare quando non si parla e non si ascolta) -->
     <BaseButton 
       v-else
@@ -53,15 +62,16 @@
 
 <script setup>
 import BaseButton from './BaseButton.vue'
-import { mic, trash, volumeHigh, add, send } from 'ionicons/icons'; // <-- Aggiunto 'send'
+import { mic, trash, volumeHigh, add, send, close } from 'ionicons/icons'; // <-- Aggiunto 'send'
 
 defineProps({
   isListening: { type: Boolean, default: false },
-  isSpeaking: { type: Boolean, default: false } 
+  isSpeaking: { type: Boolean, default: false },
+  isQuizActive: { type: Boolean, default: false } 
 })
 
 // <-- Aggiunto 'send-audio' agli emits
-defineEmits(['toggle-microphone', 'stop-audio', 'cancel-recording', 'open-quiz-menu', 'send-audio'])
+defineEmits(['toggle-microphone', 'stop-audio', 'cancel-recording', 'open-quiz-menu', 'send-audio', 'cancel-quiz'])
 </script>
 
 <style scoped>
