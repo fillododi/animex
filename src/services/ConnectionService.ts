@@ -84,7 +84,7 @@ export class ServerConnectionService implements ConnectionService {
         const recognizedAnimal = sessionStore.recognizedAnimal
         const body = {
             sessionId: sessionId,
-            animalId: recognizedAnimal?.animalType,
+            animalId: recognizedAnimal?.animalType.name,
             history: chatStore.messages.filter((msg: { ok: boolean }) => msg.ok).map((msg: { role: MessageRole; content: string }) => ({role: msg.role, text: msg.content})),
             message: text
         }
