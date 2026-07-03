@@ -1,6 +1,15 @@
 \documentclass{article}
 \usepackage{titling}
 \usepackage{hyperref}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{booktabs}
+\usepackage{xcolor}
+
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}}
 
 \title{Animex \\ \large Multimodal Interactive Technologies and Applications Project}
 \author{
@@ -59,6 +68,45 @@ To test the Animex application you must follow these steps:
 
 \clearpage
 \section{Response to Heuristic Evaluation}
+After receiving feedback from the heuristic evaluation, improvements were made to the system. Here follows a table with the issues risen and the solutions found:
+\begin{longtable}{L{0.10\textwidth} L{0.28\textwidth} L{0.20\textwidth} L{0.23\textwidth} C{0.05\textwidth}}
 
+\toprule
+\textbf{Where} & \textbf{Interaction Breakdown} & \textbf{Violated Principle} & \textbf{Solution} & \textbf{Sev.} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+
+Scanner to Assistant transition & After scanning an animal, the system does not provide a clear transition between the Scanner task and the Assistant task. While the animal is correctly recognized, users are not guided towards the next available interaction, making the different tasks appear disconnected. & H1 - Visibility of system status; H2 - Match between system and the real world; multimodal grounding of task flow & The app's flow made this issue negligible: the user scans an animal and is then free to either go and chat with the animal, or go to the VR; this choice of action is purposely left to the user, making any kind or automatic redirect unnecessary. & 3 \\
+\midrule
+
+Multiple-animal recognition & The current design does not clearly specify how the system behaves when multiple animals are detected within the same camera frame. Automatically selecting one animal may lead to misunderstandings and incorrect follow-up interactions. & H5 - Error prevention; H9 - Error recovery; ambiguity handling; referent grounding & This has been fixed by giving the user a way to choose the animal when an ambiguous scenario appears. & 4 \\
+\midrule
+
+Assistant interaction & During the Assistant interaction, there is no persistent visual element indicating which animal is currently being discussed. Once the recognition task is completed, users may lose track of the active referent, especially during longer conversations. This weakens multimodal grounding and may make the Assistant appear disconnected from the previous recognition task. & H1 - Visibility of system status; multimodal grounding of referents & The currently recognized animal is now always visible to the user regardless of the section of the app. & 3 \\
+\midrule
+
+Assistant speech output & The assistant's spoken responses cannot currently be interrupted while they are being generated or played. Users must wait until the response finishes before continuing the interaction. & H3 - User control and freedom; interruptible grounding; turn-taking in conversational interaction & The assistant can now be correctly interrupted. & 3 \\
+\midrule
+
+Quiz access inside Assistant & The Quiz entry point is located at the top of the Assistant page. After a long conversation, users may need to scroll through a large amount of chat history before being able to start the quiz. & H6 - Recognition rather than recall; H7 - Flexibility and efficiency of use & The quiz entry point is now in a fixed position, making it more accessible to use. & 2 \\
+\midrule
+
+Technical / development information exposed to users & Recognition or backend-related information useful for developers can appear meaningless or confusing to children, creating a mismatch between a playful educational app and technical system feedback. & H4 - Consistency and standards; H2 - Match between system and real world & Development related information is now correctly transformed into data that the end user can read. & 2 \\
+\midrule
+
+Mobile layout and system navigation overlap & On mobile devices, the chat input bar or bottom controls may be covered by Android/iOS navigation elements or by the keyboard. This can block the main action precisely when the user wants to ask a question or answer a quiz. & H4 - Consistency and standards; H7 - Efficiency of use; accessibility principles & The UI has been redone from scratch to effectively solve this issue and improve the user's overall experience. & 3 \\
+\midrule
+
+Tutorial, onboarding and contextual help & The relationship between Scanner, Assistant and AR functionalities is not immediately clear. New users may not understand that animal recognition is expected before using the other functionalities. Furthermore, the available actions inside each task are not always self-evident. & H6 - Recognition rather than recall; H10 - Help and documentation & The new UI makes this kind of information clearer: when no animal is recognized, the other actions are locked, making it clear what the user has to do. after a recognition, said actions are unlocked. & 2 \\
+\midrule
+
+Overall application architecture & Although the application includes multiple modalities such as voice interaction, image recognition and AR, these modalities currently operate as separate tasks. The Assistant relies only on voice interaction, the Scanner relies only on image recognition, and the AR experience is isolated from the other functionalities. No task combines modalities simultaneously. As a consequence, the application is multimodal at the system level but not at the interaction level. & H2 - Match between system and real world; multimodal integration principles; grounding principles & More modalities have been added to the app: for example, now all the pages allow for the use of the voice chat, making the interaction truly multimodal. & 4 \\
+\midrule
+
+Quiz generation & The quiz is generated dynamically through an LLM. It is unclear whether generated questions are always restricted to the information presented to the user about the selected animal. Additionally, LLM-generated quizzes may produce repetitive question structures over time, reducing educational variety. & H5 - Error prevention; educational consistency & The AI has been improved to give less repetitive questions and to be contextualized. & 3 \\
+\end{longtable}
+\clearpage
 
 \end{document}
