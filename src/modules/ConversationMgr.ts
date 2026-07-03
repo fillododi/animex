@@ -87,14 +87,14 @@ export class ConversationManager {
             try {
                 const connectionService = useServiceStore().connectionService;
                 const stateStore = useSessionStore();
-                const currentAnimalId = stateStore.recognizedAnimal?.animalType;
-                if (!currentAnimalId || !connectionService) {
+                const currentAnimal = stateStore.recognizedAnimal?.animalType;
+                if (!currentAnimal || !connectionService) {
                     this.speakErrorResponse();
                     return false; 
                 }
                 const question = await connectionService.sendQuizNextRequest(
                     stateStore.sessionId, 
-                    currentAnimalId.name,  
+                    currentAnimal.name,  
                     difficulty,
                     chatStore.getOldQuestions().length > 0 ? chatStore.getOldQuestions() : [],
                     ["yes_no", "multiple_choice"]
@@ -149,11 +149,11 @@ export class ConversationManager {
         private async evaluateQuizAnswer(answer: string): Promise<QuizValidationResultDTO | null> {
 
             const stateStore = useSessionStore();
-            const currentAnimalId = stateStore.recognizedAnimal?.animalType;
+            const currentAnimal = stateStore.recognizedAnimal?.animalType;
             const chatStore = useChatStore();
             const activeQuestion = chatStore.activeQuestion;
             
-            if (!currentAnimalId) return null;
+            if (!currentAnimal) return null;
             const questionId = activeQuestion?.id;
             const prompt = activeQuestion?.prompt;
 
@@ -163,7 +163,7 @@ export class ConversationManager {
                 const connectionService = useServiceStore().connectionService;
                 const result = await connectionService?.sendQuizValidateRequest(
                     stateStore.sessionId,
-                    currentAnimalId.name,
+                    currentAnimal.name,
                     questionId,
                     answer,
                     prompt,
