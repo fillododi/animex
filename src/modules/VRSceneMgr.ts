@@ -7,6 +7,7 @@ import { FoodEntity } from './vr-entities/FoodEntity';
 import { Entity } from './vr-entities/Entity';
 import { assert } from '@/utility/assert';
 import { Vector3 } from 'three';
+import { useSessionStore } from '@/stores/sessionStore';
 
 /**
  * Manages the VR Scene.
@@ -84,9 +85,8 @@ export class VRSceneManager {
      * Loads the main scene of the VR: background and animal
      */
     loadMainScene() {
-        // TODO: take animal from pinia
-        const animal = AnimalType.TIGER;
-
+        const animal = useSessionStore().getAnimalType();
+        if(!animal) return;
         // Load background
         this.texLoader.load(`/vr-assets/backgrounds/${animal.backgroundIMG}`, (tex: THREE.Texture) => {
             this.bgSphereMat.map = tex;

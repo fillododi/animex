@@ -1,77 +1,154 @@
 <template>
-  <div class="vertical-chat-bar">
-    
-    <!-- Tasto Muto (Appare solo se il bot sta parlando) -->
+  <div class="vertical-chat-bar"
+    :class="{ 'muting-mode': sessionStore.multipleAnimals !== null, 'hidden-bg': sessionStore.multipleAnimals !== null && !globalUiState.getSpeaking() }">
     <BaseButton 
-      v-if="isSpeaking"
+      v-if="sessionStore.multipleAnimals !== null && globalUiState.getSpeaking()"
       :icona="volumeHigh" 
       variante="grigio" 
       rotondo 
-      @click="$emit('stop-audio')"
+      @click="stopGlobalAudio"
     />
+    <template v-else-if="sessionStore.multipleAnimals === null">
+      <template v-if="isVRMode">
+        <BaseButton :icona="leaf" variante="grigio" rotondo @click="$emit('spawn-plant')" />
+        <BaseButton :icona="restaurant" variante="grigio" rotondo @click="$emit('spawn-meat')" />
+        <div class="divider"></div>
+      </template>
 
-    <!-- Tasto Cestino (Appare solo se stai registrando l'audio) -->
-    <BaseButton 
-      v-else-if="isListening"
-      :icona="trash" 
-      variante="pericolo" 
-      rotondo 
-      @click="$emit('cancel-recording')"
-    />
+      <BaseButton v-if="globalUiState.getSpeaking()" :icona="volumeHigh" variante="grigio" rotondo @click="stopGlobalAudio" />
+      <BaseButton v-else-if="globalUiState.getRecording()" :icona="trash" variante="pericolo" rotondo @click="eraseGlobalAudio" />
+      <BaseButton v-else-if="!!chatStore.activeQuestion" :icona="close" variante="pericolo" rotondo @click="cancelActiveQuiz" />
+      <BaseButton v-else :icona="gameController" variante="grigio" rotondo @click="isQuizModalOpen = true" />
+      <BaseButton v-if="sessionStore.multipleAnimals !== null && globalUiState.getSpeaking()" :icona="volumeHigh" variante="grigio" rotondo @click="stopGlobalAudio"
+      />
 
-    <!-- Tasto Chiudi Quiz (Appare solo se il quiz è attivo) -->
-    <BaseButton 
-      v-else-if="isQuizActive"
-      :icona="close" 
-      variante="pericolo" 
-      rotondo 
-      @click="$emit('cancel-quiz')"
-    />
+      <div class="divider"></div>
 
-    <!-- Tasto "+" Quiz (Appare quando non si parla e non si ascolta) -->
-    <BaseButton 
-      v-else
-      :icona="gameController" 
-      variante="grigio" 
-      rotondo 
-      @click="$emit('open-quiz-menu')"
-    />
-
-    <div class="divider"></div>
-
-    <!-- Tasto INVIA (Appare MENTRE registri per inviare l'audio) -->
-    <BaseButton 
-      v-if="isListening"
-      :icona="send" 
-      variante="grigio" 
-      rotondo 
-      @click="$emit('send-audio')"
-    />
-
-    <!-- Tasto Microfono (Appare quando NON registri) -->
-    <BaseButton 
-      v-else
-      :icona="mic" 
-      variante="grigio" 
-      rotondo 
-      @click="$emit('toggle-microphone')"
-    />
-
+      <BaseButton v-if="globalUiState.getRecording()" :icona="send" variante="grigio" rotondo @click="sendGlobalAudio" />
+      <BaseButton v-else :icona="mic" variante="grigio" rotondo @click="toggleGlobalMic" />
+    </template>
   </div>
+
+  <QuizMenu 
+    :isOpen="isQuizModalOpen" 
+    @close="isQuizModalOpen = false" 
+    @select-quiz="selectQuiz" 
+  />
 </template>
 
 <script setup>
-import BaseButton from './BaseButton.vue'
-import { mic, trash, volumeHigh, send, close, gameController } from 'ionicons/icons'; // <-- Aggiunto 'send'
+import { ref } from 'vue';
+import BaseButton from './BaseButton.vue';
+import QuizMenu from '@/components/QuizMenu.vue';
+import { mic, trash, volumeHigh, send, close, gameController, leaf, restaurant} from 'ionicons/icons'; 
+import { globalUiState } from '@/utility/UiState';
+import { useChatStore } from '@/stores/chatStore';
+import { useManagerStore } from '@/stores/managerStore';
+import { CHAT_STATUS } from '@/utility/constants';
+import {useSessionStore } from '@/stores/sessionStore';
+const chatStore = useChatStore();
+const managerStore = useManagerStore();
+const sessionStore = useSessionStore();
+const isQuizModalOpen = ref(false);
 
 defineProps({
-  isListening: { type: Boolean, default: false },
-  isSpeaking: { type: Boolean, default: false },
-  isQuizActive: { type: Boolean, default: false } 
-})
+  isVRMode: { type: Boolean, default: false } 
+});
 
-// <-- Aggiunto 'send-audio' agli emits
-defineEmits(['toggle-microphone', 'stop-audio', 'cancel-recording', 'open-quiz-menu', 'send-audio', 'cancel-quiz'])
+defineEmits(['spawn-plant', 'spawn-meat']);
+
+
+const toggleGlobalMic = async () => {
+  if (globalUiState.getProcessing() || globalUiState.getRecording()) return;
+  if (globalUiState.getSpeaking()) {
+    await managerStore.conversationManager?.stopSpeaking();
+    globalUiState.setSpeaking(false);
+  }
+  try { await managerStore.conversationManager?.stopListening(); } catch(e) {}
+  
+  try {
+     globalUiState.setStatusMessage(CHAT_STATUS.INITIALIZING);
+     globalUiState.setRecording(true);
+     globalUiState.setMicReady(false);
+
+    await managerStore.conversationManager?.startInteraction(() => {
+      globalUiState.setMicReady(true);
+      globalUiState.setStatusMessage(CHAT_STATUS.RECORDING);
+    }, (errorMessage) => {
+      globalUiState.setStatusMessage(("Errore: " + errorMessage));
+      globalUiState.setRecording(false);
+      globalUiState.setMicReady(false);
+    });
+  } catch (error) {
+    globalUiState.setStatusMessage(("Errore: " + error.message));
+    globalUiState.setRecording(false);
+  }
+};
+
+const eraseGlobalAudio = async () => {
+  if (globalUiState.getRecording()) {
+    await managerStore.conversationManager?.stopListening();
+    await managerStore.conversationManager?.resetTranscript(); 
+    globalUiState.setRecording(false);
+    globalUiState.setStatusMessage(CHAT_STATUS.IDLE);
+  }
+};
+
+const stopGlobalAudio = async () => {
+  await managerStore.conversationManager?.stopSpeaking();
+  globalUiState.setSpeaking(false);
+};
+
+const sendGlobalAudio = async () => {
+  globalUiState.setRecording(false);
+  globalUiState.setProcessing(true);
+  globalUiState.setStatusMessage(CHAT_STATUS.THINKING);
+
+  try {
+    await managerStore.conversationManager?.stopListening();
+    const userText = managerStore.conversationManager ? await managerStore.conversationManager.getCurrentTranscript() : "";
+    
+    if (globalUiState.getQuizStatus()) {
+      await managerStore.conversationManager?.validateQuiz(userText);
+      globalUiState.setStatusMessage(CHAT_STATUS.SUCCESS);
+    } else {
+      await managerStore.conversationManager?.processTextInteraction(userText);
+      globalUiState.setStatusMessage(CHAT_STATUS.SUCCESS);
+    }
+  } catch (error) {
+    globalUiState.setStatusMessage(("Errore: " + error.message));
+  } finally {
+    await managerStore.conversationManager?.resetTranscript();
+    globalUiState.setProcessing(false);
+    globalUiState.setQuizStatus(false);
+    globalUiState.setSpeaking(false);
+  }
+};
+
+const selectQuiz = async (difficulty) => {
+  isQuizModalOpen.value = false;
+  globalUiState.setProcessing(true);
+  globalUiState.setStatusMessage(CHAT_STATUS.THINKING);
+  await managerStore.conversationManager?.stopSpeaking();
+  
+  try {
+    const manager = managerStore.conversationManager;
+    const isQuizLoaded = manager ? await manager.requestQuiz(difficulty) : false;
+    globalUiState.setQuizStatus(isQuizLoaded);
+    globalUiState.setStatusMessage(isQuizLoaded ? CHAT_STATUS.QUIZ_LOADED : CHAT_STATUS.NO_QUIZ_AVAILABLE);
+  } catch (error) {
+    globalUiState.setStatusMessage(("Errore quiz: " + error.message));
+  } finally {
+    globalUiState.setProcessing(false);
+    globalUiState.setSpeaking(false);
+  }
+};
+
+const cancelActiveQuiz = () => {
+  chatStore.clearQuiz();
+  globalUiState.setQuizStatus(false);
+  globalUiState.setStatusMessage(CHAT_STATUS.IDLE);
+};
 </script>
 
 <style scoped>
@@ -92,6 +169,10 @@ defineEmits(['toggle-microphone', 'stop-audio', 'cancel-recording', 'open-quiz-m
   top: 50%;
   transform: translateY(-50%);
   z-index: 20;
+  transition: all 0.3s ease;
+}
+.muting-mode {
+  top: calc(50% - 60px); 
 }
 .divider {
   width: 70%;
@@ -99,10 +180,17 @@ defineEmits(['toggle-microphone', 'stop-audio', 'cancel-recording', 'open-quiz-m
   background-color: rgba(255, 255, 255, 0.2);
   margin: 2px 0;
 }
+.hidden-bg {
+  background: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
 @media (prefers-color-scheme: dark) {
   .vertical-chat-bar {
     background: var(--background-dark, #2c2a26);
     border-color: var(--primary, #fb6237);
   }
-  }
+}
 </style>

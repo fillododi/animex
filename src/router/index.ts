@@ -33,7 +33,7 @@ const routes: Array<RouteRecordRaw> = [
       },
       
       {
-        path: '/vr',
+        path: 'vr',
         name: 'VR',
         component: VirtualReality
       }

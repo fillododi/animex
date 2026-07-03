@@ -94,32 +94,10 @@
       <DynamicMessage 
         v-if="uiState.isRecording && sessionStore.recognizedAnimal"
       />
-      <div class="vertical-right-bar" v-if="isGreetingSpeaking">
-        <BaseButton 
-          :icona="volumeHigh"
-          class="dynamic-btn"
-          rotondo
-          @click="stopGreetingAudio"
-        />
-      </div>
       <ChatBar 
-        v-if="uiState.isRecording && sessionStore.recognizedAnimal"
-        :isListening="globalUiState.getRecording()"
-        :isSpeaking="globalUiState.getSpeaking()"
-        :isQuizActive="!!chatStore.activeQuestion"
-        @toggle-microphone="toggleGlobalMic"
-        @cancel-recording="eraseGlobalAudio"
-        @stop-audio="stopGlobalAudio"
-        @send-audio="sendGlobalAudio"
-        @open-quiz-menu="isQuizModalOpen = true"
-        @cancel-quiz="cancelActiveQuiz"
+        v-if="uiState.isRecording && (sessionStore.recognizedAnimal || sessionStore.multipleAnimals)"
       />
     </ion-content>
-    <QuizMenu 
-      :isOpen="isQuizModalOpen" 
-      @close="isQuizModalOpen = false" 
-      @select-quiz="selectQuiz" 
-    />
   </ion-page>
 </template>
 
@@ -149,8 +127,6 @@ const managerStore = useManagerStore();
 const recog = new RecognitionManager();
 const sessionStore = useSessionStore();
 const videoElement = ref<HTMLVideoElement | null>(null);
-const isQuizModalOpen = ref(false);
-const isGreetingSpeaking = ref(false);
 
 onMounted(() => {
   if(!videoElement.value) {
@@ -195,12 +171,10 @@ watch(
   () => sessionStore.recognizedAnimal,
   async (newAnimal, oldAnimal) => {
     if (newAnimal && newAnimal.id !== oldAnimal?.id) {
-      
-        await managerStore.conversationManager?.stopSpeaking(); 
-        //isGreetingSpeaking.value = true;
-        await managerStore.conversationManager?.speak(`${newAnimal.displayName}`);
-        //isGreetingSpeaking.value = false; 
-         
+      await managerStore.conversationManager?.stopSpeaking();
+      globalUiState.setSpeaking(true); 
+      await managerStore.conversationManager?.speak(`${newAnimal.displayName}`); 
+      globalUiState.setSpeaking(false); 
     }
   }
 );
@@ -210,9 +184,9 @@ watch(
   async (newAnimals) => {
     if (newAnimals && newAnimals.length > 1) {
       await managerStore.conversationManager?.stopSpeaking();
-      isGreetingSpeaking.value = true; 
+      globalUiState.setSpeaking(true);
       await managerStore.conversationManager?.speak("Con quale animale vuoi parlare?" + newAnimals.map(animal => animal.displayName));
-      isGreetingSpeaking.value = false;
+      globalUiState.setSpeaking(false);
     }
   }
 );
@@ -220,7 +194,7 @@ watch(
 const handleStart = async () => {
     try {
       serviceStore.setCameraService(videoElement.value);
-      await recog.startRecognitionLoop();
+      if(!sessionStore.recognizedAnimal ) await recog.startRecognitionLoop();
       uiState.isRecording = true;
       document.documentElement.style.setProperty('--nav-display', 'none');
       
@@ -242,13 +216,11 @@ const handleStart = async () => {
 const resumeScan = async () => {
   sessionStore.multipleAnimals = null;
   sessionStore.recognizedAnimal = null; 
-  isGreetingSpeaking.value = false;
   await recog.startRecognitionLoop();
 };
 
 const handleStop = async () => {
   await managerStore.conversationManager?.stopSpeaking();
-  isGreetingSpeaking.value = false;
   await recog.stopRecognitionLoop();
   uiState.isRecording = false;
 };
@@ -265,7 +237,6 @@ onIonViewDidLeave(async () => {
   }
   globalUiState.setStatusMessage(CHAT_STATUS.IDLE);
   await managerStore.conversationManager?.stopSpeaking();
-  isGreetingSpeaking.value = false;
 });
 
 const showSettingsAlert = async () => {
@@ -308,111 +279,11 @@ const openSettings = async () => {
     await alert.present();
   }
 };
-const selectQuiz = async (difficulty: DifficultyLevel) => {
-  isQuizModalOpen.value = false;
-  
-  globalUiState.setProcessing(true);
-  globalUiState.setStatusMessage(CHAT_STATUS.THINKING);
-  await managerStore.conversationManager?.stopSpeaking();
-  
-  try {
-    const manager = managerStore.conversationManager;
-    const isQuizLoaded = manager ? await manager.requestQuiz(difficulty) : false;
-    globalUiState.setQuizStatus(isQuizLoaded);
-    globalUiState.setStatusMessage(isQuizLoaded ? CHAT_STATUS.QUIZ_LOADED : CHAT_STATUS.NO_QUIZ_AVAILABLE);
-  } catch (error: any) {
-    globalUiState.setStatusMessage(("Errore quiz: " + error.message) as any);
-  } finally {
-    globalUiState.setProcessing(false);
-    globalUiState.setSpeaking(false);
-  }
-};
-
-const toggleGlobalMic = async () => {
-  if (globalUiState.getProcessing() || globalUiState.getRecording()) return;
-  
-  if (globalUiState.getSpeaking()) {
-    await managerStore.conversationManager?.stopSpeaking();
-    globalUiState.setSpeaking(false);
-  }
-  try {
-       await managerStore.conversationManager?.stopListening();
-     } catch(e) {}
-  
-  try {
-     globalUiState.setStatusMessage(CHAT_STATUS.INITIALIZING);
-     globalUiState.setRecording(true);
-     globalUiState.setMicReady(false);
-
-    await managerStore.conversationManager?.startInteraction(() => {
-      globalUiState.setMicReady(true);
-      globalUiState.setStatusMessage(CHAT_STATUS.RECORDING);
-    }, (errorMessage) => {
-      globalUiState.setStatusMessage(("Errore: " + errorMessage) as any);
-      globalUiState.setRecording(false);
-      globalUiState.setMicReady(false);
-    });
-  } catch (error: any) {
-    globalUiState.setStatusMessage(("Errore: " + error.message) as any);
-    globalUiState.setRecording(false);
-  }
-};
-
-const eraseGlobalAudio = async () => {
-  if (globalUiState.getRecording()) {
-    await managerStore.conversationManager?.stopListening();
-    await managerStore.conversationManager?.resetTranscript(); 
-    globalUiState.setRecording(false);
-    globalUiState.setStatusMessage(CHAT_STATUS.IDLE);
-  }
-};
-
-const stopGlobalAudio = async () => {
-  await managerStore.conversationManager?.stopSpeaking();
-  globalUiState.setSpeaking(false);
-};
-
-const sendGlobalAudio = async () => {
-  globalUiState.setRecording(false);
-  globalUiState.setProcessing(true);
-  globalUiState.setStatusMessage(CHAT_STATUS.THINKING);
-
-  try {
-    await managerStore.conversationManager?.stopListening();
-    const userText = managerStore.conversationManager ? await managerStore.conversationManager.getCurrentTranscript() : "";
-    
-    if (globalUiState.getQuizStatus()) {
-      await managerStore.conversationManager?.validateQuiz(userText);
-      globalUiState.setStatusMessage(CHAT_STATUS.SUCCESS);
-    } else {
-      await managerStore.conversationManager?.processTextInteraction(userText);
-      globalUiState.setStatusMessage(CHAT_STATUS.SUCCESS);
-    }
-  } catch (error: any) {
-    globalUiState.setStatusMessage(("Errore: " + error.message) as any);
-  } finally {
-    await managerStore.conversationManager?.resetTranscript();
-    globalUiState.setProcessing(false);
-    globalUiState.setQuizStatus(false);
-    
-    globalUiState.setSpeaking(false) 
-  }
-};
 
 const chooseAnimal = (animal: AnimalData) => {
     sessionStore.updateRecognizedAnimal(animal);
   };
 
-const cancelActiveQuiz = () => {
-  chatStore.clearQuiz();
-  globalUiState.setQuizStatus(false);
-  globalUiState.setStatusMessage(CHAT_STATUS.IDLE);
-};
-
-const stopGreetingAudio = async () => {
-  await managerStore.conversationManager?.stopSpeaking();
-  isGreetingSpeaking.value = false;
-};
 </script>
 
 <style scoped>
@@ -423,15 +294,6 @@ const stopGreetingAudio = async () => {
 
 .camera-on {
   --background: transparent;
-}
-
-.camera-box {
-  width: 100%;
-  height: 100%;
-  position: absolute;
-  top: 0;
-  left: 0;
-  z-index: 1; 
 }
 
 .floating-controls {
@@ -542,22 +404,6 @@ const stopGreetingAudio = async () => {
   letter-spacing: 1px;
 }
 
-.vertical-right-bar {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 12px 8px;
-  background: var(--background-light, #fff8dc);
-  backdrop-filter: blur(15px);
-  -webkit-backdrop-filter: blur(15px);
-  border-radius: 40px;
-  border-color: var(--secondary, #fac400);
-  position: absolute;
-  right: 15px; 
-  top: 130px;
-  transform: translateY(-50%);
-  z-index: 20;
-}
 @media (prefers-color-scheme: dark) {
   .camera-off {
     --background: var(--background-dark, #2c2a26);
@@ -568,7 +414,7 @@ const stopGreetingAudio = async () => {
   .custom-toolbar {
     --background: var(--background-dark, #2c2a26);
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  }
+  } 
   .text-white { color: var(--background-light, #fff8dc); }
   .multiple-animals-card {
     background: var(--background-dark, #2c2a26);
@@ -592,12 +438,8 @@ const stopGreetingAudio = async () => {
   .stile-input:hover {
     border-color: var(--primary, #fb6237); 
     background: var(--background-dark, #2c2a26);
-  }
+  } 
   .text-lime { color: var(--primary, #fb6237); }
-  .vertical-right-bar {
-    background: var(--background-dark, #2c2a26);
-    border-color: var(--primary, #fb6237);
-  }
 }
 
 @keyframes slideUpCard {

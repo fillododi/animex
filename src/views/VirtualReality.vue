@@ -1,24 +1,31 @@
 <template>
     <IonPage>
-        <IonContent>
-            <div style="margin-top: 15px; display: flex; gap: 10px; align-items: center;">
-                <ion-button v-if="!isGyroActive" @click="enableGyroscope">Enable Camera Control</ion-button>
-                <ion-button @click="sceneManager.spawnFoodOfType(FoodType.PLANT)">+ Plant</ion-button>
-                <ion-button @click="sceneManager.spawnFoodOfType(FoodType.MEAT)">+ Meat</ion-button>
-            </div>
+        <IonContent :scroll-y="false">
             <div ref="sceneContainer" class="scene-container"></div>
+            <div class="vr-ui-layer">
+                <ChatBar 
+                isVRMode
+                @spawn-plant="sceneManager.spawnFoodOfType(FoodType.PLANT)"
+                @spawn-meat="sceneManager.spawnFoodOfType(FoodType.MEAT)"
+                />
+                <DynamicMessage />
+            </div>
+            
+
         </IonContent>
     </IonPage>
 </template>
 
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue';
-import { IonButton, IonContent, IonPage, onIonViewDidLeave, onIonViewWillEnter } from '@ionic/vue';
+import { IonContent, IonPage, onIonViewDidLeave, onIonViewWillEnter } from '@ionic/vue';
 import { VRSceneManager } from '@/modules/VRSceneMgr';
 import { Motion } from '@capacitor/motion';
 import { Vector3 } from 'three';
 import { FoodType } from '@/utility/AnimalType';
 import { assert } from '@/utility/assert';
+import ChatBar from '@/components/ChatBar.vue';
+import DynamicMessage from '@/components/DynamicMessage.vue';
 
 const sceneContainer = ref(null);
 const isGyroActive = ref(false);
@@ -29,11 +36,11 @@ let gyroListener = null;
 onMounted(() => {
     // Initialize
     sceneContainer.value.appendChild(sceneManager.getRendererDOM());
-    sceneManager.activate();
     window.addEventListener('resize', onWindowResize);
 });
 
 onIonViewWillEnter(() => {
+    enableGyroscope()
     sceneManager.activate();
 })
 
@@ -92,10 +99,24 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .scene-container {
+    position: absolute;
+    top: 0;
+    left: 0;
     width: 100vw;
     height: 100vh;
+    z-index: 1; 
     overflow: hidden;
-    margin: 0;
-    padding: 0;
+}
+
+.vr-ui-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.vr-ui-layer > * {
+    pointer-events: auto;
 }
 </style>
