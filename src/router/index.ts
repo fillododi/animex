@@ -1,8 +1,8 @@
 import { createRouter, createWebHistory } from '@ionic/vue-router';
 import type { RouteRecordRaw } from 'vue-router';
 
-import HomePage from '../views/HomePage.vue';
 import ChatView from '../views/ChatBot.vue';
+import VirtualReality from '@/views/VirtualReality.vue';
 import RecogView from '../views/RecognitionPage.vue';
 import MainLayout from '../views/MainLayout.vue';
 
@@ -17,14 +17,14 @@ const routes: Array<RouteRecordRaw> = [
     component: MainLayout
   },
   {
-    path: '/home',
-    name: 'Home',
-    component: HomePage
-  },
-  {
     path: '/chat',
     name: 'Chat',
     component: ChatView
+  },
+  {
+    path: '/vr',
+    name: 'VR',
+    component: VirtualReality
   },
   {
     path: '/cam',

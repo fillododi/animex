@@ -106,3 +106,15 @@ The intended delivery flow is:
 4. Sync assets into Capacitor native projects
 5. Produce Android and iOS demo builds
 6. Optionally publish the web build for browser-based fallback
+
+### Asset sources
+
+The assets used for the VR mode were sourced as follows:
+- Animal models by Poly by Google [CC-BY] via Poly Pizza
+- Turkey by Kenney via Poly Pizza
+- Steak by Jarlan Perez [CC-BY] via Poly Pizza
+- Salad Bowl by Jarlan Perez [CC-BY] via Poly Pizza
+- Plant by Zsky [CC-BY] via Poly Pizza
+- Dog Munching Bell Pepper by qubodup -- https://freesound.org/s/829502/ -- License: Creative Commons 0
+- Gớm by SieuAmThanh -- https://freesound.org/s/534536/ -- License: Creative Commons 0
+- yummy.mp3 by dorr1 -- https://freesound.org/s/338959/ -- License: Creative Commons 0
