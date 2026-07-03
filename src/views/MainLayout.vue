@@ -23,13 +23,13 @@
         </ion-tab-button>
 
         <ion-tab-button 
-          tab="ar" 
-          href="/main/ar"
+          tab="vr" 
+          href="/main/vr"
           :disabled="sessionStore.recognizedAnimal === null"
         >
           <i class="fa-solid fa-vr-cardboard"></i>
           <ion-icon :icon="cube"></ion-icon>
-          <ion-label v-if="sessionStore.recognizedAnimal">Visione AR</ion-label>
+          <ion-label v-if="sessionStore.recognizedAnimal">Visione VR</ion-label>
         </ion-tab-button>
 
       </ion-tab-bar>

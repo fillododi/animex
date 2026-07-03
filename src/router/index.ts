@@ -1,8 +1,8 @@
 import { createRouter, createWebHistory } from '@ionic/vue-router';
 import type { RouteRecordRaw } from 'vue-router';
 
-import HomePage from '../views/HomePage.vue';
 import ChatView from '../views/ChatBot.vue';
+import VirtualReality from '@/views/VirtualReality.vue';
 import RecogView from '../views/RecognitionPage.vue';
 import MainLayout from '../views/MainLayout.vue';
 
@@ -10,11 +10,6 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/',
     redirect: '/main/scanner'
-  },
-  {
-    path: '/home',
-    name: 'Home',
-    component: HomePage
   },
   {
     path: '/main',
@@ -36,14 +31,13 @@ const routes: Array<RouteRecordRaw> = [
         name: 'RecognitionPage',
         component: RecogView
       },
-      // IN FUTURE: We can add an AR view route here, but it's currently commented out for now.
-      /*
+      
       {
-        path: 'ar',
-        name: 'ARView',
-        component: () => import('../views/ARView.vue')
+        path: '/vr',
+        name: 'VR',
+        component: VirtualReality
       }
-      */
+      
     ]
   }
 ]

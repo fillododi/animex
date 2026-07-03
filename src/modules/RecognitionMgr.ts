@@ -1,7 +1,7 @@
 import { useServiceStore } from "@/stores/serviceStore"
 import { useSessionStore } from "@/stores/sessionStore"
 import type { AnimalData } from "@/utility/AnimalData"
-import type { AnimalType } from "@/utility/AnimalType"
+import { AnimalType } from "@/utility/AnimalType"
 
 export class RecognitionManager {
     private frameId: number
@@ -70,7 +70,7 @@ export class RecognitionManager {
             const numVerts = animal.boundingPoly?.normalizedVertices?.length ?? 1
             const animalData : AnimalData = {
                 id: crypto.randomUUID(),
-                animalType: animal.id as AnimalType,
+                animalType: AnimalType.fromString(animal.id),
                 displayName: animal.displayName ?? "Sconosciuto",
                 pos: {
                     x: sumX / numVerts,
