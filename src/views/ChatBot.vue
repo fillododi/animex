@@ -89,9 +89,6 @@
     
     <ion-footer
       class="ion-no-border" :style="{ 
-        position: 'absolute',
-        bottom: 0,
-        width: '100%',
         transform: kbHeight > 0 
           ? (isIOS ? `translateY(-${kbHeight}px)` : `translateY(0px)`) 
           : `translateY(calc(-50px - var(--ion-safe-area-bottom, 0px)))`,
