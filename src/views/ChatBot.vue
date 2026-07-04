@@ -113,7 +113,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch, nextTick } from 'vue';
+import { computed, onMounted, ref, watch, nextTick} from 'vue';
 import { IonPage, IonContent, IonButton, IonFooter, onIonViewDidLeave, alertController, IonHeader, IonToolbar, IonTitle} from '@ionic/vue';
 import ChatBubble from '@/components/ChatBubble.vue';
 import InputBar from '@/components/InputBar.vue';
@@ -142,13 +142,13 @@ const contentRef = ref();
 // identica ovunque.
 const contentPaddingBottom = computed(() => {
   return kbHeight.value > 0
-    ? `20px`
+    ? `${kbHeight.value + 20}px`
     : `calc(130px + var(--ion-safe-area-bottom, 0px))`;
 });
 
 const footerPaddingBottom = computed(() => {
   return kbHeight.value > 0
-    ? `0px`
+    ? `${kbHeight.value}px`
     : `calc(50px + var(--ion-safe-area-bottom, 0px))`;
 });
 // --- UI STATE VARIABLES ---
@@ -163,12 +163,15 @@ const inputTextModel = computed({
 });
 
 onMounted(() => {
-  // Keyboard event listeners to adjust the UI when the keyboard is shown or hidden
-  Keyboard.addListener('keyboardWillShow', (info) => {
-    kbHeight.value = info.keyboardHeight;
+  Keyboard.addListener('keyboardDidShow', (info) => {
+    // Clamp di sicurezza: una tastiera reale non supera mai il 50%
+    // dello schermo. Se il plugin riporta un valore anomalo su
+    // qualche device Android, la UI non collassa comunque.
+    kbHeight.value = Math.min(info.keyboardHeight, window.innerHeight * 0.5);
     document.body.classList.add('keyboard-is-open');
+    console.log('KB height:', info.keyboardHeight)
   });
-  Keyboard.addListener('keyboardWillHide', () => {
+  Keyboard.addListener('keyboardDidHide', () => {
     kbHeight.value = 0;
     document.body.classList.remove('keyboard-is-open');
   });
