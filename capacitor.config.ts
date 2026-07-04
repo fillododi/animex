@@ -1,5 +1,5 @@
 import type { CapacitorConfig } from '@capacitor/cli';
-
+import { KeyboardResize } from '@capacitor/keyboard';
 const config: CapacitorConfig = {
   appId: 'io.ionic.starter',
   appName: 'animex',
@@ -10,8 +10,8 @@ const config: CapacitorConfig = {
   },
   plugins: {
     Keyboard: {
-      resize: 'none', 
-      //resizeOnFullScreen: true,
+      resize: KeyboardResize.Body, 
+      resizeOnFullScreen: true,
     },
   }
 };

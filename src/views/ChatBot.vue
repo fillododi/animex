@@ -16,7 +16,7 @@
     </ion-header>
     <ion-content ref="contentRef" class="ion-padding chat-background" :scroll-events="true" @ionScrollStart="hideKeyboard">
       <div class="chat-container" :style="{ 
-             paddingBottom: contentPaddingBottom, 
+            paddingBottom: contentPaddingBottom, 
             transition: 'padding-bottom 0.25s cubic-bezier(0.32, 0.72, 0, 1)'
      }">
         
@@ -142,13 +142,13 @@ const contentRef = ref();
 // identica ovunque.
 const contentPaddingBottom = computed(() => {
   return kbHeight.value > 0
-    ? `${kbHeight.value + 20}px`
+    ? `20px`
     : `calc(130px + var(--ion-safe-area-bottom, 0px))`;
 });
 
 const footerPaddingBottom = computed(() => {
   return kbHeight.value > 0
-    ? `${kbHeight.value}px`
+    ? `0px`
     : `calc(50px + var(--ion-safe-area-bottom, 0px))`;
 });
 // --- UI STATE VARIABLES ---
