@@ -168,12 +168,9 @@ onMounted(() => {
     // dello schermo. Se il plugin riporta un valore anomalo su
     // qualche device Android, la UI non collassa comunque.
     kbHeight.value = Math.min(info.keyboardHeight, window.innerHeight * 0.5);
-    document.body.classList.add('keyboard-is-open');
-    console.log('KB height:', info.keyboardHeight)
   });
   Keyboard.addListener('keyboardDidHide', () => {
     kbHeight.value = 0;
-    document.body.classList.remove('keyboard-is-open');
   });
   managerStore.initConversationManager();
 });
