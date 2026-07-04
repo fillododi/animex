@@ -87,14 +87,18 @@
 
     </ion-content>
     
-    <ion-footer
-      class="ion-no-border" :style="{ 
-        transform: kbHeight > 0 
-          ? (isIOS ? `translateY(-${kbHeight}px)` : `translateY(0px)`) 
-          : `translateY(calc(-50px - var(--ion-safe-area-bottom, 0px)))`,
-        transition: 'transform 0.25s cubic-bezier(0.32, 0.72, 0, 1)' 
-      }">
-
+    <div
+      :style="{ 
+        position: 'fixed',
+        left: 0,
+        right: 0,
+        bottom: kbHeight > 0 
+          ? (isIOS ? `${kbHeight}px` : '0px') 
+          : `calc(50px + var(--ion-safe-area-bottom, 0px))`,
+        zIndex: 9999,
+        transition: 'bottom 0.25s cubic-bezier(0.32, 0.72, 0, 1)' 
+      }"
+    >
       <InputBar 
         v-model="inputTextModel"
         :isListening="uiState.getRecording()"
@@ -107,7 +111,7 @@
         @open-quiz-menu="openMenuQuiz()"
         @cancel-quiz="cancelActiveQuiz"
       />
-    </ion-footer>
+    </div>
     <QuizMenu 
       :isOpen="isQuizModalOpen" 
       @close="isQuizModalOpen = false" 
