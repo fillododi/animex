@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { AnimalType, FoodType } from "@/utility/AnimalType";
+import { FoodType } from "@/utility/AnimalType";
 import { DragControls } from 'three/addons/controls/DragControls.js';
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { AnimalEntity } from './vr-entities/AnimalEntity';

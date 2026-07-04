@@ -64,7 +64,7 @@ const toggleGlobalMic = async () => {
     await managerStore.conversationManager?.stopSpeaking();
     globalUiState.setSpeaking(false);
   }
-  try { await managerStore.conversationManager?.stopListening(); } catch(e) {}
+  await managerStore.conversationManager?.stopListening();
   
   try {
      globalUiState.setStatusMessage(CHAT_STATUS.INITIALIZING);

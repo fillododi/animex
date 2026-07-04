@@ -7,7 +7,7 @@ defineProps({
     default: ''
   },
   icona: {
-    type: [String, Object], // Ora accetta sia stringhe (emoji/font-awesome) che oggetti (Ionicons)
+    type: [String, Object], 
     default: ''
   },
   variante: {
@@ -45,7 +45,6 @@ defineProps({
 </template>
 
 <style scoped>
-/* Aggiungiamo uno stile per allineare perfettamente le nuove icone */
 .custom-ion-icon {
   font-size: 22px;
   display: flex;
@@ -53,7 +52,6 @@ defineProps({
   justify-content: center;
 }
 
-/* --- Il resto del tuo CSS originale rimane INVARIATO --- */
 .base-btn {
   display: flex;
   align-items: center;

@@ -41,11 +41,9 @@
 <script setup lang="ts">
 import { IonPage, IonTabs, IonRouterOutlet, IonTabBar, IonTabButton, IonLabel, IonIcon } from '@ionic/vue';
 import { useSessionStore } from '@/stores/sessionStore';
-import { globalUiState } from '@/utility/UiState';
 import { camera, chatbubbles, cube } from 'ionicons/icons';
 
 const sessionStore = useSessionStore();
-const uiState = globalUiState;
 </script>
 
 <style scoped>

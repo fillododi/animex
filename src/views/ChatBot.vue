@@ -122,7 +122,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, watch, nextTick } from 'vue';
-import { IonPage, IonContent, IonButton, IonFooter, onIonViewDidLeave, alertController, IonHeader, IonToolbar, IonTitle, IonIcon, IonModal } from '@ionic/vue';
+import { IonPage, IonContent, IonButton, IonFooter, onIonViewDidLeave, alertController, IonHeader, IonToolbar, IonTitle} from '@ionic/vue';
 import ChatBubble from '@/components/ChatBubble.vue';
 import InputBar from '@/components/InputBar.vue';
 import { useChatStore } from '@/stores/chatStore';
@@ -197,9 +197,7 @@ watch(
 // --- EVENT HANDLERS ---
 
 const handleStart = async () => {
-  try {
-       await conversationManager.value?.stopListening();
-     } catch(e) {}
+  await conversationManager.value?.stopListening();
   try {
      uiState.setStatusMessage(CHAT_STATUS.INITIALIZING);
      uiState.setRecording(true);
@@ -286,12 +284,6 @@ const handleStopAudio = async () => {
   uiState.setSpeaking(false);
 };
 
-const handleInputFocus = async () => {
-  uiState.setUsingKeyboard(true);
-  if (uiState.getSpeaking()) {
-    await handleStopAudio();
-  }
-};
 
 const handleTextSubmit = async (selectedAnswer?: string | Event) => {
   const clickedAnswer = typeof selectedAnswer === 'string' ? selectedAnswer : "";
