@@ -8,14 +8,14 @@
     <ion-content class="whatsapp-modal-content">
       <div class="whatsapp-menu">
         
-        <div class="menu-item" @click="seleziona('easy')">
+        <div class="menu-item" @click="select('easy')">
           <div class="icon-circle easy-color">
             <ion-icon :icon="happy"></ion-icon>
           </div>
           <span>Quiz facile</span>
         </div>
 
-        <div class="menu-item" @click="seleziona('medium')">
+        <div class="menu-item" @click="select('medium')">
           <div class="icon-circle medium-color">
             <ion-icon :icon="extensionPuzzle"></ion-icon>
           </div>
@@ -32,7 +32,6 @@ import { IonModal, IonContent, IonIcon } from '@ionic/vue';
 import { happy, extensionPuzzle } from 'ionicons/icons';
 import type { DifficultyLevel } from '@/utility/Types';
 
-// Riceve lo stato di apertura dalla pagina genitore
 defineProps({
   isOpen: {
     type: Boolean,
@@ -40,11 +39,10 @@ defineProps({
   }
 });
 
-// Comunica alla pagina genitore quando chiudere o quale quiz è stato scelto
 const emit = defineEmits(['close', 'select-quiz']);
 
-const seleziona = (difficolta: DifficultyLevel) => {
-  emit('select-quiz', difficolta);
+const select = (difficulty: DifficultyLevel) => {
+  emit('select-quiz', difficulty);
 };
 </script>
 

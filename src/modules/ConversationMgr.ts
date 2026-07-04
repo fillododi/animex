@@ -2,7 +2,7 @@ import { EMPTY_INPUT_ANIMAL_TEXT, SOMETHING_BAD_IN_BACKEND, TRY_TO_WRITE_TEXT } 
 import { useServiceStore } from '@/stores/serviceStore';
 import { useSessionStore } from '@/stores/sessionStore';
 import { useChatStore } from '@/stores/chatStore';
-import type { DifficultyLevel, QuizValidationResultDTO } from '@/utility/Types';
+import type { DifficultyLevel, QuizValidationResultDTO, QuizType } from '@/utility/Types';
 
 export class ConversationManager {
     
@@ -83,7 +83,7 @@ export class ConversationManager {
 
     public async requestQuiz(difficulty: DifficultyLevel): Promise<boolean> {
             const chatStore = useChatStore();
-            
+            const quizTypes: QuizType[] = ["yes_no", "multiple_choice"];
             try {
                 const connectionService = useServiceStore().connectionService;
                 const stateStore = useSessionStore();
@@ -97,7 +97,7 @@ export class ConversationManager {
                     currentAnimal.name,  
                     difficulty,
                     chatStore.getOldQuestions().length > 0 ? chatStore.getOldQuestions() : [],
-                    ["yes_no", "multiple_choice"]
+                    quizTypes
                 );
 
                 if (question) {

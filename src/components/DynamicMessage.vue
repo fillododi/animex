@@ -8,9 +8,44 @@
     <div v-else-if="chatStore.activeQuestion" class="message-card quiz">
       <span class="role-badge">ESPERTO</span>
       <p>{{ chatStore.activeQuestion.prompt }}</p>
-      <div class="hint">Usa il microfono per rispondere!</div>
-    </div>
+      <div v-if="chatStore.activeQuestion.type === 'multiple_choice' && chatStore.activeQuestion.choices && chatStore.activeQuestion.choices.length > 0" class="inline-quiz-options">              
+        <ion-button 
+          v-for="(choice, i) in chatStore.activeQuestion.choices" 
+          :key="i"
+          size="small"
+          fill="outline"
+          class="quiz-choice-btn"
+          @click="handleTextSubmit(choice)"
+          :disabled="uiState.getProcessing()"
+        >
+          {{ choice }}
+        </ion-button>
+      </div>
 
+      <!-- Bottoni per Vero/Falso -->
+      <div v-else-if="chatStore.activeQuestion.type === 'yes_no'" class="inline-quiz-options">
+        <ion-button 
+          size="small"
+          fill="outline"
+          class="quiz-choice-btn"
+          @click="handleTextSubmit('Vero')"
+          :disabled="uiState.getProcessing()"
+        >
+          Vero
+        </ion-button>
+        <ion-button 
+          size="small"
+          fill="outline"
+          class="quiz-choice-btn"
+          @click="handleTextSubmit('Falso')"
+          :disabled="uiState.getProcessing()"
+        >
+          Falso
+        </ion-button>
+      </div>
+      <div v-else class="hint">Usa il microfono per rispondere!</div>
+    </div>
+    
     <div v-else-if="lastBotMessage" class="message-card text-msg">
       <span class="role-badge">ESPERTO</span>
       <p>{{ lastBotMessage.content }}</p>
@@ -23,9 +58,14 @@
 import { computed, ref, watch, onUnmounted } from 'vue';
 import { useChatStore } from '@/stores/chatStore';
 import { globalUiState } from '@/utility/UiState';
+import { IonButton } from '@ionic/vue';
+import { useManagerStore } from '@/stores/managerStore';
+import { CHAT_STATUS, SOMETHING_BAD_IN_BACKEND } from '@/utility/constants';
 
 const chatStore = useChatStore();
 const uiState = globalUiState;
+const managerStore = useManagerStore();
+const conversationManager = computed(() => managerStore.conversationManager);
 
 const lastBotMessage = computed(() => {
   for (let i = chatStore.messages.length - 1; i >= 0; i--) {
@@ -57,7 +97,7 @@ watch(
     }
 
     timeoutId = setTimeout(() => {
-      isVisible.value = false;
+      if (!chatStore.activeQuestion) isVisible.value = false;
     }, 10000);
   },
   { deep: true } 
@@ -70,6 +110,25 @@ onUnmounted(() => {
 const shouldShow = computed(() => {
   return isVisible.value && (uiState.getProcessing() || chatStore.activeQuestion || lastBotMessage.value);
 });
+
+const handleTextSubmit = async (answer: string) => {
+  await conversationManager.value?.stopSpeaking();
+  if (!answer || uiState.getProcessing()) return;
+  
+  uiState.setProcessing(true);
+  uiState.setStatusMessage(CHAT_STATUS.THINKING);
+  
+  try {
+    await conversationManager.value?.validateQuiz(answer);
+    uiState.setStatusMessage(CHAT_STATUS.SUCCESS);  
+  } catch (error: any) {
+    uiState.setStatusMessage((SOMETHING_BAD_IN_BACKEND) as any);
+  } finally {
+    uiState.setProcessing(false);
+    uiState.setQuizStatus(false);
+    uiState.setSpeaking(false);
+  }
+};
 </script>
 
 <style scoped>
@@ -127,6 +186,24 @@ const shouldShow = computed(() => {
   color: #666;
 }
 
+.inline-quiz-options {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 12px;
+  margin-bottom: 4px;
+}
+
+.quiz-choice-btn {
+  --border-radius: 8px;
+  --border-color: var(--secondary, #fac400);
+  --color: var(--secondary, #fac400);
+  margin: 0;
+  text-transform: none; 
+  font-family: var(--font-main, 'Urbanist', sans-serif);
+  font-weight: 600;
+}
+
 @keyframes slide-up {
   from { opacity: 0; transform: translateY(15px); }
   to { opacity: 1; transform: translateY(0); }
@@ -142,6 +219,10 @@ const shouldShow = computed(() => {
   }
   .hint, .thinking p {
     color: #aaa;
+  }
+  .quiz-choice-btn {
+    --border-color: var(--primary, #fb6237);
+    --color: var(--primary, #fb6237);
   }
 }
 </style>
