@@ -93,7 +93,7 @@
         left: 0,
         right: 0,
         bottom: kbHeight > 0 
-          ? (isIOS ? `${kbHeight}px` : '0px') 
+          ? `${kbHeight}px` 
           : `calc(50px + var(--ion-safe-area-bottom, 0px))`,
         zIndex: 9999,
         transition: 'bottom 0.25s cubic-bezier(0.32, 0.72, 0, 1)' 
@@ -131,7 +131,7 @@ import { type DifficultyLevel} from '@/utility/Types';
 import { NativeSettings, AndroidSettings, IOSSettings } from 'capacitor-native-settings';
 import { useSessionStore } from '@/stores/sessionStore';
 import {globalUiState} from '@/utility/UiState';
-import { Keyboard } from '@capacitor/keyboard';
+import { Keyboard, KeyboardResize } from '@capacitor/keyboard';
 import QuizMenu from '@/components/QuizMenu.vue';
 import { useManagerStore } from '@/stores/managerStore';
 import { Capacitor } from '@capacitor/core';
@@ -156,6 +156,9 @@ const inputTextModel = computed({
 });
 
 onMounted(() => {
+  if (!isIOS) {
+    Keyboard.setResizeMode({ mode: KeyboardResize.None });
+  }
   // Keyboard event listeners to adjust the UI when the keyboard is shown or hidden
   Keyboard.addListener('keyboardWillShow', (info) => {
     kbHeight.value = info.keyboardHeight;
@@ -339,6 +342,10 @@ onIonViewDidLeave(async () => {
   uiState.setStatusMessage(CHAT_STATUS.IDLE);
   await conversationManager.value?.stopSpeaking();
   document.body.classList.remove('keyboard-is-open');
+
+  if (!isIOS) {
+    Keyboard.setResizeMode({ mode: KeyboardResize.Native });
+  }
 });
 
 const showSettingsAlert = async () => {
