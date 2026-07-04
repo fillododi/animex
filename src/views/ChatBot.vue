@@ -87,31 +87,27 @@
 
     </ion-content>
     
-    <div
-      :style="{ 
-        position: 'fixed',
-        left: 0,
-        right: 0,
-        bottom: kbHeight > 0 
-          ? `${kbHeight}px` 
+    <ion-footer class="ion-no-border" style="--background: transparent; background: transparent;">
+      <div :style="{ 
+        paddingBottom: kbHeight > 0 
+          ? (isIOS ? `${kbHeight}px` : '0px') 
           : `calc(50px + var(--ion-safe-area-bottom, 0px))`,
-        zIndex: 9999,
-        transition: 'bottom 0.25s cubic-bezier(0.32, 0.72, 0, 1)' 
-      }"
-    >
-      <InputBar 
-        v-model="inputTextModel"
-        :isListening="uiState.getRecording()"
-        :isSpeaking="uiState.getSpeaking()"
-        :isQuizActive="!!chatStore.activeQuestion"
-        @toggle-microphone="toggleMicrophone"
-        @cancel-recording="handleCancel"
-        @stop-audio="handleStopAudio"
-        @send="uiState.getRecording() ? handleStop() : handleTextSubmit()"
-        @open-quiz-menu="openMenuQuiz()"
-        @cancel-quiz="cancelActiveQuiz"
-      />
-    </div>
+        transition: 'padding-bottom 0.25s cubic-bezier(0.32, 0.72, 0, 1)' 
+      }">
+        <InputBar 
+          v-model="inputTextModel"
+          :isListening="uiState.getRecording()"
+          :isSpeaking="uiState.getSpeaking()"
+          :isQuizActive="!!chatStore.activeQuestion"
+          @toggle-microphone="toggleMicrophone"
+          @cancel-recording="handleCancel"
+          @stop-audio="handleStopAudio"
+          @send="uiState.getRecording() ? handleStop() : handleTextSubmit()"
+          @open-quiz-menu="openMenuQuiz()"
+          @cancel-quiz="cancelActiveQuiz"
+        />
+      </div>
+    </ion-footer>
     <QuizMenu 
       :isOpen="isQuizModalOpen" 
       @close="isQuizModalOpen = false" 
@@ -156,9 +152,6 @@ const inputTextModel = computed({
 });
 
 onMounted(() => {
-  if (!isIOS) {
-    Keyboard.setResizeMode({ mode: KeyboardResize.None });
-  }
   // Keyboard event listeners to adjust the UI when the keyboard is shown or hidden
   Keyboard.addListener('keyboardWillShow', (info) => {
     kbHeight.value = info.keyboardHeight;
@@ -343,9 +336,6 @@ onIonViewDidLeave(async () => {
   await conversationManager.value?.stopSpeaking();
   document.body.classList.remove('keyboard-is-open');
 
-  if (!isIOS) {
-    Keyboard.setResizeMode({ mode: KeyboardResize.Native });
-  }
 });
 
 const showSettingsAlert = async () => {
