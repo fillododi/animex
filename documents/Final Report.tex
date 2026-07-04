@@ -7,6 +7,7 @@
 \usepackage[margin=1in]{geometry}
 \usepackage{booktabs}
 \usepackage{xcolor}
+\usepackage{graphicx}
 
 \newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
 \newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}}
@@ -64,7 +65,50 @@ To test the Animex application you must follow these steps:
 
 \clearpage
 \section{Project Architecture}
+The Animex project is split across a two-tier architecture:
+\begin{itemize}
+    \item \textbf{Front-end Mobile Application}: handles user input and displays graphical interface.
+    \item \textbf{Back-end Server}: receives and sanitizes requests, prompts \textit{Google Cloud}'s APIs and elaborates results for the front-end.
+\end{itemize}
+\includegraphics[width = \textwidth]{Deployment view.jpeg}
+Given the aims of the MITA course, this report will focus on the architecture of the front-end application.
 
+\subsection{Front-end Application}
+\subsubsection{Overview}
+The Animex application was developed utilizing the \textit{Typescript} programming language, the \textit{Vue}, \textit{Ionic}, and \textit{Three.js} graphical frameworks, and the \textit{Capacitor} input framework. \\
+The application itself can be divided into multiple layers:
+\begin{itemize}
+    \item \textbf{Presentation Layer}: displays information to the user.
+    \item \textbf{Module Layer}: handles the behavior needed for the system's tasks.
+    \item \textbf{Service Layer}: interact with the user's device to provide the information and functions requested by the modules.
+\end{itemize}
+\includegraphics[width = \textwidth]{Component view.jpeg}
+
+\subsubsection{Service Layer}
+The service layer is composed of three services:
+\begin{itemize}
+    \item \textbf{Connection Service}: connects to the back-end server, sends HTTP requests and forwards the responses to the appropriate modules.
+    \item \textbf{Camera Service}: exposes the device's camera feed.
+    \item \textbf{Speech Service}: connects to the user's microphone to convert their speech to text and reads out system messages through text-to-speech.
+\end{itemize}
+
+\subsubsection{Module Layer}
+The module layer is formed by three modules, one for each of the system's tasks:
+\begin{itemize}
+    \item \textbf{Recognition Manager}: periodically samples the camera feed through the \textit{Camera Service} and then sends the image to the back-end using the \textit{Connection Service}.
+    Once the server's response is received, it saves the recognized animal as the current conversation subject or, if multiple animals were detected, it prompts the user to select one.
+    \item \textbf{Conversation Manager}: keeps track of the messages sent between the user and the system's LLM, utilizes the \textit{Speech Service} to elaborate user input and system output, and provides quiz functionality.
+    \item \textbf{VR Scene Manager}: renders the VR environment with the selected animal's model and background environment and handles the VR-entities and their behaviors.
+\end{itemize}
+
+\subsubsection{Presentation Layer}
+The presentation layer is split across four views:
+\begin{itemize}
+    \item \textbf{Main Layout}: is overlaid on top of the other views, handles navigation between pages.
+    \item \textbf{Recognition Page}: shows the device's camera feed, highlights identified animals in frame and allows the user to ask questions and respond to quizzes via speech.
+    \item \textbf{Chat Bot Page}: shows the message history regarding the currently selected animal, allows the user to ask questions and request quizzes both via speech and via text.
+    \item \textbf{Virtual Reality Page}: shows the VR scene, allows users to interact with the 3D model by giving it food and to ask questions via speech.
+\end{itemize}
 
 \clearpage
 \section{Response to Heuristic Evaluation}
