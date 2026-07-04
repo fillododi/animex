@@ -1,6 +1,6 @@
 <template>
   <ion-page>
-    <ion-header class="ion-no-border">
+    <ion-header class="ion-no-border" >
       <ion-toolbar class="custom-toolbar">
         <ion-title class="ion-text-center logo-title">
           <span class="text-white">ANIM</span><span class="text-lime">EX</span>
@@ -11,18 +11,16 @@
           <div class="recognized-animal-banner" v-if="sessionStore.recognizedAnimal">
             {{ sessionStore.recognizedAnimal.displayName }}
           </div>
-<!--
-          <div class="status-banner" :class="{ active: uiState.getRecording() }">
-            <div class="status-text">{{ uiState.getStatusMessage() }}</div>
-          </div> -->
         </div>
       </ion-toolbar>
     </ion-header>
     <ion-content ref="contentRef" class="ion-padding chat-background" :scroll-events="true" @ionScrollStart="hideKeyboard">
       <div class="chat-container" :style="{ 
-             paddingBottom: kbHeight > 0 ? `${kbHeight + 20}px` : `calc(130px + var(--ion-safe-area-bottom, 0px))`, 
-             transition: 'padding-bottom 0.25s cubic-bezier(0.32, 0.72, 0, 1)' 
-           }">
+             paddingBottom: kbHeight > 0 
+            ? (isIOS ? `${kbHeight + 20}px` : '70px') 
+            : `calc(130px + var(--ion-safe-area-bottom, 0px))`, 
+            transition: 'padding-bottom 0.25s cubic-bezier(0.32, 0.72, 0, 1)'
+     }">
         
         <ChatBubble 
           v-for="(msg, index) in chatStore.messages" 
@@ -90,15 +88,16 @@
     </ion-content>
     
     <ion-footer
-      class="ion-no-border"
-      :style="{ 
+      class="ion-no-border" :style="{ 
         position: 'absolute',
         bottom: 0,
         width: '100%',
-        transform: kbHeight > 0 ? `translateY(-${kbHeight}px)` : `translateY(calc(-50px - var(--ion-safe-area-bottom, 0px)))`,
+        transform: kbHeight > 0 
+          ? (isIOS ? `translateY(-${kbHeight}px)` : `translateY(0px)`) 
+          : `translateY(calc(-50px - var(--ion-safe-area-bottom, 0px)))`,
         transition: 'transform 0.25s cubic-bezier(0.32, 0.72, 0, 1)' 
-      }"
-    >
+      }">
+
       <InputBar 
         v-model="inputTextModel"
         :isListening="uiState.getRecording()"
@@ -134,6 +133,7 @@ import {globalUiState} from '@/utility/UiState';
 import { Keyboard } from '@capacitor/keyboard';
 import QuizMenu from '@/components/QuizMenu.vue';
 import { useManagerStore } from '@/stores/managerStore';
+import { Capacitor } from '@capacitor/core';
 // --- CHAT INITIALIZATION ---
 
 const chatStore = useChatStore();
@@ -142,6 +142,7 @@ const managerStore = useManagerStore();
 const conversationManager = computed(() => managerStore.conversationManager);
 const kbHeight = ref(0);
 const contentRef = ref();
+const isIOS = Capacitor.getPlatform() === 'ios';
 // --- UI STATE VARIABLES ---
 const uiState = globalUiState;
 const inputTextModel = computed({

@@ -95,6 +95,9 @@ function onInput(event) {
   background: var(--background-light, #fff8dc);
   color: #000000;
   border-top: 1px solid rgba(0, 0, 0, 0.1);
+
+  width: 100%;
+  box-sizing: border-box;
 }
 .global-input-bar input {
   flex: 1;
@@ -109,6 +112,7 @@ function onInput(event) {
   
   background: rgba(0, 0, 0, 0.05);
   color: #000000;
+  min-width: 0;
 }
 .global-input-bar input:focus {
   border-color: var(--primary, #fb6237);
