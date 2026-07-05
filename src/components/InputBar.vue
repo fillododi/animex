@@ -104,7 +104,7 @@ function onInput(event) {
 <style scoped>
 /* LIGHT MODE (DEFAULT) */
 .global-input-bar {
-  padding: 10px 15px;
+  /*padding: 10px 15px;
   display: flex;
   gap: 5px;
   align-items: center;
@@ -118,7 +118,7 @@ function onInput(event) {
   border-top: 1px solid rgba(0, 0, 0, 0.1);
 
   width: 100%;
-  box-sizing: border-box;
+  box-sizing: border-box;*/
 }
 
 /* Stile Ion-Input */
