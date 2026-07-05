@@ -295,7 +295,7 @@ const chooseAnimal = (animal: AnimalData) => {
 
 .floating-controls {
   position: absolute;
-  bottom: calc(75px + var(--ion-safe-area-bottom, 0px));
+  bottom: 20px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 10;

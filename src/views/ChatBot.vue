@@ -14,11 +14,8 @@
         </div>
       </ion-toolbar>
     </ion-header>
-    <ion-content ref="contentRef" class="ion-padding chat-background" :scroll-events="true" @ionScrollStart="hideKeyboard">
-      <div class="chat-container" :style="{ 
-            paddingBottom: contentPaddingBottom, 
-            transition: 'padding-bottom 0.25s cubic-bezier(0.32, 0.72, 0, 1)'
-     }">
+    <ion-content ref="contentRef" class="ion-padding chat-background" >
+      <div class="chat-container">
         
         <ChatBubble 
           v-for="(msg, index) in chatStore.messages" 
@@ -86,23 +83,18 @@
     </ion-content>
     
     <ion-footer class="ion-no-border" style="--background: transparent; background: transparent;">
-      <div :style="{ 
-        paddingBottom: footerPaddingBottom,
-        transition: 'padding-bottom 0.25s cubic-bezier(0.32, 0.72, 0, 1)' 
-      }">
-        <InputBar 
-          v-model="inputTextModel"
-          :isListening="uiState.getRecording()"
-          :isSpeaking="uiState.getSpeaking()"
-          :isQuizActive="!!chatStore.activeQuestion"
-          @toggle-microphone="toggleMicrophone"
-          @cancel-recording="handleCancel"
-          @stop-audio="handleStopAudio"
-          @send="uiState.getRecording() ? handleStop() : handleTextSubmit()"
-          @open-quiz-menu="openMenuQuiz()"
-          @cancel-quiz="cancelActiveQuiz"
-        />
-      </div>
+      <InputBar 
+        v-model="inputTextModel"
+        :isListening="uiState.getRecording()"
+        :isSpeaking="uiState.getSpeaking()"
+        :isQuizActive="!!chatStore.activeQuestion"
+        @toggle-microphone="toggleMicrophone"
+        @cancel-recording="handleCancel"
+        @stop-audio="handleStopAudio"
+        @send="uiState.getRecording() ? handleStop() : handleTextSubmit()"
+        @open-quiz-menu="openMenuQuiz()"
+        @cancel-quiz="cancelActiveQuiz"
+      />
     </ion-footer>
     <QuizMenu 
       :isOpen="isQuizModalOpen" 
@@ -132,7 +124,7 @@ const chatStore = useChatStore();
 const sessionStore = useSessionStore();
 const managerStore = useManagerStore();
 const conversationManager = computed(() => managerStore.conversationManager);
-const kbHeight = ref(0);
+//const kbHeight = ref(0);
 const contentRef = ref();
 
 // --- KEYBOARD-AWARE PADDING (identica su iOS e Android) ---
@@ -140,7 +132,7 @@ const contentRef = ref();
 // entrambe le piattaforme (vedi capacitor.config.ts + AndroidManifest.xml),
 // questa è l'unica logica che sposta content/footer, quindi deve essere
 // identica ovunque.
-const contentPaddingBottom = computed(() => {
+/*const contentPaddingBottom = computed(() => {
   return kbHeight.value > 0
     ? `${kbHeight.value + 20}px`
     : `calc(130px + var(--ion-safe-area-bottom, 0px))`;
@@ -150,7 +142,7 @@ const footerPaddingBottom = computed(() => {
   return kbHeight.value > 0
     ? `${kbHeight.value}px`
     : `calc(50px + var(--ion-safe-area-bottom, 0px))`;
-});
+});*/
 // --- UI STATE VARIABLES ---
 const uiState = globalUiState;
 const inputTextModel = computed({
@@ -163,7 +155,7 @@ const inputTextModel = computed({
 });
 
 onMounted(() => {
-  Keyboard.addListener('keyboardDidShow', (info) => {
+  /*Keyboard.addListener('keyboardDidShow', (info) => {
     // Clamp di sicurezza: una tastiera reale non supera mai il 50%
     // dello schermo. Se il plugin riporta un valore anomalo su
     // qualche device Android, la UI non collassa comunque.
@@ -171,7 +163,7 @@ onMounted(() => {
   });
   Keyboard.addListener('keyboardDidHide', () => {
     kbHeight.value = 0;
-  });
+  });*/
   managerStore.initConversationManager();
 });
 
@@ -345,7 +337,7 @@ onIonViewDidLeave(async () => {
   }
   uiState.setStatusMessage(CHAT_STATUS.IDLE);
   await conversationManager.value?.stopSpeaking();
-  document.body.classList.remove('keyboard-is-open');
+  //document.body.classList.remove('keyboard-is-open');
 
 });
 
@@ -399,11 +391,11 @@ const openMenuQuiz = () => {
 };
 
 // --- GESTURE KEYBOARD ---
-const hideKeyboard = async () => {
+/*const hideKeyboard = async () => {
   if (kbHeight.value > 0) {
     await Keyboard.hide();
   }
-};
+};*/
 
 const scrollDown = async () => {
   await nextTick();

@@ -27,7 +27,7 @@
           href="/main/vr"
           :disabled="sessionStore.recognizedAnimal === null"
         >
-          <i class="fa-solid fa-vr-cardboard"></i>
+          <!-- <i class="fa-solid fa-vr-cardboard"></i> -->
           <ion-icon :icon="cube"></ion-icon>
           <ion-label v-if="sessionStore.recognizedAnimal">Visione VR</ion-label>
         </ion-tab-button>
@@ -39,11 +39,31 @@
 </template>
 
 <script setup lang="ts">
+import { onMounted, onUnmounted } from 'vue';
 import { IonPage, IonTabs, IonRouterOutlet, IonTabBar, IonTabButton, IonLabel, IonIcon } from '@ionic/vue';
 import { useSessionStore } from '@/stores/sessionStore';
 import { camera, chatbubbles, cube } from 'ionicons/icons';
+import { Keyboard } from '@capacitor/keyboard';
+import type { PluginListenerHandle } from '@capacitor/core';
 
 const sessionStore = useSessionStore();
+
+let hideListener: PluginListenerHandle;
+let showListener: PluginListenerHandle;
+
+onMounted(async () => {
+  hideListener = await Keyboard.addListener('keyboardWillShow', () => {
+    document.body.classList.add('keyboard-is-open');
+  });
+  showListener = await Keyboard.addListener('keyboardWillHide', () => {
+    document.body.classList.remove('keyboard-is-open');
+  });
+});
+
+onUnmounted(() => {
+  hideListener?.remove();
+  showListener?.remove();
+});
 </script>
 
 <style scoped>
@@ -52,20 +72,13 @@ const sessionStore = useSessionStore();
 .text-lime { color: var(--primary, #fb6237); }
 
 body.keyboard-is-open .custom-tab-bar {
-  opacity: 0 !important;
-  pointer-events: none;
+  display: none !important;
 }
 .custom-tab-bar {
-  position: absolute !important;
-  bottom: 0;
-  width: 100%;
-  /*height: calc(60px + var(--ion-safe-area-bottom, 0px));*/
-  z-index: 10;
   --background: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-top: 1px solid rgba(0, 0, 0, 0.1);
-  /*padding-bottom: var(--ion-safe-area-bottom, 0px);*/
 }
 
 ion-tab-button {
