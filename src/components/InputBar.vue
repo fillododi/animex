@@ -66,7 +66,7 @@ function onInput(event) {
 
     <!-- Campo di Input -->
     <ion-input 
-      type="text" 
+      inputmode="text" 
       :value="modelValue" 
       @ionInput="onInput"
       @keyup.enter="$emit('send')"
@@ -123,47 +123,47 @@ function onInput(event) {
 
 /* Stile Ion-Input */
 .chat-input {
-  flex: 1;
+  /*flex: 1;
   border: 1px solid transparent;
   border-radius: 20px;
   font-family: var(--font-main, 'Urbanist', sans-serif);
   font-size: var(--text-base, 15px);
   outline: none;
   transition: none !important;
-  will-change: transform;
+  will-change: transform;*/
   
   /* Variabili CSS di Ionic per lo Shadow DOM */
-  --padding-top: 10px;
+  /*--padding-top: 10px;
   --padding-bottom: 10px;
   --padding-start: 15px;
   --padding-end: 15px;
   --background: rgba(0, 0, 0, 0.05);
   --color: #000000;
   
-  min-width: 0;
+  min-width: 0;*/
 }
 
 /* Quando l'input Ionic è a fuoco, sfrutta la classe .ion-focused */
 .chat-input.ion-focused {
-  border-color: var(--primary, #fb6237);
-  --background: rgba(0, 0, 0, 0.08);
+  /*border-color: var(--primary, #fb6237);
+  --background: rgba(0, 0, 0, 0.08);*/
 }
 
 /* DARK MODE */
 @media (prefers-color-scheme: dark) {
   .global-input-bar {
-    background: var(--background-dark, #2c2a26);
+    /*background: var(--background-dark, #2c2a26);
     color: var(--background-light, #fff8dc);
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);*/
   }
   
   .chat-input {
-    --background: rgba(255, 255, 255, 0.1);
-    --color: var(--background-light, #fff8dc);
+    /*--background: rgba(255, 255, 255, 0.1);
+    --color: var(--background-light, #fff8dc);*/
   }
   
   .chat-input.ion-focused {
-    --background: rgba(255, 255, 255, 0.15);
+    /*--background: rgba(255, 255, 255, 0.15);*/
   }
 }
 </style>
