@@ -15,6 +15,7 @@ export class DeviceCameraService implements CameraService {
     private active: boolean
     private stream: MediaStream |  undefined
     private videoElement: HTMLVideoElement
+    private startingPromise: Promise<void> | null = null;
 
     constructor(videoElement: HTMLVideoElement) {
         this.stream = undefined
@@ -24,24 +25,30 @@ export class DeviceCameraService implements CameraService {
 
     async start() {
         assert(!this.active, "Camera Service already active!")
-        this.stream = await navigator.mediaDevices.getUserMedia({
-            video: {
-                facingMode: {
-                    ideal: "environment"
-                }
-            },
-            audio: false
-        })
-        this.videoElement.srcObject = this.stream
-        this.videoElement.muted = true
-        this.videoElement.playsInline = true
-        this.videoElement.autoplay = true
-        await this.videoElement.play()
-        this.active = true
+        if (this.startingPromise) {
+            return this.startingPromise;
+        }
+        this.startingPromise = (async () => {
+            this.stream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: { ideal: "environment" } },
+                audio: false
+            });
+            this.videoElement.srcObject = this.stream;
+            this.videoElement.muted = true;
+            this.videoElement.playsInline = true;
+            this.videoElement.autoplay = true;
+            await this.videoElement.play();
+            this.active = true;
+        })();
+        try {
+            await this.startingPromise;
+        } finally {
+            this.startingPromise = null;
+        }
     }
 
     async stop() {
-        assert(this.active, "Camera Service already stopped!")
+        if (!this.active) return
         this.stream?.getTracks().forEach(track => track.stop())
         this.videoElement.srcObject = null
         this.active = false

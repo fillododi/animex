@@ -48,21 +48,19 @@ import type { PluginListenerHandle } from '@capacitor/core';
 
 const sessionStore = useSessionStore();
 
-let hideListener: PluginListenerHandle;
-let showListener: PluginListenerHandle;
-
+const listeners: { hide?: PluginListenerHandle; show?: PluginListenerHandle } = {};
 onMounted(async () => {
-  hideListener = await Keyboard.addListener('keyboardWillShow', () => {
+  listeners.hide = await Keyboard.addListener('keyboardWillShow', () => {
     document.body.classList.add('keyboard-is-open');
   });
-  showListener = await Keyboard.addListener('keyboardWillHide', () => {
+  listeners.show = await Keyboard.addListener('keyboardWillHide', () => {
     document.body.classList.remove('keyboard-is-open');
   });
 });
 
 onUnmounted(() => {
-  hideListener?.remove();
-  showListener?.remove();
+  listeners.hide?.remove();
+  listeners.show?.remove();
 });
 </script>
 

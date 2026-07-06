@@ -117,11 +117,18 @@ import { useChatStore } from '@/stores/chatStore';
 import { useManagerStore } from '@/stores/managerStore';
 import DynamicMessage from '@/components/DynamicMessage.vue';
 import type { AnimalData } from '@/utility/AnimalData';
+import {
+  CameraPermissionDeniedError,
+  CameraStartAbortedError
+} from '@/errors/RecognitionErrors';
+import { describeRecognitionError } from '@/errors/describeRecognitionError';
+import { useErrorStore } from '@/stores/errorStore';
 
 // --- INITIALIZATION ---
 const chatStore = useChatStore();
 const serviceStore = useServiceStore();
 const managerStore = useManagerStore();
+const errorStore = useErrorStore();
 const recog = new RecognitionManager();
 const sessionStore = useSessionStore();
 const videoElement = ref<HTMLVideoElement | null>(null);
@@ -137,6 +144,7 @@ onMounted(() => {
 // --- UI STATE VARIABLES ---
 const uiState = reactive({
   isRecording: false,
+  isStarting: false,
   statusMessage: ""
 });
 // --- WHATCHERS ---
@@ -175,7 +183,6 @@ watch(
     }
   }
 );
-
 watch(
   () => sessionStore.multipleAnimals,
   async (newAnimals) => {
@@ -187,44 +194,61 @@ watch(
     }
   }
 );
+watch(
+  () => errorStore.activeLoopError,
+  (newError) => {
+    if (newError) {
+      uiState.isRecording = false; 
+      recog.closeCamera(); 
+      serviceStore.resetCameraService(); 
+      globalUiState.setStatusMessage(CHAT_STATUS.IDLE);
+    }
+  }
+);
 // --- EVENT HANDLERS ---
 const handleStart = async () => {
+  if (uiState.isStarting || uiState.isRecording) return;
+  uiState.isStarting = true;
     try {
       serviceStore.setCameraService(videoElement.value);
-      if(!sessionStore.recognizedAnimal ) await recog.startRecognitionLoop();
+      if(!sessionStore.recognizedAnimal ) {
+        await recog.startRecognitionLoop();
+      }
+      else if (serviceStore.cameraService && !serviceStore.cameraService.isActive()) {
+        await serviceStore.cameraService.start();
+      }
       uiState.isRecording = true;
       document.documentElement.style.setProperty('--nav-display', 'none');
-      
-    } catch (error: any) {
-      if (error.name === 'NotAllowedError') {
-        await showSettingsAlert();
-      }
-      else if(error.name !== 'AbortError' || !error.message.includes('aborted')){
-        const alert = await alertController.create({
-          header: 'Fotocamera non disponibile',
-          message: 'Temporaneo inutilizzo della fotocamera. Dettagli: ' + error.message,
-          buttons: ['OK']
-        });
-        await alert.present();
-      }
+
+    } catch (error) {
+      await presentRecognitionError(error);
+    }
+    finally {
+      uiState.isStarting = false;
     }
 };
 
 const resumeScan = async () => {
   sessionStore.multipleAnimals = null;
-  sessionStore.recognizedAnimal = null; 
-  await recog.startRecognitionLoop();
+  sessionStore.recognizedAnimal = null;
+  try {
+    await recog.startRecognitionLoop();
+  } catch (error) {
+    await presentRecognitionError(error);
+  }
 };
 
 const handleStop = async () => {
   await managerStore.conversationManager?.stopSpeaking();
   await recog.stopRecognitionLoop();
+  await recog.closeCamera();
   uiState.isRecording = false;
+  serviceStore.resetCameraService();
 };
 
 onIonViewDidLeave(async () => {
   if(uiState.isRecording) {
-    handleStop();
+    await handleStop();
   }
   serviceStore.resetCameraService();
   if (globalUiState.getRecording()) {
@@ -280,6 +304,31 @@ const openSettings = async () => {
 const chooseAnimal = (animal: AnimalData) => {
     sessionStore.updateRecognizedAnimal(animal);
   };
+// --- ERROR MANAGEMENT ---
+/**
+ * Translates a RecognitionError (or an unexpected error) into the correct 
+ * alert for the user. The choice of message is synchronous: the alert appears 
+ * as soon as the Promise of startRecognitionLoop() is rejected, so the waiting 
+ * time now depends only on the timeout set in ConnectionService (a few seconds) 
+ * and no longer on the browser's network timeout.
+ */
+const presentRecognitionError = async (error: unknown) => {
+  if (error instanceof CameraStartAbortedError) {
+    return; // unvoluntary user action, no need to alert
+  }
+  if (error instanceof CameraPermissionDeniedError) {
+    await showSettingsAlert();
+    return;
+  }
+  uiState.isRecording = false;
+  recog.closeCamera();
+  serviceStore.resetCameraService();
+  globalUiState.setStatusMessage(CHAT_STATUS.IDLE);
+
+  const { header, message } = describeRecognitionError(error);
+  const alert = await alertController.create({ header, message, buttons: ['OK'] });
+  await alert.present();
+};
 
 </script>
 

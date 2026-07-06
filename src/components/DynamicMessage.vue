@@ -68,17 +68,11 @@ const managerStore = useManagerStore();
 const conversationManager = computed(() => managerStore.conversationManager);
 
 const lastBotMessage = computed(() => {
-  for (let i = chatStore.messages.length - 1; i >= 0; i--) {
-    const message = chatStore.messages[i];
-    if (message?.role === 'model') {
-      return message;
-    }
-  }
-  return null;
+  return [...chatStore.messages].reverse().find(message => message?.role === 'model') || null;
 });
 
-const isVisible = ref(false); 
-let timeoutId: ReturnType<typeof setTimeout> | null = null;
+const isVisible = ref(false);
+const timer: { id: ReturnType<typeof setTimeout> | null } = { id: null };
 
 watch(
   () => [
@@ -90,13 +84,13 @@ watch(
   ([isProcessing, isSpeaking]) => {
     isVisible.value = true; 
     
-    if (timeoutId) clearTimeout(timeoutId);
+    if (timer.id) clearTimeout(timer.id);
     
     if (isProcessing || isSpeaking) {
       return;
     }
 
-    timeoutId = setTimeout(() => {
+    timer.id = setTimeout(() => {
       if (!chatStore.activeQuestion) isVisible.value = false;
     }, 10000);
   },
@@ -104,7 +98,7 @@ watch(
 );
 
 onUnmounted(() => {
-  if (timeoutId) clearTimeout(timeoutId);
+  if (timer.id) clearTimeout(timer.id);
 });
 
 const shouldShow = computed(() => {

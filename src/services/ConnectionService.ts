@@ -4,6 +4,7 @@ import { useChatStore } from "@/stores/chatStore"
 import type { ChatDTO, MessageRole, QuizQuestionDTO, QuizType, QuizValidationResultDTO, RecognitionDTO } from "@/utility/Types"
 import { useSessionStore } from "@/stores/sessionStore"
 import { type DifficultyLevel } from "@/utility/Types"
+import { RecognitionError, ConnectionTimeoutError, ConnectionUnavailableError, ServerUnhealthyError } from "@/errors/RecognitionErrors"
 
 export interface ConnectionService extends Service {
     
@@ -19,7 +20,6 @@ export interface ConnectionService extends Service {
     sendChatRequest(sessionId: string, text: string): Promise<ChatDTO | null>
     sendQuizNextRequest(sessionId: string, animalId: string, difficulty: DifficultyLevel, oldQuestions: string[], types: QuizType[]): Promise<QuizQuestionDTO | null>
     sendQuizValidateRequest(sessionId: string, animalId: string, questionId: string, answer: string, prompt: string): Promise<QuizValidationResultDTO | null>
-    //sendARRequest
 }
 
 export class ServerConnectionService implements ConnectionService {
@@ -31,15 +31,38 @@ export class ServerConnectionService implements ConnectionService {
     constructor() {
         this.active = false
         this.url = import.meta.env.VITE_BASE_URL
-        this.timeout = import.meta.env.VITE_SERVER_TIMEOUT
+        this.timeout = Number(import.meta.env.VITE_SERVER_TIMEOUT) || 3000
     }
 
     async start(): Promise<void> {
         assert(!this.active, "Connection Service is already active!")
-        const request: RequestInfo = new Request(`${this.url}/healthz`, {method: 'GET', headers: {"Content-Type": "application/json"}})
-        const res = await fetch(request)
-        const json = await res.json()
-        this.active = json.ok
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), this.timeout)
+        try {
+            const request: RequestInfo = new Request(`${this.url}/healthz`, {
+                method: 'GET',
+                headers: {"Content-Type": "application/json"},
+                signal: controller.signal
+            })
+            const res = await fetch(request)
+            if (!res.ok) {
+                throw new ConnectionUnavailableError(`Health-check fallito con status ${res.status}`)
+            }
+            const json = await res.json()
+            if (!json.ok) {
+                throw new ServerUnhealthyError()
+            }
+            this.active = true
+        } catch (err) {
+            this.active = false
+            if (err instanceof RecognitionError) throw err
+            if (err instanceof DOMException && err.name === 'AbortError') {
+                throw new ConnectionTimeoutError(this.timeout, err)
+            }
+            throw new ConnectionUnavailableError(undefined, err)
+        } finally {
+            clearTimeout(timeoutId)
+        }
     }
 
     stop(): void {
@@ -67,13 +90,12 @@ export class ServerConnectionService implements ConnectionService {
             headers: {"Content-Type": "application/json"},
             body: JSON.stringify(body)
         })
-        return fetch(request).then(res => res.json())
-            .then(res => {
-                return res.data as RecognitionDTO
-            })
-            .catch(() => {
-                return null
-            })
+        const response = await fetch(request);
+        if (!response.ok) {
+            throw new Error(`Il server ha risposto con codice ${response.status}`);
+        }
+        const res = await response.json();
+        return res.data as RecognitionDTO;
     }
 
     async sendChatRequest(sessionId: string, text: string): Promise<ChatDTO | null> {

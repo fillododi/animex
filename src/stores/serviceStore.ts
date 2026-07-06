@@ -6,7 +6,7 @@ import { NativeSTTService, NativeTTSService } from '@/services/SpeechService';
 
 export const useServiceStore = defineStore('service', () => {
   
-    const cameraService = ref<CameraService | null>(null);
+    const cameraService = ref<DeviceCameraService | null>(null);
     const connectionService = ref<ConnectionService | null>(null);
     const ttsService = ref<NativeTTSService | null>(null);
     const sttService = ref<NativeSTTService | null>(null);
@@ -18,11 +18,13 @@ export const useServiceStore = defineStore('service', () => {
             resetCameraService()
             return
         }
+        if(cameraService.value) {
+            resetCameraService()
+        }
         cameraService.value = new DeviceCameraService(videoElement);
-        cameraService.value.start()
     }
-    function resetCameraService() {
-        cameraService.value?.stop()
+    async function resetCameraService() {
+        await cameraService.value?.stop()
         cameraService.value = null
     }
 
