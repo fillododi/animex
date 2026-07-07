@@ -1,114 +1,120 @@
 <template>
   <ion-page>
     
-    <ion-header class="ion-no-border">
-      <ion-toolbar class="custom-toolbar">
-        <ion-title class="ion-text-center logo-title">
-          <span class="text-white">ANIM</span><span class="text-lime">EX</span>
-        </ion-title>
-      </ion-toolbar>
-    </ion-header>
 
-    <!-- AREA A SCORRIMENTO -->
-    <div class="slider-viewport">
+    <ion-tabs>
       
-      <!-- Bottom nav -->
-      <div 
-        class="slider-track" 
-        :style="{ transform: `translateX(-${paginaAttiva * 33.3333}%)` }"
-      >
+      <ion-router-outlet></ion-router-outlet>
+
+      <ion-tab-bar slot="bottom" class="custom-tab-bar">
         
-        <!-- PAGINA 0: CHAT -->
-        <div class="page-wrapper">
-          <ChatView /> <!-- Qui viene iniettata la tua intera pagina Chat -->
-        </div>
+        <ion-tab-button 
+          tab="chat" 
+          href="/main/chat" 
+          :disabled="sessionStore.recognizedAnimal === null"
+        >
+          <ion-icon :icon="chatbubbles"></ion-icon>
+          <ion-label v-if="sessionStore.recognizedAnimal">Assistente</ion-label>
+        </ion-tab-button>
 
-        <!-- PAGINA 1: SCANNER -->
-        <div class="page-wrapper">
-          <ScannerView /> <!-- Qui viene iniettata la tua intera pagina Fotocamera -->
-        </div>
+        <ion-tab-button tab="scanner" href="/main/scanner">
+          <ion-icon :icon="camera"></ion-icon>
+          <ion-label>Scanner</ion-label>
+        </ion-tab-button>
 
-        <!-- PAGINA 2: VISIONE AR -->
-        <div class="page-wrapper">
-          <VirtualReality />
-        </div>
+        <ion-tab-button 
+          tab="vr" 
+          href="/main/vr"
+          :disabled="sessionStore.recognizedAnimal === null"
+        >
+          <!-- <i class="fa-solid fa-vr-cardboard"></i> -->
+          <ion-icon :icon="cube"></ion-icon>
+          <ion-label v-if="sessionStore.recognizedAnimal">Visione VR</ion-label>
+        </ion-tab-button>
 
-      </div>
-    </div>
-
-    <BottomNav v-model="paginaAttiva" />
+      </ion-tab-bar>
+    </ion-tabs>
     
   </ion-page>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
-import { IonPage, IonHeader, IonToolbar, IonTitle } from '@ionic/vue';
+import { onMounted, onUnmounted } from 'vue';
+import { IonPage, IonTabs, IonRouterOutlet, IonTabBar, IonTabButton, IonLabel, IonIcon } from '@ionic/vue';
+import { useSessionStore } from '@/stores/sessionStore';
+import { camera, chatbubbles, cube } from 'ionicons/icons';
+import { Keyboard } from '@capacitor/keyboard';
+import type { PluginListenerHandle } from '@capacitor/core';
 
-import BottomNav from '@/components/BottomNav.vue';
+const sessionStore = useSessionStore();
 
-import ChatView from '@/views/ChatBot.vue';
-import ScannerView from '@/views/RecognitionPage.vue';
-import VirtualReality from './VirtualReality.vue';
+const listeners: { hide?: PluginListenerHandle; show?: PluginListenerHandle } = {};
+onMounted(async () => {
+  listeners.hide = await Keyboard.addListener('keyboardWillShow', () => {
+    document.body.classList.add('keyboard-is-open');
+  });
+  listeners.show = await Keyboard.addListener('keyboardWillHide', () => {
+    document.body.classList.remove('keyboard-is-open');
+  });
+});
 
-// Imposta la pagina di partenza (1 = Scanner al centro)
-const paginaAttiva = ref(1);
+onUnmounted(() => {
+  listeners.hide?.remove();
+  listeners.show?.remove();
+});
 </script>
 
 <style scoped>
-.slider-viewport {
-  flex: 1;
-  width: 100%;
-  height: 100%;
-  overflow: hidden; 
-  position: relative;
-  background-color: var(--dark, #000);
+
+.text-white { color: var(--background-light, #fff8dc); }
+.text-lime { color: var(--primary, #fb6237); }
+
+body.keyboard-is-open .custom-tab-bar {
+  display: none !important;
+}
+.custom-tab-bar {
+  --background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
 }
 
-/* Il binario lungo il triplo dello schermo (100% * 3 pagine) */
-.slider-track {
-  display: flex;
-  width: 300%;
-  height: 100%;
-  transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
-  will-change: transform; /* Ottimizza l'animazione per i telefoni */
+ion-tab-button {
+  --color: var(background-dark, #2c2a26);
+  --color-selected: var(--secondary, #fac400);
+  transition: all 0.3s;
 }
 
-.page-wrapper {
-  width: 33.3333%;
-  height: 100%;
-  position: relative;
-  overflow: hidden;
+ion-tab-button i {
+  font-size: 20px;
+  margin-bottom: 4px;
 }
 
-.placeholder-ar {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  color: white;
-  background-image: url('https://images.unsplash.com/photo-1511497584788-8767fe7d98f1?auto=format&fit=crop&w=1280&q=80');
-  background-size: cover;
-}
-.placeholder-ar h2 {
-  background: rgba(0,0,0,0.7);
-  padding: 10px 20px;
-  border-radius: 20px;
+
+ion-tab-button.tab-selected i {
+  transform: translateY(-3px);
 }
 
-.custom-toolbar {
-  --background: var(--dark, #0a0a0a);
-  --border-width: 0;
-  border-bottom: 1px solid #222;
+
+ion-tab-button ion-icon {
+  font-size: 24px; 
+  margin-bottom: 4px;
+  transition: transform 0.3s ease;
 }
 
-.logo-title {
-  font-family: var(--font-main, 'Urbanist', sans-serif);
-  font-size: 22px;
-  font-weight: 700;
-  letter-spacing: 2px;
+
+ion-tab-button.tab-selected ion-icon {
+  transform: translateY(-4px);
 }
 
-.text-white { color: #ffffff; }
-.text-lime { color: var(--lime, #deff9a); }
+@media (prefers-color-scheme: dark) {
+  .custom-tab-bar {
+    --background: rgba(0, 0, 0, 0.85);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  ion-tab-button {
+    --color: var(--background-light, #fff8dc);
+    --color-selected: var(--primary, #fb6237);
+  }
+}
 </style>

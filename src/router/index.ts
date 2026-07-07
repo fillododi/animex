@@ -9,27 +9,36 @@ import MainLayout from '../views/MainLayout.vue';
 const routes: Array<RouteRecordRaw> = [
   {
     path: '/',
-    redirect: '/main'
+    redirect: '/main/scanner'
   },
   {
     path: '/main',
     name: 'MainLayout',
-    component: MainLayout
-  },
-  {
-    path: '/chat',
-    name: 'Chat',
-    component: ChatView
-  },
-  {
-    path: '/vr',
-    name: 'VR',
-    component: VirtualReality
-  },
-  {
-    path: '/cam',
-    name: 'RecognitionPage',
-    component: RecogView
+    component: MainLayout,
+    
+    children: [
+      {
+        path: '',
+        redirect: '/main/scanner'
+      },
+      {
+        path: 'chat', 
+        name: 'Chat',
+        component: ChatView
+      },
+      {
+        path: 'scanner', 
+        name: 'RecognitionPage',
+        component: RecogView
+      },
+      
+      {
+        path: 'vr',
+        name: 'VR',
+        component: VirtualReality
+      }
+      
+    ]
   }
 ]
 

@@ -1,11 +1,14 @@
 :root {
   /* Palette Colori */
-  --lime: #deff9a;
-  --dark: #0a0a0a;
-  --gray: #1a1a1a;
   --white: #ffffff;
   --danger: #ff4757;
-
+  --primary: #fb6237;
+  --secondary: #fac400;
+  --background-light: #fff8dc;
+  --background-dark: #2c2a26;
+  --background-accent: #e9ff99;
+  --accent: #d3ff33;
+  --tab-button-color: #aaaaaa;
   /* Font e Tipografia */
   --font-main: 'Urbanist', sans-serif;
   --text-sm: 12px;
@@ -19,8 +22,8 @@
 
 /* Stile base per tutta l'app */
 body {
-  background-color: var(--dark);
-  color: var(--white);
+  background-color: var(--background-dark, #2c2a26);
+  color: var(--background-light, #fff8dc);
   font-family: var(--font-main);
   margin: 0;
 }

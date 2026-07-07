@@ -2,7 +2,7 @@ import { EMPTY_INPUT_ANIMAL_TEXT, SOMETHING_BAD_IN_BACKEND, TRY_TO_WRITE_TEXT } 
 import { useServiceStore } from '@/stores/serviceStore';
 import { useSessionStore } from '@/stores/sessionStore';
 import { useChatStore } from '@/stores/chatStore';
-import type { DifficultyLevel, QuizValidationResultDTO } from '@/utility/Types';
+import type { DifficultyLevel, QuizValidationResultDTO, QuizType } from '@/utility/Types';
 
 export class ConversationManager {
     
@@ -51,12 +51,12 @@ export class ConversationManager {
             if(!text) {
                 if(this.counter === 0){
                     chatStore.addEmptyResponse();
-                    this.speak(EMPTY_INPUT_ANIMAL_TEXT);
+                    await this.speak(EMPTY_INPUT_ANIMAL_TEXT);
                     this.counter++;
                     return false;
                 } else {
                     chatStore.addFallbackResponse();
-                    this.speak(EMPTY_INPUT_ANIMAL_TEXT + " " + TRY_TO_WRITE_TEXT);
+                    await this.speak(EMPTY_INPUT_ANIMAL_TEXT + " " + TRY_TO_WRITE_TEXT);
                     return false;
                 }
             }else { 
@@ -65,17 +65,17 @@ export class ConversationManager {
                 const response = await connectionService?.sendChatRequest(sessionId, text);
                 this.counter = 0;
                 if(!response || response.answer.trim() === ""){
-                    this.speakErrorResponse();
+                    await this.speakErrorResponse();
                     return false;
                 } 
                 else{
                     chatStore.addBotMessage(response.answer);
-                    this.speak(response.answer);
+                    await this.speak(response.answer);
                 }
             }
             
         } catch (error) {
-            this.speakErrorResponse()
+            await this.speakErrorResponse();
             return false;
         }
         return true;
@@ -83,7 +83,7 @@ export class ConversationManager {
 
     public async requestQuiz(difficulty: DifficultyLevel): Promise<boolean> {
             const chatStore = useChatStore();
-            
+            const quizTypes: QuizType[] = ["yes_no", "multiple_choice"];
             try {
                 const connectionService = useServiceStore().connectionService;
                 const stateStore = useSessionStore();
@@ -97,30 +97,31 @@ export class ConversationManager {
                     currentAnimal.name,  
                     difficulty,
                     chatStore.getOldQuestions().length > 0 ? chatStore.getOldQuestions() : [],
-                    ["yes_no", "multiple_choice"]
+                    quizTypes
                 );
 
                 if (question) {
                     chatStore.setActiveQuestion(question);
-                    this.speak(question.prompt);
-                    if(question.type === "yes_no"){
-                        this.speak("Vero o Falso");
-                    }
-                    else if(question.type === "multiple_choice" && question.choices){
-                        for (const choice of question.choices?? []) {
-                            this.speak(choice);
-                        }
-                    }
+                    const testToSpeak = [
+                    question.prompt,
+                    question.type === "yes_no" ? "Vero o Falso" : null,
+                    ...(question.type === "multiple_choice" ? (question.choices || []) : [])
+                    ]
+                    .filter(Boolean) 
+                    .join(". ");     
+
+                await this.speak(testToSpeak);
+                    
                 } 
                 else {
                     chatStore.clearQuiz();
-                    this.speakErrorResponse();
+                    await this.speakErrorResponse();
                     return false;
                 }
 
             } catch (error) {
                 chatStore.clearQuiz();
-                this.speakErrorResponse();
+                await this.speakErrorResponse();
                 return false;
             }
             return true;
@@ -135,14 +136,15 @@ export class ConversationManager {
                 const result = await this.evaluateQuizAnswer(answer);
                 if (result && result.feedback) {
                     chatStore.addBotMessage(result.feedback);
-                    this.speak(result.feedback);
                     chatStore.clearQuiz();
+                    await this.speak(result.feedback);
                 } else {
-                    this.speakErrorResponse();
+                    chatStore.clearQuiz();
+                    await this.speakErrorResponse();
                 }
                 
             } catch{
-                this.speakErrorResponse();
+                await this.speakErrorResponse();
             }
         }
 
@@ -202,7 +204,7 @@ export class ConversationManager {
         await this.speak(SOMETHING_BAD_IN_BACKEND);
     }
 
-    private async speak(text: string): Promise<void> {
+    public async speak(text: string): Promise<void> {
         const ttsService = useServiceStore().ttsService
         await ttsService?.speak(text);
     }

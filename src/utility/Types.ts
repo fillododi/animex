@@ -1,15 +1,5 @@
 import type { CHAT_STATUS } from "./constants";
 
-export interface ChatUIState {
-  isRecording: boolean;
-  isMicReady: boolean;
-  isProcessing: boolean;
-  inputText: string;
-  statusMessage?: string;
-  quizStatus: boolean;
-  showQuizOptions: boolean;
-}
-
 export type ChatStatus = typeof CHAT_STATUS[keyof typeof CHAT_STATUS] | `Errore: ${string}`;
 
 export type RecognitionStatus = "LOW_CONFIDENCE" | "AMBIGUOUS" | "MATCHED_LOW_CERTAINTY" | `MATCHED`;
@@ -18,14 +8,22 @@ export type BoundingPoly = {
   vertices?: { x: number; y: number }[];
   normalizedVertices?: { x: number; y: number }[];
 }
-
+// sarà una lista di selectedAnimal quindi lo status va messo dentro
 export type RecognitionDTO = {
-  status: RecognitionStatus;
-  selectedAnimal: {
+  selectedAnimals?: {
     id: string;
     displayName: string;
     boundingPoly: BoundingPoly | undefined;
-  }
+    status: RecognitionStatus;
+  }[];
+  // Backend will return always an array of selectedAnimals in future, 
+  // even if i contains only one animal, but for now we need to support both cases
+  selectedAnimal?: {
+    id: string;
+    displayName: string;
+    boundingPoly: BoundingPoly | undefined;
+    status: RecognitionStatus;
+  };
 }
 export type MessageRole = "user" | "model";
 

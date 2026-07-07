@@ -28,7 +28,7 @@ defineProps({
 
   <div class="chat-bubble" :class="[role, { 'thinking': isThinking }]">
     <div class="role-tag" v-if="!isThinking">
-      {{ role === 'ai' ? 'IA EXPERT' : 'TU' }}
+      {{ role === 'ai' ? 'ESPERTO' : 'TU' }}
     </div>
     
     <!-- Testo del messaggio -->
@@ -49,22 +49,23 @@ defineProps({
   font-family: var(--font-main, 'Urbanist', sans-serif);
   font-size: var(--text-base, 14px);
   max-width: 85%;
-  word-wrap: break-word; /* Evita che parole troppo lunghe escano dal box */
-  animation: fade-in 0.3s ease-out; /* Animazione di entrata */
+  word-wrap: break-word; 
+  animation: fade-in 0.3s ease-out; 
+  margin-bottom: 12px;
 }
 
 /* Stile per i messaggi dell'IA */
 .chat-bubble.ai {
-  background: #f0f0f0;
-  color: var(--dark, #0a0a0a);
+  background: var(--background-light, #fff8dc);
+  color: var(--background-dark, #2c2a26);
   align-self: flex-start;
   border-bottom-left-radius: 4px; /* Rende la coda della nuvoletta più netta */
 }
 
 /* Stile per i messaggi dell'Utente */
 .chat-bubble.utente {
-  background: var(--lime, #deff9a);
-  color: var(--dark, #0a0a0a);
+  background: var(--secondary, #fac400);
+  color: var(--background-dark, #2c2a26);
   align-self: flex-end;
   border-bottom-right-radius: 4px;
 }
@@ -80,7 +81,7 @@ defineProps({
 
 .chat-bubble.thinking {
   font-style: italic;
-  color: #888;
+  color: var(--secondary, #fac400);
   background: transparent;
   border: 1px dashed #ccc;
   align-self: flex-start;

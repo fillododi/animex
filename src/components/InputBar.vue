@@ -1,25 +1,18 @@
 <script setup>
-import BaseButton from './BaseButton.vue'
+import { IonButton, IonIcon, IonInput } from '@ionic/vue';
+import { mic, send, trash, volumeHigh, gameController, close } from 'ionicons/icons';
 
 defineProps({
-  modelValue: {
-    type: String,
-    default: ''
-  },
-  isAscoltando: {
-    type: Boolean,
-    default: false
-  }
+  modelValue: { type: String, default: '' },
+  isListening: { type: Boolean, default: false },
+  isSpeaking: { type: Boolean, default: false },
+  isQuizActive: { type: Boolean, default: false } 
 })
 
-const emit = defineEmits([
-  'update:modelValue', // Aggiorna il testo mentre l'utente digita
-  'send',             // Quando l'utente preme la freccia o il tasto Invio
-  'toggle-microphone',  // Quando l'utente preme il microfono
-  'focus'              // Quando l'utente tocca la barra per scrivere
-])
+const emit = defineEmits(['update:modelValue', 'send', 'toggle-microphone', 'focus', 'blur', 'stop-audio', 'cancel-recording', 'open-quiz-menu', 'cancel-quiz'])
 
 function onInput(event) {
+  // L'evento di Ionic restituisce il valore nel detail o direttamente nel target
   emit('update:modelValue', event.target.value)
 }
 </script>
@@ -27,61 +20,150 @@ function onInput(event) {
 <template>
   <div class="global-input-bar">
     
-    <!-- Tasto Microfono -->
-    <BaseButton 
-      :icona="isAscoltando ? '🔴' : '🎤'" 
-      variante="grigio" 
-      rotondo 
-      :attivo="isAscoltando"
-      @click="$emit('toggle-microphone')"
-    />
-    
-    <!-- Campo di testo -->
-    <input 
-      type="text" 
-      :value="modelValue" 
-      @input="onInput"
-      @keyup.enter="$emit('send')"
-      @focus="$emit('focus')"
-      placeholder="Chiedi all'IA..." 
+    <!-- Pulsante Stop Audio -->
+    <ion-button 
+      v-if="isSpeaking"
+      fill="clear"
+      color="medium"
+      shape="round"
+      @click="$emit('stop-audio')"
     >
+      <ion-icon slot="icon-only" :icon="volumeHigh" />
+    </ion-button>
+
+    <!-- Pulsante Elimina Registrazione -->
+    <ion-button 
+      v-else-if="isListening"
+      fill="clear"
+      color="medium"
+      shape="round"
+      @click="$emit('cancel-recording')"
+    >
+      <ion-icon slot="icon-only" :icon="trash" />
+    </ion-button>
+
+    <!-- Pulsante Chiudi Quiz (Variante Pericolo) -->
+    <ion-button 
+      v-else-if="isQuizActive"
+      fill="clear"
+      color="danger"
+      shape="round"
+      @click="$emit('cancel-quiz')"
+    >
+      <ion-icon slot="icon-only" :icon="close" />
+    </ion-button>
+
+    <!-- Pulsante Apri Menu Quiz -->
+    <ion-button 
+      v-else
+      fill="clear"
+      color="medium"
+      shape="round"
+      @click="$emit('open-quiz-menu')"
+    >
+      <ion-icon slot="icon-only" :icon="gameController" />
+    </ion-button>
+
+    <!-- Campo di Input -->
+    <ion-input 
+      inputmode="text" 
+      :value="modelValue" 
+      @ionInput="onInput"
+      @keyup.enter="$emit('send')"
+      @ionFocus="$emit('focus')"
+      @ionBlur="$emit('blur')"
+      placeholder="Chiedi all'IA..." 
+      class="chat-input"
+    ></ion-input>
     
-    <!-- Tasto Invia -->
-    <BaseButton 
-      icona="⬆️" 
-      variante="grigio" 
-      rotondo 
-      @click="$emit('send')"
-    />
+    <!-- Pulsante Microfono -->
+    <ion-button 
+      fill="clear"
+      :color="isListening ? 'danger' : 'medium'"
+      shape="round"
+      :class="{ 'active': isListening }"
+      @click="!isListening && $emit('toggle-microphone')"
+    >
+      <ion-icon slot="icon-only" :icon="mic" />
+    </ion-button>
+    
+    <!-- Pulsante Invia -->
+    <ion-button 
+      fill="clear"
+      color="medium"
+      shape="round"
+      @mousedown.prevent="$emit('send')"
+      @touchstart.prevent="$emit('send')"
+    >
+      <ion-icon slot="icon-only" :icon="send" />
+    </ion-button>
 
   </div>
 </template>
 
 <style scoped>
+/* LIGHT MODE (DEFAULT) */
 .global-input-bar {
   padding: 10px 15px;
   display: flex;
-  gap: 10px;
-  background: var(--white, #ffffff);
+  gap: 5px;
   align-items: center;
-  border-top: 1px solid #eee;
   flex-shrink: 0;
   z-index: 15;
-  color: var(--dark)
+  transition: none !important;
+  will-change: transform;
+
+  background: var(--background-light, #fff8dc);
+  color: #000000;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+
+  width: 100%;
+  box-sizing: border-box;
 }
 
-.global-input-bar input {
+/* Stile Ion-Input */
+.chat-input {
   flex: 1;
-  border: 1px solid #ddd;
-  padding: 10px 15px;
+  border: 1px solid transparent;
   border-radius: 20px;
   font-family: var(--font-main, 'Urbanist', sans-serif);
   font-size: var(--text-base, 15px);
   outline: none;
-  transition: border-color 0.3s;
+  transition: none !important;
+  will-change: transform;
+  
+  /* Variabili CSS di Ionic per lo Shadow DOM */
+  --padding-top: 10px;
+  --padding-bottom: 10px;
+  --padding-start: 15px;
+  --padding-end: 15px;
+  --background: rgba(0, 0, 0, 0.05);
+  --color: #000000;
+  
+  min-width: 0;
 }
 
-.global-input-bar input:focus {
-  border-color: var(--lime, #deff9a);
+/* Quando l'input Ionic è a fuoco, sfrutta la classe .ion-focused */
+.chat-input.ion-focused {
+  border-color: var(--primary, #fb6237);
+  --background: rgba(0, 0, 0, 0.08);
+}
+
+/* DARK MODE */
+@media (prefers-color-scheme: dark) {
+  .global-input-bar {
+    background: var(--background-dark, #2c2a26);
+    color: var(--background-light, #fff8dc);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  .chat-input {
+    --background: rgba(255, 255, 255, 0.1);
+    --color: var(--background-light, #fff8dc);
+  }
+  
+  .chat-input.ion-focused {
+    --background: rgba(255, 255, 255, 0.15);
+  }
 }
 </style>

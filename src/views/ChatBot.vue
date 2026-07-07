@@ -1,57 +1,22 @@
 <template>
   <ion-page>
-
-    <ion-content class="ion-padding chat-background">
-      
-      <!-- Banner di stato invariato -->
-      <div class="status-banner" :class="{ active: uiState.isRecording }">
-        {{ uiState.statusMessage }}
-      </div>
-
-        <ion-button 
-          v-if="!uiState.showQuizOptions"
-          expand="block" 
-          @click="uiState.showQuizOptions = true" 
-          :disabled="uiState.isRecording || uiState.isProcessing || chatStore.activeQuestion != null "
-          color="secondary"
-          style="margin-top: 15px;"
-        >
-          FAMMI UN QUIZ
-        </ion-button>
-
-        <div v-else style="margin-top: 15px; display: flex; gap: 10px; align-items: center;">
-          <ion-button 
-            expand="block" 
-            @click="handleQuizRequest('easy')" 
-            :disabled="uiState.isProcessing"
-            color="success"
-            style="flex: 1; margin: 0;"
-          >
-            FACILE
-          </ion-button>
-          
-          <ion-button 
-            expand="block" 
-            @click="handleQuizRequest('medium')" 
-            :disabled="uiState.isProcessing"
-            color="warning"
-            style="flex: 1; margin: 0;"
-          >
-            MEDIO
-          </ion-button>
-
-          <ion-button 
-            fill="clear" 
-            color="medium" 
-            @click="uiState.showQuizOptions = false"
-            style="margin: 0;"
-          >
-            X
-          </ion-button>
+    <ion-header class="ion-no-border" >
+      <ion-toolbar class="custom-toolbar">
+        <ion-title class="ion-text-center logo-title">
+          <span class="text-white">ANIM</span><span class="text-lime">EX</span>
+        </ion-title>
+      </ion-toolbar>
+      <ion-toolbar class="banners-toolbar">
+        <div class="fixed-banners">
+          <div class="recognized-animal-banner" v-if="sessionStore.recognizedAnimal">
+            {{ sessionStore.recognizedAnimal.displayName }}
+          </div>
         </div>
-
+      </ion-toolbar>
+    </ion-header>
+    <ion-content ref="contentRef" class="ion-padding chat-background" >
       <div class="chat-container">
-        <!-- Ciclo che stampa i messaggi usando il nostro componente -->
+        
         <ChatBubble 
           v-for="(msg, index) in chatStore.messages" 
           :key="index" 
@@ -60,7 +25,7 @@
         />
         
         <ChatBubble 
-          v-if="uiState.isProcessing" 
+          v-if="uiState.getProcessing()" 
           role="ai" 
           text="Elaborazione in corso..." 
           isThinking 
@@ -79,7 +44,7 @@
                 fill="outline"
                 class="quiz-choice-btn"
                 @click="handleTextSubmit(choice)"
-                :disabled="uiState.isProcessing"
+                :disabled="uiState.getProcessing()"
               >
                 {{ choice }}
               </ion-button>
@@ -91,7 +56,7 @@
                 fill="outline"
                 class="quiz-choice-btn"
                 @click="handleTextSubmit('Vero')"
-                :disabled="uiState.isProcessing"
+                :disabled="uiState.getProcessing()"
               >
                 Vero
               </ion-button>
@@ -100,7 +65,7 @@
                 fill="outline"
                 class="quiz-choice-btn"
                 @click="handleTextSubmit('Falso')"
-                :disabled="uiState.isProcessing"
+                :disabled="uiState.getProcessing()"
               >
                 Falso
               </ion-button>
@@ -110,173 +75,254 @@
               <p class="info-text">Rispondi scrivendo o parlando...</p>
             </div>
       
-            <ion-button size="small" fill="clear" color="medium" @click="chatStore.clearQuiz()">
-              Annulla
-            </ion-button>
+            
           </div>
         </div>
+        <div id="scroll-anchor" style="height: 1px; width: 100%;"></div>
       </div>
 
     </ion-content>
     
-    <ion-footer>
+    <ion-footer class="ion-no-border" style="--background: transparent; background: transparent;">
       <InputBar 
-        v-model="uiState.inputText"
-        :isAscoltando="uiState.isRecording"
+        v-model="inputTextModel"
+        :isListening="uiState.getRecording()"
+        :isSpeaking="uiState.getSpeaking()"
+        :isQuizActive="!!chatStore.activeQuestion"
         @toggle-microphone="toggleMicrophone"
-        @send="handleTextSubmit"
+        @cancel-recording="handleCancel"
+        @stop-audio="handleStopAudio"
+        @send="uiState.getRecording() ? handleStop() : handleTextSubmit()"
+        @open-quiz-menu="openMenuQuiz()"
+        @cancel-quiz="cancelActiveQuiz"
       />
     </ion-footer>
+    <QuizMenu 
+      :isOpen="isQuizModalOpen" 
+      @close="isQuizModalOpen = false" 
+      @select-quiz="selectQuiz" 
+    />
   </ion-page>
 </template>
 
 <script setup lang="ts">
-import { reactive, shallowRef, onMounted } from 'vue';
-import { IonPage, IonContent, IonButton, IonFooter, onIonViewDidLeave, alertController } from '@ionic/vue';
+import { computed, onMounted, ref, watch} from 'vue';
+import { IonPage, IonContent, IonButton, IonFooter, onIonViewDidLeave, alertController, IonHeader, IonToolbar, IonTitle, onIonViewDidEnter} from '@ionic/vue';
 import ChatBubble from '@/components/ChatBubble.vue';
 import InputBar from '@/components/InputBar.vue';
-import { ConversationManager } from '@/modules/ConversationMgr';
 import { useChatStore } from '@/stores/chatStore';
 import { CHAT_STATUS } from '@/utility/constants';
-import { type ChatUIState, type DifficultyLevel} from '@/utility/Types';
+import { type DifficultyLevel} from '@/utility/Types';
 import { NativeSettings, AndroidSettings, IOSSettings } from 'capacitor-native-settings';
+import { useSessionStore } from '@/stores/sessionStore';
+import {globalUiState} from '@/utility/UiState';
+import QuizMenu from '@/components/QuizMenu.vue';
+import { useManagerStore } from '@/stores/managerStore';
 // --- CHAT INITIALIZATION ---
 
 const chatStore = useChatStore();
+const sessionStore = useSessionStore();
+const managerStore = useManagerStore();
+const conversationManager = computed(() => managerStore.conversationManager);
+const lastViewportHeight = ref(window.innerHeight);
+const resizeTimeout = ref<ReturnType<typeof setTimeout> | null>(null);
+
 // --- UI STATE VARIABLES ---
-const uiState = reactive<ChatUIState>({
-  isRecording: false,
-  isMicReady: false,
-  isProcessing: false,
-  inputText: "",
-  statusMessage: CHAT_STATUS.IDLE,
-  quizStatus: false,
-  showQuizOptions: false,
+const uiState = globalUiState;
+const inputTextModel = computed({
+  get() {
+    return uiState.getInputText();
+  },
+  set(newValue: string) {
+    uiState.setInputText(newValue);
+  }
 });
 
-const conversationManager = shallowRef<ConversationManager | null>(null);
 onMounted(() => {
-  conversationManager.value = new ConversationManager();
+  managerStore.initConversationManager();
 });
+
+// --- WATCHERS TO SYNC AUDIO AND UI ---
+
+watch(
+  () => chatStore.messages.length,
+  (newLength, oldLength) => {
+    scrollToBottom();
+    if (newLength > oldLength) {
+      const lastMsg = chatStore.messages[newLength - 1];
+      if (lastMsg &&lastMsg.role === 'model') {
+        uiState.setProcessing(false);
+        uiState.setStatusMessage(CHAT_STATUS.SUCCESS);
+        uiState.setSpeaking(true);
+      }
+    }
+  }
+);
+
+watch(
+  () => chatStore.activeQuestion,
+  (newQuestion) => {
+    scrollToBottom();
+    if (newQuestion) {
+      uiState.setProcessing(false);
+      uiState.setStatusMessage(CHAT_STATUS.SUCCESS);
+      uiState.setSpeaking(true);
+    }
+  }
+);
 // --- EVENT HANDLERS ---
 
 const handleStart = async () => {
+  await conversationManager.value?.stopListening();
   try {
-    uiState.statusMessage = CHAT_STATUS.INITIALIZING;
-    uiState.isRecording = true;
-    uiState.isMicReady = false;
-    
+     uiState.setStatusMessage(CHAT_STATUS.INITIALIZING);
+     uiState.setRecording(true);
+     uiState.setMicReady(false);
+
     await conversationManager.value?.startInteraction(() => {
-      uiState.isMicReady = true;
-      uiState.statusMessage = CHAT_STATUS.RECORDING;
+      uiState.setMicReady(true);
+      uiState.setStatusMessage(CHAT_STATUS.RECORDING);
       }, (errorMessage) => {
         if (errorMessage === 'NEEDS_SETTINGS') {
           showSettingsAlert();
           // This if is to prevent overwriting the alert message if the user has already been prompted
-          if(uiState.statusMessage != CHAT_STATUS.DENIED_HARD){
-            uiState.statusMessage = CHAT_STATUS.DENIED_HARD;
+          if(uiState.getStatusMessage() != CHAT_STATUS.DENIED_HARD){
+            uiState.setStatusMessage(CHAT_STATUS.DENIED_HARD);
           }
         } else if (errorMessage === 'FIRST_DENIAL') {
-          uiState.statusMessage = CHAT_STATUS.DENIED_SOFT;
+          uiState.setStatusMessage(CHAT_STATUS.DENIED_SOFT);
         } else {
-          uiState.statusMessage = "Errore: " + errorMessage;
+          uiState.setStatusMessage(("Errore: " + errorMessage) as any);
         }
-        uiState.isRecording = false;
-        uiState.isMicReady = false;
+         uiState.setRecording(false);
+         uiState.setMicReady(false);
       });
     
   } catch (error: any) {
-    uiState.statusMessage = "Errore: " + error.message;
-    uiState.isRecording = false;
+    await uiState.setStatusMessage(("Errore: " + error.message) as any);
+    uiState.setRecording(false);
   }
 };
 
 const handleStop = async () => {
-  await conversationManager.value?.stopSpeaking();
-  uiState.isRecording = false;
-  uiState.isProcessing = true;
-  uiState.statusMessage = CHAT_STATUS.THINKING;
+  uiState.setRecording(false);
+  uiState.setProcessing(true);
+  uiState.setStatusMessage(CHAT_STATUS.THINKING);
+  uiState.setUsingKeyboard(false);
   try {
     await conversationManager.value?.stopListening();
     const userText = conversationManager.value ? await conversationManager.value?.getCurrentTranscript() : "";
-    if(uiState.quizStatus){
-      await conversationManager.value?.validateQuiz(userText)? 
-      uiState.statusMessage = CHAT_STATUS.SUCCESS : uiState.statusMessage = CHAT_STATUS.NO_QUIZ_AVAILABLE;
+    if(chatStore.activeQuestion){
+      await conversationManager.value?.validateQuiz(userText);
+      uiState.setStatusMessage(CHAT_STATUS.SUCCESS);
     } 
     else{
-      await conversationManager.value?.processTextInteraction(userText)? 
-      uiState.statusMessage = CHAT_STATUS.SUCCESS : uiState.statusMessage = CHAT_STATUS.IDLE;
+      await conversationManager.value?.processTextInteraction(userText);
+      uiState.setStatusMessage(CHAT_STATUS.SUCCESS);
     }
   } catch (error: any) {
-    uiState.statusMessage = "Errore: " + error.message;
+    uiState.setStatusMessage(("Errore: " + error.message) as any);
   } finally {
     await conversationManager.value?.resetTranscript();
-    uiState.isProcessing = false;
-    uiState.quizStatus = false;
+    uiState.setProcessing(false);
+    uiState.setQuizStatus(false);
+    uiState.setSpeaking(false);
   }
 };
 
 
-const toggleMicrophone = () => {
-
-  if (uiState.isProcessing) return;
-
-  if (uiState.isRecording) {
-    handleStop();
+const toggleMicrophone = async () => {
+  if (uiState.getProcessing() || uiState.getRecording()) return;
+  if (uiState.getSpeaking()) {
+    await handleStopAudio();
+  }
+  if (uiState.getRecording()) {
+    await conversationManager.value?.stopListening();
+    await conversationManager.value?.resetTranscript();
+    uiState.setRecording(false);
+    uiState.setStatusMessage(CHAT_STATUS.IDLE);
   } else {
     handleStart();
   }
 };
 
+const handleCancel = async () => {
+  if (uiState.getRecording()) {
+    await conversationManager.value?.stopListening();
+    await conversationManager.value?.resetTranscript(); 
+    uiState.setRecording(false);
+    uiState.setStatusMessage(CHAT_STATUS.IDLE);
+  }
+};
+
+const handleStopAudio = async () => {
+  await conversationManager.value?.stopSpeaking();
+  uiState.setSpeaking(false);
+};
+
+
 const handleTextSubmit = async (selectedAnswer?: string | Event) => {
   const clickedAnswer = typeof selectedAnswer === 'string' ? selectedAnswer : "";
-  const text = clickedAnswer || uiState.inputText.trim();
+  const text = clickedAnswer || uiState.getInputText().trim();
   await conversationManager.value?.stopSpeaking();
-  if (!text  || uiState.isProcessing) return;
-  uiState.inputText = "";
-  uiState.isProcessing = true;
-  uiState.statusMessage = CHAT_STATUS.THINKING;
+  if (!text  || uiState.getProcessing()) return;
+  uiState.setInputText("");
+  uiState.setProcessing(true);
+  uiState.setStatusMessage(CHAT_STATUS.THINKING);
   try {
-    if(uiState.quizStatus){ 
+    if(chatStore.activeQuestion){ 
       await conversationManager.value?.validateQuiz(text);
     }else {
       await conversationManager.value?.processTextInteraction(text);
     }
-     uiState.statusMessage = CHAT_STATUS.SUCCESS;  
+     uiState.setStatusMessage(CHAT_STATUS.SUCCESS);  
   } catch (error: any) {
-    uiState.statusMessage = "Errore: " + error.message;
+    uiState.setStatusMessage(("Errore: " + error.message) as any);
   }
    finally {
-    uiState.isProcessing = false;
-    uiState.quizStatus = false;
+    uiState.setProcessing(false);
+    uiState.setQuizStatus(false);
+    uiState.setSpeaking(false);
   }
   
 };
 
 const handleQuizRequest = async (difficulty: DifficultyLevel) => {
-  uiState.showQuizOptions = false;
-  uiState.isProcessing = true;
-  uiState.statusMessage = CHAT_STATUS.THINKING;
+  uiState.setShowQuizOptions(false);
+  uiState.setProcessing(true);
+  uiState.setStatusMessage(CHAT_STATUS.THINKING);
   await conversationManager.value?.stopSpeaking();
   try {
-    uiState.quizStatus = conversationManager.value ? await conversationManager.value.requestQuiz(difficulty) : false;
-    uiState.quizStatus ? uiState.statusMessage = CHAT_STATUS.QUIZ_LOADED : uiState.statusMessage = CHAT_STATUS.NO_QUIZ_AVAILABLE;
+    uiState.setQuizStatus(conversationManager.value ? await conversationManager.value.requestQuiz(difficulty) : false);
+    uiState.getQuizStatus() ? uiState.setStatusMessage(CHAT_STATUS.QUIZ_LOADED) : uiState.setStatusMessage(CHAT_STATUS.NO_QUIZ_AVAILABLE);
   } catch (error: any) {
-    uiState.statusMessage = "Errore quiz: " + error.message;
+    uiState.setStatusMessage(("Errore quiz: " + error.message) as any);
   } finally {
-    uiState.isProcessing = false;
+    uiState.setProcessing(false);
+    uiState.setSpeaking(false);
   }
 };
 
+onIonViewDidEnter(async () => {
+  if (window.visualViewport) {
+    lastViewportHeight.value = window.visualViewport.height;
+    window.visualViewport.addEventListener('resize', handleViewportResize);
+  }
+});
 
 onIonViewDidLeave(async () => {
-  if(uiState.isRecording) {
+  if(uiState.getRecording()) {
     await conversationManager.value?.stopListening();
     await conversationManager.value?.resetTranscript();
-    uiState.isRecording = false;
-    uiState.statusMessage = CHAT_STATUS.IDLE;
-  } 
+    uiState.setRecording(false);
+  }
+  uiState.setStatusMessage(CHAT_STATUS.IDLE);
   await conversationManager.value?.stopSpeaking();
+  //document.body.classList.remove('keyboard-is-open');
+  if (window.visualViewport) {
+    window.visualViewport.removeEventListener('resize', handleViewportResize);
+  }
+
 });
 
 const showSettingsAlert = async () => {
@@ -288,7 +334,7 @@ const showSettingsAlert = async () => {
         text: 'Annulla',
         role: 'cancel',
         handler: () => {
-          uiState.statusMessage = CHAT_STATUS.DENIED_SOFT;
+          uiState.setStatusMessage(CHAT_STATUS.DENIED_SOFT);
         }
       },
       {
@@ -311,23 +357,110 @@ const openSettings = async () => {
       optionIOS: IOSSettings.App
     });
   } catch (e) {
-    uiState.statusMessage = CHAT_STATUS.SETTINGS_ERROR;
+    uiState.setStatusMessage(CHAT_STATUS.SETTINGS_ERROR);
   }
 };
 
+
+const isQuizModalOpen = ref(false);
+
+const selectQuiz = (difficulty: DifficultyLevel) => {
+  isQuizModalOpen.value = false; 
+  handleQuizRequest(difficulty); 
+};
+
+const openMenuQuiz = () => {
+  if (uiState.getRecording() || uiState.getProcessing() || chatStore.activeQuestion != null) return;
+  isQuizModalOpen.value = true;
+};
+
+const cancelActiveQuiz = () => {
+  chatStore.clearQuiz();
+  globalUiState.setQuizStatus(false);
+  globalUiState.setStatusMessage(CHAT_STATUS.IDLE);
+};
+
+// --- SCROLL TO BOTTOM FUNCTION ---
+const scrollToBottom = async () => {
+  setTimeout(() => {
+    const anchor = document.getElementById('scroll-anchor');
+    if (anchor) {
+      anchor.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }
+  }, 100);
+};
+
+const handleViewportResize = async () => {
+  if (!window.visualViewport) return;
+
+  const currentHeight = window.visualViewport.height;
+  const anchor = document.getElementById('scroll-anchor');
+
+  if (resizeTimeout.value) {
+    clearTimeout(resizeTimeout.value);
+  }
+  
+  if (currentHeight < lastViewportHeight.value) {
+    // 1. Reduce the screen height (Keyboard opening)
+    // Scroll to the bottom immediately to ensure the input bar is visible above the keyboard
+    if (anchor) {
+      anchor.scrollIntoView(false);
+    }
+  } else {
+    // keyboard is closing, wait a bit before scrolling to the bottom to allow the UI to adjust
+    resizeTimeout.value = setTimeout(() => {
+      if (anchor) {
+        anchor.scrollIntoView({ behavior: 'smooth', block: 'end' });
+      }
+    }, 150);
+  }
+  
+  // Update the last known viewport height for the next resize event
+  lastViewportHeight.value = currentHeight;
+};
+
 </script>
-
 <style scoped>
-
-.chat-background {
-  --background: #f0f2f5; 
+ion-page, ion-content, .chat-background {
+  --background: #ffffff !important;
+  background: #ffffff !important;
 }
 
-.status-banner {
-  background-color: #ffffff;
-  color: #2f3542;
+/* --- TOOLBAR E BANNER FISSI --- */
+.custom-toolbar {
+  --background: var(--white, #ffffff);
+  --border-width: 0;
+}
+.banners-toolbar, .fixed-banners, ion-footer {
+  --background: var(--white, #ffffff);
+}
+.logo-title {
+  font-family: var(--font-main, 'Urbanist', sans-serif);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 2px;
+}
+.text-white { color: var(--background-dark, #2c2a26);}
+.text-lime { color: var(--secondary, #fac400); }
+
+.recognized-animal-banner {
+  background-color: var(--secondary, #fac400);
+  color: var(--background-light, #fff8dc);
   text-align: center;
   padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  font-weight: bold;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+.status-banner {
+  background-color: var(--secondary, #fac400); 
+  color: var(--background-dark, #2c2a26);
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: space-between; 
+  padding: 10px 15px;
   border-radius: 8px;
   margin-bottom: 20px;
   font-weight: bold;
@@ -335,31 +468,28 @@ const openSettings = async () => {
   transition: all 0.3s ease;
 }
 .status-banner.active {
-  background-color: #ff4757;
+  background-color: var(--danger, #ff4757);
   color: white;
 }
-.controls-container {
-  margin-bottom: 30px;
+.status-text {
+  flex: 1;
+  text-align: center;
 }
 
+/* --- CHAT CONTAINER & BUBBLES --- */
 .chat-container {
   display: flex;
   flex-direction: column;
   padding-bottom: 20px;
 }
-
 .message-wrapper {
   display: flex;
   margin-bottom: 12px;
   width: 100%;
 }
-.wrapper-right {
-  justify-content: flex-end;
-}
 .wrapper-left {
   justify-content: flex-start;
 }
-
 .message-bubble {
   max-width: 80%;
   padding: 10px 14px;
@@ -369,38 +499,21 @@ const openSettings = async () => {
   flex-direction: column;
   box-shadow: 0 1px 2px rgba(0,0,0,0.15);
 }
-
-.user-bubble {
-  background-color: #dcf8c6; 
-  color: #000000;
-  border-bottom-right-radius: 4px; 
-}
-
 .animal-bubble {
   background-color: #ffffff;
   color: #000000;
   border-bottom-left-radius: 4px;
 }
-
 .message-bubble p {
   margin: 0;
   font-size: 16px;
   line-height: 1.4;
   word-wrap: break-word;
 }
-
-.time-stamp {
-  font-size: 11px;
-  color: #888;
-  align-self: flex-end;
-  margin-top: 4px;
-  margin-left: 15px;
-}
 .quiz-bubble {
-  border: 2px solid #3880ff; /* Dà un bordo colorato per far capire che è un quiz */
+  border: 2px solid var(--secondary, #fac400); 
   min-width: 250px;
 }
-
 .inline-quiz-options {
   display: flex;
   flex-direction: column;
@@ -408,26 +521,51 @@ const openSettings = async () => {
   margin-top: 12px;
   margin-bottom: 6px;
 }
-
 .quiz-choice-btn {
   --border-radius: 8px;
-  --border-color: #3880ff;
-  --color: #3880ff;
+  --border-color: var(--primary, #fb6237);
+  --color: var(--primary, #fb6237);
   margin: 0;
-  text-transform: none; /* Evita tutto maiuscolo per le risposte lunghe */
+  text-transform: none; 
 }
-
 .info-text {
   font-size: 13px;
-  color: #666;
+  color: var(--background-dark, #2c2a26);
   font-style: italic;
   margin-top: 10px;
 }
-
 .animate-pop {
   animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
 }
 
+@media (prefers-color-scheme: dark) {
+  ion-page, ion-content, .chat-background {
+    --background: var(--background-dark,#2c2a26) !important;
+  }
+  .custom-toolbar {
+    --background: var(--background-dark,#2c2a26);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  }
+  .banners-toolbar, .fixed-banners, ion-footer {
+    --background: var(--background-dark,#2c2a26);
+  }
+  .text-white { 
+    color: var(--background-light, #fff8dc); /* Scritta 'ANIM' bianca di notte */
+  }
+  .text-lime { 
+    color: var(--primary, #fb6237); 
+  }
+  .recognized-animal-banner{
+    background-color: var(--primary, #fb6237);
+    color: var(--background-dark, #2c2a26); 
+  }
+  /* Risolve il problema della scritta che non si vede! */
+  .status-banner {
+    background-color: var(--secondary, #fac400); 
+    color: var(--background-light, #fff8dc);
+  }
+  
+}
 @keyframes popIn {
   from { opacity: 0; transform: scale(0.9) translateY(10px); }
   to { opacity: 1; transform: scale(1) translateY(0); }

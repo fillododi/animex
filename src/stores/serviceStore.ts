@@ -1,12 +1,12 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import { DeviceCameraService, type CameraService } from '@/services/CameraService';
+import { DeviceCameraService} from '@/services/CameraService';
 import { ServerConnectionService, type ConnectionService } from '@/services/ConnectionService';
 import { NativeSTTService, NativeTTSService } from '@/services/SpeechService';
 
 export const useServiceStore = defineStore('service', () => {
   
-    const cameraService = ref<CameraService | null>(null);
+    const cameraService = ref<DeviceCameraService | null>(null);
     const connectionService = ref<ConnectionService | null>(null);
     const ttsService = ref<NativeTTSService | null>(null);
     const sttService = ref<NativeSTTService | null>(null);
@@ -15,10 +15,17 @@ export const useServiceStore = defineStore('service', () => {
     
     function setCameraService(videoElement: HTMLVideoElement | null) {
         if(!videoElement) {
-            cameraService.value = null
+            resetCameraService()
             return
         }
+        if(cameraService.value) {
+            resetCameraService()
+        }
         cameraService.value = new DeviceCameraService(videoElement);
+    }
+    async function resetCameraService() {
+        await cameraService.value?.stop()
+        cameraService.value = null
     }
 
     function setConnectionService(){
@@ -35,6 +42,7 @@ export const useServiceStore = defineStore('service', () => {
 
   return {
     cameraService,
+    resetCameraService,
     connectionService,
     ttsService,
     sttService,
