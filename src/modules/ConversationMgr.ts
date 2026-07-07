@@ -102,15 +102,16 @@ export class ConversationManager {
 
                 if (question) {
                     chatStore.setActiveQuestion(question);
-                    await this.speak(question.prompt);
-                    if(question.type === "yes_no"){
-                        await this.speak("Vero o Falso");
-                    }
-                    else if(question.type === "multiple_choice" && question.choices){
-                        for (const choice of question.choices?? []) {
-                            await this.speak(choice);
-                        }
-                    }
+                    const testToSpeak = [
+                    question.prompt,
+                    question.type === "yes_no" ? "Vero o Falso" : null,
+                    ...(question.type === "multiple_choice" ? (question.choices || []) : [])
+                    ]
+                    .filter(Boolean) 
+                    .join(". ");     
+
+                await this.speak(testToSpeak);
+                    
                 } 
                 else {
                     chatStore.clearQuiz();

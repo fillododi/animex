@@ -78,6 +78,7 @@
             
           </div>
         </div>
+        <div id="scroll-anchor" style="height: 1px; width: 100%;"></div>
       </div>
 
     </ion-content>
@@ -105,8 +106,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch, nextTick} from 'vue';
-import { IonPage, IonContent, IonButton, IonFooter, onIonViewDidLeave, alertController, IonHeader, IonToolbar, IonTitle} from '@ionic/vue';
+import { computed, onMounted, ref, watch} from 'vue';
+import { IonPage, IonContent, IonButton, IonFooter, onIonViewDidLeave, alertController, IonHeader, IonToolbar, IonTitle, onIonViewDidEnter} from '@ionic/vue';
 import ChatBubble from '@/components/ChatBubble.vue';
 import InputBar from '@/components/InputBar.vue';
 import { useChatStore } from '@/stores/chatStore';
@@ -115,7 +116,6 @@ import { type DifficultyLevel} from '@/utility/Types';
 import { NativeSettings, AndroidSettings, IOSSettings } from 'capacitor-native-settings';
 import { useSessionStore } from '@/stores/sessionStore';
 import {globalUiState} from '@/utility/UiState';
-import { Keyboard } from '@capacitor/keyboard';
 import QuizMenu from '@/components/QuizMenu.vue';
 import { useManagerStore } from '@/stores/managerStore';
 // --- CHAT INITIALIZATION ---
@@ -124,25 +124,9 @@ const chatStore = useChatStore();
 const sessionStore = useSessionStore();
 const managerStore = useManagerStore();
 const conversationManager = computed(() => managerStore.conversationManager);
-//const kbHeight = ref(0);
-const contentRef = ref();
+const lastViewportHeight = ref(window.innerHeight);
+const resizeTimeout = ref<ReturnType<typeof setTimeout> | null>(null);
 
-// --- KEYBOARD-AWARE PADDING (identica su iOS e Android) ---
-// Nessun ramo per piattaforma: ora che il resize nativo è disattivato su
-// entrambe le piattaforme (vedi capacitor.config.ts + AndroidManifest.xml),
-// questa è l'unica logica che sposta content/footer, quindi deve essere
-// identica ovunque.
-/*const contentPaddingBottom = computed(() => {
-  return kbHeight.value > 0
-    ? `${kbHeight.value + 20}px`
-    : `calc(130px + var(--ion-safe-area-bottom, 0px))`;
-});
-
-const footerPaddingBottom = computed(() => {
-  return kbHeight.value > 0
-    ? `${kbHeight.value}px`
-    : `calc(50px + var(--ion-safe-area-bottom, 0px))`;
-});*/
 // --- UI STATE VARIABLES ---
 const uiState = globalUiState;
 const inputTextModel = computed({
@@ -155,15 +139,6 @@ const inputTextModel = computed({
 });
 
 onMounted(() => {
-  /*Keyboard.addListener('keyboardDidShow', (info) => {
-    // Clamp di sicurezza: una tastiera reale non supera mai il 50%
-    // dello schermo. Se il plugin riporta un valore anomalo su
-    // qualche device Android, la UI non collassa comunque.
-    kbHeight.value = Math.min(info.keyboardHeight, window.innerHeight * 0.5);
-  });
-  Keyboard.addListener('keyboardDidHide', () => {
-    kbHeight.value = 0;
-  });*/
   managerStore.initConversationManager();
 });
 
@@ -172,6 +147,7 @@ onMounted(() => {
 watch(
   () => chatStore.messages.length,
   (newLength, oldLength) => {
+    scrollToBottom();
     if (newLength > oldLength) {
       const lastMsg = chatStore.messages[newLength - 1];
       if (lastMsg &&lastMsg.role === 'model') {
@@ -180,18 +156,17 @@ watch(
         uiState.setSpeaking(true);
       }
     }
-    scrollDown();
   }
 );
 
 watch(
   () => chatStore.activeQuestion,
   (newQuestion) => {
+    scrollToBottom();
     if (newQuestion) {
       uiState.setProcessing(false);
       uiState.setStatusMessage(CHAT_STATUS.SUCCESS);
       uiState.setSpeaking(true);
-      scrollDown();
     }
   }
 );
@@ -237,7 +212,7 @@ const handleStop = async () => {
   try {
     await conversationManager.value?.stopListening();
     const userText = conversationManager.value ? await conversationManager.value?.getCurrentTranscript() : "";
-    if(uiState.getQuizStatus()){
+    if(chatStore.activeQuestion){
       await conversationManager.value?.validateQuiz(userText);
       uiState.setStatusMessage(CHAT_STATUS.SUCCESS);
     } 
@@ -295,7 +270,7 @@ const handleTextSubmit = async (selectedAnswer?: string | Event) => {
   uiState.setProcessing(true);
   uiState.setStatusMessage(CHAT_STATUS.THINKING);
   try {
-    if(uiState.getQuizStatus()){ 
+    if(chatStore.activeQuestion){ 
       await conversationManager.value?.validateQuiz(text);
     }else {
       await conversationManager.value?.processTextInteraction(text);
@@ -328,6 +303,12 @@ const handleQuizRequest = async (difficulty: DifficultyLevel) => {
   }
 };
 
+onIonViewDidEnter(async () => {
+  if (window.visualViewport) {
+    lastViewportHeight.value = window.visualViewport.height;
+    window.visualViewport.addEventListener('resize', handleViewportResize);
+  }
+});
 
 onIonViewDidLeave(async () => {
   if(uiState.getRecording()) {
@@ -338,6 +319,9 @@ onIonViewDidLeave(async () => {
   uiState.setStatusMessage(CHAT_STATUS.IDLE);
   await conversationManager.value?.stopSpeaking();
   //document.body.classList.remove('keyboard-is-open');
+  if (window.visualViewport) {
+    window.visualViewport.removeEventListener('resize', handleViewportResize);
+  }
 
 });
 
@@ -390,24 +374,51 @@ const openMenuQuiz = () => {
   isQuizModalOpen.value = true;
 };
 
-// --- GESTURE KEYBOARD ---
-/*const hideKeyboard = async () => {
-  if (kbHeight.value > 0) {
-    await Keyboard.hide();
-  }
-};*/
-
-const scrollDown = async () => {
-  await nextTick();
-  setTimeout(() => {
-    contentRef.value?.$el.scrollToBottom(300); 
-  }, 100);
-};
 const cancelActiveQuiz = () => {
   chatStore.clearQuiz();
   globalUiState.setQuizStatus(false);
   globalUiState.setStatusMessage(CHAT_STATUS.IDLE);
 };
+
+// --- SCROLL TO BOTTOM FUNCTION ---
+const scrollToBottom = async () => {
+  setTimeout(() => {
+    const anchor = document.getElementById('scroll-anchor');
+    if (anchor) {
+      anchor.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }
+  }, 100);
+};
+
+const handleViewportResize = async () => {
+  if (!window.visualViewport) return;
+
+  const currentHeight = window.visualViewport.height;
+  const anchor = document.getElementById('scroll-anchor');
+
+  if (resizeTimeout.value) {
+    clearTimeout(resizeTimeout.value);
+  }
+  
+  if (currentHeight < lastViewportHeight.value) {
+    // 1. Reduce the screen height (Keyboard opening)
+    // Scroll to the bottom immediately to ensure the input bar is visible above the keyboard
+    if (anchor) {
+      anchor.scrollIntoView(false);
+    }
+  } else {
+    // keyboard is closing, wait a bit before scrolling to the bottom to allow the UI to adjust
+    resizeTimeout.value = setTimeout(() => {
+      if (anchor) {
+        anchor.scrollIntoView({ behavior: 'smooth', block: 'end' });
+      }
+    }, 150);
+  }
+  
+  // Update the last known viewport height for the next resize event
+  lastViewportHeight.value = currentHeight;
+};
+
 </script>
 <style scoped>
 ion-page, ion-content, .chat-background {

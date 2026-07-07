@@ -1,9 +1,4 @@
-<template>
-  <!-- This component observes the store and presents an ion-alert when needed. 
-   It should be mounted ONCE at the root of the app (e.g., App.vue), alongside 
-   ion-router-outlet — NOT inside a single page — so it remains mounted while 
-   the user navigates between RecognitionPage, ChatBot, VirtualReality, etc. -->
-</template>
+
 
 <script setup lang="ts">
 import { watch } from 'vue';

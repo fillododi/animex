@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import { DeviceCameraService, type CameraService } from '@/services/CameraService';
+import { DeviceCameraService} from '@/services/CameraService';
 import { ServerConnectionService, type ConnectionService } from '@/services/ConnectionService';
 import { NativeSTTService, NativeTTSService } from '@/services/SpeechService';
 
