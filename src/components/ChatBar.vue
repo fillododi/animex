@@ -46,6 +46,7 @@ import { useChatStore } from '@/stores/chatStore';
 import { useManagerStore } from '@/stores/managerStore';
 import { CHAT_STATUS } from '@/utility/constants';
 import {useSessionStore } from '@/stores/sessionStore';
+import { alertController } from '@ionic/vue';
 const chatStore = useChatStore();
 const managerStore = useManagerStore();
 const sessionStore = useSessionStore();
@@ -75,7 +76,17 @@ const toggleGlobalMic = async () => {
       globalUiState.setMicReady(true);
       globalUiState.setStatusMessage(CHAT_STATUS.RECORDING);
     }, (errorMessage) => {
-      globalUiState.setStatusMessage(("Errore: " + errorMessage));
+      if (errorMessage === 'NEEDS_SETTINGS') {
+          showSettingsAlert();
+          // This if is to prevent overwriting the alert message if the user has already been prompted
+          if(uiState.getStatusMessage() != CHAT_STATUS.DENIED_HARD){
+            uiState.setStatusMessage(CHAT_STATUS.DENIED_HARD);
+          }
+        } else if (errorMessage === 'FIRST_DENIAL') {
+          uiState.setStatusMessage(CHAT_STATUS.DENIED_SOFT);
+        } else {
+          uiState.setStatusMessage(("Errore: " + errorMessage));
+        }
       globalUiState.setRecording(false);
       globalUiState.setMicReady(false);
     });
@@ -149,6 +160,25 @@ const cancelActiveQuiz = () => {
   globalUiState.setQuizStatus(false);
   globalUiState.setStatusMessage(CHAT_STATUS.IDLE);
 };
+
+const showSettingsAlert = async () => {
+  const alert = await alertController.create({
+    header: 'Microfono Disabilitato',
+    message: "L'app ha bisogno del microfono e del riconoscimento vocale per ascoltare la tua voce. Apri le impostazioni del telefono per consentire l'accesso",
+    buttons: [
+      {
+        text: 'Annulla',
+        role: 'cancel',
+        handler: () => {
+          uiState.setStatusMessage(CHAT_STATUS.DENIED_SOFT);
+        }
+      }
+    ]
+  });
+
+  await alert.present();
+};
+
 </script>
 
 <style scoped>
