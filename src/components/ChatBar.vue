@@ -47,6 +47,7 @@ import { useManagerStore } from '@/stores/managerStore';
 import { CHAT_STATUS } from '@/utility/constants';
 import {useSessionStore } from '@/stores/sessionStore';
 import { alertController } from '@ionic/vue';
+import { NativeSettings, AndroidSettings, IOSSettings } from 'capacitor-native-settings';
 const chatStore = useChatStore();
 const managerStore = useManagerStore();
 const sessionStore = useSessionStore();
@@ -172,11 +173,29 @@ const showSettingsAlert = async () => {
         handler: () => {
           uiState.setStatusMessage(CHAT_STATUS.DENIED_SOFT);
         }
+      },
+      {
+        text: 'Apri Impostazioni',
+        role: 'confirm',
+        handler: () => {
+          openSettings();
+        }
       }
     ]
   });
 
   await alert.present();
+};
+
+const openSettings = async () => {
+  try {
+    await NativeSettings.open({
+      optionAndroid: AndroidSettings.ApplicationDetails, 
+      optionIOS: IOSSettings.App
+    });
+  } catch (e) {
+    uiState.setStatusMessage(CHAT_STATUS.SETTINGS_ERROR);
+  }
 };
 
 </script>
