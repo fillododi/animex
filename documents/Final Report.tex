@@ -58,8 +58,28 @@ To test the Animex application you must follow these steps:
 
 \clearpage
 \section{Conceptual Description}
-
-
+ANIMEX is an educational mobile application designed to bridge the gap between outdoor exploration and interactive learning.\\
+Acting as a portable, AI-powered digital zoologist, the application aims to foster environmental awareness by transforming passive wildlife observation into an active and engaging experience.\\ 
+Through the integration of computer vision, spatial computing, and natural language processing, ANIMEX allows users to identify animal species, visualize them in their physical environment, and deepen their understanding through conversational interactions and gamification.
+\subsection{System Architecture}
+The application is built upon a modular and highly decoupled architecture. This design ensures a fluid and frictionless user experience, characterized by seamless navigation and dynamic interface adaptations.\\
+A centralized state management system is employed to strictly separate the underlying business logic from the graphical user interface.\\ 
+This conceptual separation allows the application to efficiently process real time multimodal data such as live camera feeds, voice inputs, and active learning sessions without compromising performance or visual continuity.
+\subsection{Main Functional Modules}
+The ANIMEX ecosystem is conceptually divided into three interconnected macro-modules:
+\begin{enumerate}
+    \item \textbf{Scanning and Recognition Engine:} This module leverages real time computer vision to identify wildlife. It features an immersive, distraction-free interface that dynamically adapts its layout to prioritize the camera feed during active scanning, ensuring an optimal framing and detection experience for the user.
+    
+    \item \textbf{Conversational Assistant and Gamification:} Acting as the interactive core, this multimodal chatbot enables bidirectional communication via text or voice. It provides contextual educational insights based on the identified species.\\ 
+    To promote active learning, the module seamlessly integrates an adaptive quiz system. Quizzes can be user initiated or proactively triggered by the AI, offering varying levels of difficulty (e.g., multiple-choice or true/false) and accepting answers through intuitive touch interactions, typing, or vocal commands.
+    
+    \item \textbf{Augmented Reality (AR) Vision:} This module introduces spatial computing to the application, allowing users to project 3D models of the identified animals directly into their physical surroundings. By providing a tangible sense of scale and anatomical detail, the AR module acts as a visual bridge between theoretical knowledge and the physical world, significantly enhancing user immersion.
+\end{enumerate}
+\subsection{Circular Interaction Flow}
+The conceptual strength of ANIMEX lies in its continuous and circular usage flow.\\ 
+The visual detection of an animal instantly updates the session's contextual knowledge base.\\ 
+This data seamlessly feeds into the AR module for spatial visualization and equips the virtual assistant to offer targeted educational content and quizzes.\\ 
+This architecture creates a cohesive and engaging learning loop: \textit{Detection $\rightarrow$ Visualization $\rightarrow$ Learning $\rightarrow$ Verification}.
 \clearpage
 \section{Main Tasks}
 
