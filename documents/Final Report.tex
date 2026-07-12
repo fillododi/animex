@@ -44,7 +44,7 @@ To test the Animex application you must follow these steps:
 \subsubsection{Android}
 \begin{enumerate}
     \item Go to the front-end repository.
-    \item Download Animex.apk from the releases section.
+    \item Download the latest Animex.apk version from the releases section.
     \item Install the APK on your Android device.
     \item Run the application.
     \item[Fallback:] Clone the repository, follow the repo's README to run the program through Android Studio.
@@ -56,28 +56,41 @@ To test the Animex application you must follow these steps:
     \item Follow the steps in the repo's README to run the program through XCode.
 \end{enumerate}
 
+\subsubsection{Additional Notes}
+Currently, the Animex system supports recognition for the following animal species:
+\begin{itemize}
+    \item Dog
+    \item Cat
+    \item Lion
+    \item Zebra
+    \item Hippopotamus
+    \item Tiger
+    \item Frog
+\end{itemize}
+In the absence of a live specimen, the recognition also works on images.
+
 \clearpage
 \section{Conceptual Description}
-ANIMEX is an educational mobile application designed to bridge the gap between outdoor exploration and interactive learning.\\
+Animex is an educational mobile application designed to bridge the gap between outdoor exploration and interactive learning.\\
 Acting as a portable, AI-powered digital zoologist, the application aims to foster environmental awareness by transforming passive wildlife observation into an active and engaging experience.\\ 
-Through the integration of computer vision, spatial computing, and natural language processing, ANIMEX allows users to identify animal species, visualize them in their physical environment, and deepen their understanding through conversational interactions and gamification.
+Through the integration of computer vision, spatial computing, and natural language processing, Animex allows users to identify animal species, visualize them in their physical environment, and deepen their understanding through conversational interactions and gamification.
 \subsection{System Architecture}
 The application is built upon a modular and highly decoupled architecture. This design ensures a fluid and frictionless user experience, characterized by seamless navigation and dynamic interface adaptations.\\
 A centralized state management system is employed to strictly separate the underlying business logic from the graphical user interface.\\ 
 This conceptual separation allows the application to efficiently process real time multimodal data such as live camera feeds, voice inputs, and active learning sessions without compromising performance or visual continuity.
 \subsection{Main Functional Modules}
-The ANIMEX ecosystem is conceptually divided into three interconnected macro-modules:
+The Animex ecosystem is conceptually divided into three interconnected macro-modules:
 \begin{enumerate}
     \item \textbf{Scanning and Recognition Engine:} This module leverages real time computer vision to identify wildlife. It features an immersive, distraction-free interface that dynamically adapts its layout to prioritize the camera feed during active scanning, ensuring an optimal framing and detection experience for the user.
     
     \item \textbf{Conversational Assistant and Gamification:} Acting as the interactive core, this multimodal chatbot enables bidirectional communication via text or voice. It provides contextual educational insights based on the identified species.\\ 
-    To promote active learning, the module seamlessly integrates an adaptive quiz system. Quizzes can be user initiated or proactively triggered by the AI, offering varying levels of difficulty (e.g., multiple-choice or true/false) and accepting answers through intuitive touch interactions, typing, or vocal commands.
+    To promote active learning, the module seamlessly integrates an adaptive quiz system. User can ask the system to generate a quiz, offering varying levels of difficulty (e.g., multiple-choice or true/false) and accepting answers through intuitive touch interactions, typing, or vocal commands.
     
-    \item \textbf{Augmented Reality (AR) Vision:} This module introduces spatial computing to the application, allowing users to project 3D models of the identified animals directly into their physical surroundings. By providing a tangible sense of scale and anatomical detail, the AR module acts as a visual bridge between theoretical knowledge and the physical world, significantly enhancing user immersion.
+    \item \textbf{Virtual Reality (VR) Vision:} This module introduces spatial computing to the application, allowing users to project 3D models of the identified animals and their natural habitats directly into their surroundings. By providing a tangible sense of scale and anatomical detail, the VR module acts as a visual bridge between theoretical knowledge and the physical world, significantly enhancing user immersion.
 \end{enumerate}
 \subsection{Circular Interaction Flow}
-The conceptual strength of ANIMEX lies in its continuous and circular usage flow.\\ 
-The visual detection of an animal instantly updates the session's contextual knowledge base.\\ 
+The conceptual strength of Animex lies in its continuous and circular usage flow.
+The visual detection of an animal instantly updates the session's contextual knowledge base.
 This data seamlessly feeds into the AR module for spatial visualization and equips the virtual assistant to offer targeted educational content and quizzes.\\ 
 This architecture creates a cohesive and engaging learning loop: \textit{Detection $\rightarrow$ Visualization $\rightarrow$ Learning $\rightarrow$ Verification}.
 \clearpage
@@ -96,62 +109,19 @@ Giorgino is visiting a zoo with his family. As he walks through the zoo, he sees
 \subsection{Simple Task: Visual Identification}
 The first task allows the user to identify an animal by framing it with the device camera. Animex periodically analyzes the camera feed and, when an animal is detected, displays its species. The recognized animal becomes the active subject for the conversational and immersive tasks.
 
-\subsubsection{Storyboard Example}
-The user notices an unfamiliar animal, points the camera towards it, and waits for recognition. Once the animal is clearly visible, the system highlights it and displays a concise result, for example: \textit{``Lion.''} The interaction is intentionally short so that it can be completed while the user is moving through the zoo.
-
 \subsubsection{Hierarchical Task Analysis}
-\begin{enumerate}
-    \item Start Animex.
-    \item Select an animal.
-    \begin{enumerate}
-        \item Point the camera at the animal.
-        \item If more than one animal is detected, select the intended animal through the graphical interface.
-    \end{enumerate}
-    \item Read or listen to the identification.
-    \item Exit the task or frame a different animal.
-\end{enumerate}
-\noindent\textbf{Plan:} Perform the steps in order. Step 2.2 is required only when the camera frame contains more than one possible subject.
+\includegraphics[width = 0.8\textwidth]{Task 1 HA.jpeg}
 
 \subsubsection{Grounding and Error Recovery}
-When several animals are visible at the same time, Animex does not choose a referent silently. Instead, it highlights all detected animals and asks the user to select the intended subject by touch. The chosen animal is then shown as the current referent throughout the following interactions. This grounding loop prevents later answers, quizzes, or immersive content from being associated with the wrong animal.
+When several animals of different species are visible at the same time, Animex does not choose a referent silently. Instead, it highlights all detected animals and asks the user to select the intended subject by touch. The chosen animal is then shown as the current referent throughout the following interactions. This grounding loop prevents later answers, quizzes, or immersive content from being associated with the wrong animal species.
 
 \subsection{Core Task: Questions and Quizzes}
 After an animal has been identified, the user can explore it in greater depth through an interactive assistant. Questions can be asked by voice or entered as text, and answers are presented in concise, child-friendly language. The assistant maintains the selected animal as conversational context so that follow-up questions such as \textit{``What does it eat?''} can be interpreted correctly.
 
 The user can also request a quiz and select its difficulty. Animex generates true/false or multiple-choice questions about the current animal and provides immediate feedback after each answer. The quiz therefore reinforces information that the user has just discovered through the recognition and conversation tasks.
 
-\subsubsection{Storyboard Example}
-A possible interaction is the following:
-\begin{quote}
-    \textbf{User:} ``Where do lions live?''\\
-    \textbf{System:} ``Lions mainly live in African savannahs and grasslands.''\\[0.5em]
-    \textbf{User:} ``What do they eat?''\\
-    \textbf{System:} ``Lions are carnivores. They hunt animals such as zebras and antelopes.''\\[0.5em]
-    \textbf{User:} ``Easy quiz.''\\[0.5em]
-    \textbf{System:} ``Look at the lion. Can you tell the difference between male and female?''\\
-    \textbf{User:} ``Males have a mane.''\\
-    \textbf{System:} ``Correct. Adult male lions are usually recognizable by their mane.''
-\end{quote}
-
 \subsubsection{Hierarchical Task Analysis}
-\begin{enumerate}
-    \item Start Animex.
-    \item Select an animal through the visual-identification task.
-    \item Ask for information about the selected animal.
-    \begin{enumerate}
-        \item Ask a question by voice; or
-        \item enter and send a text message.
-    \end{enumerate}
-    \item Request and complete a quiz.
-    \begin{enumerate}
-        \item Choose the quiz difficulty and question type.
-        \item Answer orally; or
-        \item submit an answer through the graphical interface or text input.
-        \item Receive feedback and, when appropriate, an explanation.
-    \end{enumerate}
-    \item Continue asking questions, repeat the quiz, switch animal, or exit.
-\end{enumerate}
-\noindent\textbf{Plan:} Perform Steps 1 and 2 first. Steps 3 and 4 are optional, repeatable, and interchangeable; the user may alternate freely between conversation and quiz interactions before exiting or selecting another animal.
+\includegraphics[width = \textwidth]{Task 2 HA.jpeg}
 
 \subsubsection{Grounding and Error Recovery}
 The zoo environment may make spoken questions difficult to understand. If speech recognition confidence is low, the system first asks the user to repeat the utterance and keeps the current animal visible so that the conversational referent is not lost. If the second attempt is still unclear, Animex proposes text input and preserves the partial interaction state. This repair strategy allows the user to continue without restarting the task.
@@ -161,22 +131,8 @@ The advanced task places the recognized animal inside a three-dimensional repres
 
 The user can observe the animal from different viewpoints, interact with it by offering different types of food, and ask contextual questions through voice chat. The scene and the assistant share the same selected-animal context; therefore, the system can relate the user's actions to explanations about diet, behavior, and habitat.
 
-\subsubsection{Storyboard Example}
-After identifying a lion, the user activates the immersive mode. Animex renders a lion model in a savannah environment with grass and acacia trees. The user may then ask, \textit{``What is the lion's natural habitat like?''} The system explains that lions commonly live in savannahs and grasslands while the corresponding environmental features remain visible in the scene. The user can also offer food to the animal and observe whether that choice is appropriate.
-
 \subsubsection{Hierarchical Task Analysis}
-\begin{enumerate}
-    \item Start Animex.
-    \item Select an animal through visual identification.
-    \item Begin the immersive experience.
-    \begin{enumerate}
-        \item Observe and navigate the 3D habitat.
-        \item Optionally feed the animal by selecting an available food item.
-    \end{enumerate}
-    \item Use voice chat to ask questions about the animal or the displayed habitat.
-    \item Continue interacting, return to the recognition or conversation task, or conclude the experience.
-\end{enumerate}
-\noindent\textbf{Plan:} Perform Steps 1--3 in order. Steps 3 and 4 may then be repeated and alternated: the user can interact with the scene, ask a question, and return to the scene as many times as desired before concluding the experience.
+\includegraphics[width = \textwidth]{Task 3 HA.jpeg}
 
 \subsubsection{Grounding and Error Recovery}
 Voice interaction in the immersive scene uses the same repair mechanism as the conversational task. When a question cannot be understood because of background noise, the system asks the user to repeat it. If recognition fails again, the user is invited to type the question. The selected animal and the active habitat remain visible during this process, maintaining a shared visual and conversational context.
@@ -197,12 +153,12 @@ Given the aims of the MITA course, this report will focus on the architecture of
 
 \subsection{Front-end Application}
 \subsubsection{Overview}
-The Animex application was developed utilizing the \textit{Typescript} programming language, the \textit{Vue}, \textit{Ionic}, and \textit{Three.js} graphical frameworks, and the \textit{Capacitor} input framework. \\
+The Animex application was developed utilizing the \textit{Typescript} programming language, the \textit{Vue}, \textit{Ionic}, and \textit{Three.js} graphical frameworks, the \textit{Capacitor} input framework, and \textit{Pinia} stores to handle global variables. \\
 The application itself can be divided into multiple layers:
 \begin{itemize}
     \item \textbf{Presentation Layer}: displays information to the user.
     \item \textbf{Module Layer}: handles the behavior needed for the system's tasks.
-    \item \textbf{Service Layer}: interact with the user's device to provide the information and functions requested by the modules.
+    \item \textbf{Service Layer}: interacts with the user's device to provide the information and functions requested by the modules.
 \end{itemize}
 \includegraphics[width = \textwidth]{Component view.jpeg}
 
@@ -265,7 +221,7 @@ Technical / development information exposed to users & Recognition or backend-re
 Mobile layout and system navigation overlap & On mobile devices, the chat input bar or bottom controls may be covered by Android/iOS navigation elements or by the keyboard. This can block the main action precisely when the user wants to ask a question or answer a quiz. & H4 - Consistency and standards; H7 - Efficiency of use; accessibility principles & The UI has been redone from scratch to effectively solve this issue and improve the user's overall experience. & 3 \\
 \midrule
 
-Tutorial, onboarding and contextual help & The relationship between Scanner, Assistant and AR functionalities is not immediately clear. New users may not understand that animal recognition is expected before using the other functionalities. Furthermore, the available actions inside each task are not always self-evident. & H6 - Recognition rather than recall; H10 - Help and documentation & The new UI makes this kind of information clearer: when no animal is recognized, the other actions are locked, making it clear what the user has to do. after a recognition, said actions are unlocked. & 2 \\
+Tutorial, onboarding and contextual help & The relationship between Scanner, Assistant and AR functionalities is not immediately clear. New users may not understand that animal recognition is expected before using the other functionalities. Furthermore, the available actions inside each task are not always self-evident. & H6 - Recognition rather than recall; H10 - Help and documentation & The new UI makes this kind of information clearer: when no animal is recognized, the other actions are locked, making it clear what the user has to do. After a recognition, said actions are unlocked. & 2 \\
 \midrule
 
 Overall application architecture & Although the application includes multiple modalities such as voice interaction, image recognition and AR, these modalities currently operate as separate tasks. The Assistant relies only on voice interaction, the Scanner relies only on image recognition, and the AR experience is isolated from the other functionalities. No task combines modalities simultaneously. As a consequence, the application is multimodal at the system level but not at the interaction level. & H2 - Match between system and real world; multimodal integration principles; grounding principles & More modalities have been added to the app: for example, now all the pages allow for the use of the voice chat, making the interaction truly multimodal. & 4 \\
